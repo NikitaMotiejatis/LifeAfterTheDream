@@ -71,3 +71,7 @@ export default defineConfig([
   },
 ])
 ```
+
+npm run build
+npm run dev          # localhost:5173
+    
