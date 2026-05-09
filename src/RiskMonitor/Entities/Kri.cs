@@ -16,9 +16,6 @@ public class Kri
     [Required]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [MaxLength(512)]
-    public string? FormulaLabel { get; set; }
-
     [Timestamp]
     public byte[] RowVersion { get; set; } = null!;
 
