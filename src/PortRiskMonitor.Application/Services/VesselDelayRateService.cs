@@ -7,21 +7,21 @@ namespace PortRiskMonitor.Application.Services;
 public class VesselDelayRateService : IVesselDelayRateService
 {
     private const double DelayThresholdHours = 2.0;
-    private const float  NormalDelayRatePct  = 8f;
+    private const float NormalDelayRatePct = 8f;
 
-    public const float GreenMax  = 10f;
+    public const float GreenMax = 10f;
     public const float YellowMax = 25f;
 
     private readonly IRiskScoreEngine _riskCalculator;
-    private readonly AppDbContext           _db;
+    private readonly AppDbContext _db;
 
-    private static float    _currentDelayRate = NormalDelayRatePct;
-    private static DateTime _lastUpdate       = DateTime.MinValue;
+    private static float _currentDelayRate = NormalDelayRatePct;
+    private static DateTime _lastUpdate = DateTime.MinValue;
 
     public VesselDelayRateService(IRiskScoreEngine riskCalculator, AppDbContext db)
     {
         _riskCalculator = riskCalculator;
-        _db             = db;
+        _db = db;
     }
 
     public float GetScoreValue() => GetDelayedCount() / (float)GetTotalCount() * 100f;
@@ -51,7 +51,7 @@ public class VesselDelayRateService : IVesselDelayRateService
     public ICollection<VesselDelayDto> GetDelayDetails()
     {
         var delayed = (int)GetDelayedCount();
-        var total   = (int)GetTotalCount();
+        var total = (int)GetTotalCount();
 
         var vesselPool = new[]
         {
@@ -72,18 +72,18 @@ public class VesselDelayRateService : IVesselDelayRateService
         {
             var (name, type) = vesselPool[i];
             var isDelayed = i < delayed;
-            var delayHrs  = isDelayed
+            var delayHrs = isDelayed
                 ? DelayThresholdHours + Random.Shared.NextDouble() * 6
                 : Random.Shared.NextDouble() * 1.5 - 0.5;
             var scheduled = DateTime.UtcNow.AddHours(-Random.Shared.Next(0, 12));
 
             vessels.Add(new VesselDelayDto(
-                VesselName:    name,
-                VesselType:    type,
+                VesselName: name,
+                VesselType: type,
                 ScheduledTime: scheduled,
-                ActualTime:    scheduled.AddHours(delayHrs),
-                DelayHours:    delayHrs,
-                Status:        isDelayed ? (delayHrs > 4 ? "VeryLate" : "Delayed") : "OnTime"
+                ActualTime: scheduled.AddHours(delayHrs),
+                DelayHours: delayHrs,
+                Status: isDelayed ? (delayHrs > 4 ? "VeryLate" : "Delayed") : "OnTime"
             ));
         }
         return vessels;
@@ -96,7 +96,7 @@ public class VesselDelayRateService : IVesselDelayRateService
 
         var delta = (float)(Random.Shared.NextDouble() * 4 - 2);
         _currentDelayRate = Math.Clamp(_currentDelayRate + delta, 2f, 45f);
-        _lastUpdate       = DateTime.UtcNow;
+        _lastUpdate = DateTime.UtcNow;
         return _currentDelayRate;
     }
 
