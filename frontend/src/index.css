@@ -1,1 +1,23 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/* Remove focus outlines from Recharts elements */
+.recharts-wrapper,
+.recharts-wrapper *:focus,
+.recharts-wrapper *:active,
+.recharts-surface,
+.recharts-surface *:focus,
+.recharts-surface *:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Prevent tooltip clipping inside chart containers */
+.recharts-wrapper,
+.recharts-wrapper svg {
+  overflow: visible !important;
+}
+
+.recharts-tooltip-wrapper {
+  z-index: 10;
+  pointer-events: none;
+}

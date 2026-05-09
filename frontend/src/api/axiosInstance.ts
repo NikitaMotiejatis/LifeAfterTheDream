@@ -16,7 +16,7 @@ axiosInstance.interceptors.response.use(
       console.warn('409 Conflict detected', error.response.data);
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;
