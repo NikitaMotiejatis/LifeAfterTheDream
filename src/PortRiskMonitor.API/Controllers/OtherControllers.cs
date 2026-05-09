@@ -19,7 +19,7 @@ namespace PortRiskMonitor.API.Controllers;
 // GET /api/alerts
 // ────────────────────────────────────────────────────────────
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/alerts")]
 [Produces("application/json")]
 public class AlertsController : ControllerBase
 {
@@ -46,7 +46,7 @@ public class AlertsController : ControllerBase
 // GET /api/reports
 // ────────────────────────────────────────────────────────────
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/reports")]
 [Produces("application/json")]
 public class ReportsController : ControllerBase
 {
@@ -78,7 +78,7 @@ public class ReportsController : ControllerBase
 // Only available in Development environment
 // ────────────────────────────────────────────────────────────
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/scenarios")]
 [Produces("application/json")]
 public class ScenariosController : ControllerBase
 {

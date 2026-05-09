@@ -4,7 +4,7 @@ namespace PortRiskMonitor.Application.Interfaces;
 
 public record BerthStatusDto(
     string BerthId,
-    bool   IsOccupied,
+    bool IsOccupied,
     string VesselType,
     DateTime? OccupiedSince
 );
