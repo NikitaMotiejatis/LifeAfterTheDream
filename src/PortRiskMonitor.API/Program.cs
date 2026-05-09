@@ -95,7 +95,7 @@ try
     // NFR: Async Communication — BackgroundService for mock data generation
     // Runs in background thread, never blocks HTTP request handlers
     // TODO: Remove MockDataBackgroundService when real data sources are connected
-    builder.Services.AddHostedService<MockDataBackgroundService>();
+    //builder.Services.AddHostedService<MockDataBackgroundService>();
 
     // ── FluentValidation ──────────────────────────────────────────────────────
     // TODO: Register all validators — FluentValidation will auto-scan the assembly

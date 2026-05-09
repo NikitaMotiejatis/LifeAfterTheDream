@@ -82,16 +82,13 @@ public class ReportsController : ControllerBase
 [Produces("application/json")]
 public class ScenariosController : ControllerBase
 {
-    private readonly MockDataBackgroundService _mockService;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<ScenariosController> _logger;
 
     public ScenariosController(
-        MockDataBackgroundService mockService,
         IWebHostEnvironment env,
         ILogger<ScenariosController> logger)
     {
-        _mockService = mockService;
         _env = env;
         _logger = logger;
     }
@@ -131,8 +128,6 @@ public class ScenariosController : ControllerBase
                 available = validScenarios
             });
         }
-
-        _mockService.SetScenario(dto.ScenarioName);
 
         _logger.LogInformation("Demo scenario activated: {scenario}", dto.ScenarioName);
 
