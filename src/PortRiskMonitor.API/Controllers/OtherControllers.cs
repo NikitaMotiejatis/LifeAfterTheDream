@@ -6,10 +6,10 @@
 
 using Microsoft.AspNetCore.Mvc;
 using PortRiskMonitor.Application.DTOs;
-using PortRiskMonitor.Application.DTOs.Read;
-using PortRiskMonitor.Application.DTOs.Write;
-using PortRiskMonitor.Application.DTOs.Shared;
 using PortRiskMonitor.Application.DTOs.Enums;
+using PortRiskMonitor.Application.DTOs.Read;
+using PortRiskMonitor.Application.DTOs.Shared;
+using PortRiskMonitor.Application.DTOs.Write;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Application.Services;
 
@@ -83,17 +83,17 @@ public class ReportsController : ControllerBase
 public class ScenariosController : ControllerBase
 {
     private readonly MockDataBackgroundService _mockService;
-    private readonly IWebHostEnvironment       _env;
+    private readonly IWebHostEnvironment _env;
     private readonly ILogger<ScenariosController> _logger;
 
     public ScenariosController(
-        MockDataBackgroundService     mockService,
-        IWebHostEnvironment           env,
-        ILogger<ScenariosController>  logger)
+        MockDataBackgroundService mockService,
+        IWebHostEnvironment env,
+        ILogger<ScenariosController> logger)
     {
         _mockService = mockService;
-        _env         = env;
-        _logger      = logger;
+        _env = env;
+        _logger = logger;
     }
 
     // POST /api/scenarios/activate
@@ -127,7 +127,7 @@ public class ScenariosController : ControllerBase
         {
             return BadRequest(new
             {
-                message   = $"Unknown scenario '{dto.ScenarioName}'",
+                message = $"Unknown scenario '{dto.ScenarioName}'",
                 available = validScenarios
             });
         }
@@ -138,7 +138,7 @@ public class ScenariosController : ControllerBase
 
         return Ok(new
         {
-            message  = $"Scenario '{dto.ScenarioName}' activated",
+            message = $"Scenario '{dto.ScenarioName}' activated",
             scenario = dto.ScenarioName
         });
     }

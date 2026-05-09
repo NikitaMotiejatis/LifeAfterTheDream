@@ -24,10 +24,10 @@
 // Controllers have no audit-related code at all.
 // ============================================================
 
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc.Filters;
 using PortRiskMonitor.Infrastructure.Entities;
 using PortRiskMonitor.Infrastructure.Repositories;
-using System.Diagnostics;
 
 namespace PortRiskMonitor.API.Filters;
 
@@ -42,26 +42,26 @@ public class BusinessLogicAuditFilter : IAsyncActionFilter
         ILogger<BusinessLogicAuditFilter> logger)
     {
         _auditRepo = auditRepo;
-        _logger    = logger;
+        _logger = logger;
     }
 
     public async Task OnActionExecutionAsync(
-        ActionExecutingContext  context,
+        ActionExecutingContext context,
         ActionExecutionDelegate next)
     {
         // ── BEFORE the action executes ────────────────────────────────────────
         var stopwatch = Stopwatch.StartNew();
 
         // Capture request metadata
-        var className  = context.Controller.GetType().Name;           // e.g. "KrisController"
+        var className = context.Controller.GetType().Name;           // e.g. "KrisController"
         var methodName = context.ActionDescriptor.DisplayName ?? "Unknown"; // e.g. "UpdateKri"
         var httpMethod = context.HttpContext.Request.Method;           // GET | POST | PUT | DELETE
-        var path       = context.HttpContext.Request.Path.Value ?? ""; // e.g. "/api/kris/abc-123"
+        var path = context.HttpContext.Request.Path.Value ?? ""; // e.g. "/api/kris/abc-123"
 
         // TODO: Replace hardcoded values with real user identity when auth is added
         // var userIdentifier = context.HttpContext.User.Identity?.Name ?? "anonymous";
         var userIdentifier = "anonymous";
-        var permissions    = "operator"; // TODO: Get from user claims
+        var permissions = "operator"; // TODO: Get from user claims
 
         // ── Execute the actual controller action ──────────────────────────────
         var executedContext = await next();
@@ -69,25 +69,25 @@ public class BusinessLogicAuditFilter : IAsyncActionFilter
         // ── AFTER the action executes ─────────────────────────────────────────
         stopwatch.Stop();
 
-        var success      = executedContext.Exception == null;
+        var success = executedContext.Exception == null;
         var errorMessage = executedContext.Exception?.Message;
-        var statusCode   = success
+        var statusCode = success
             ? (executedContext.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.StatusCode ?? 200
             : 500;
 
         // ── Write audit log record ────────────────────────────────────────────
         var auditLog = new AuditLog
         {
-            ClassName          = className,
-            MethodName         = methodName,
-            UserIdentifier     = userIdentifier,
-            Permissions        = permissions,
-            ExecutedAt         = DateTime.UtcNow,
-            DurationMs         = stopwatch.ElapsedMilliseconds,
-            Success            = success,
-            ErrorMessage       = errorMessage,
-            HttpMethod         = httpMethod,
-            RequestPath        = path,
+            ClassName = className,
+            MethodName = methodName,
+            UserIdentifier = userIdentifier,
+            Permissions = permissions,
+            ExecutedAt = DateTime.UtcNow,
+            DurationMs = stopwatch.ElapsedMilliseconds,
+            Success = success,
+            ErrorMessage = errorMessage,
+            HttpMethod = httpMethod,
+            RequestPath = path,
             ResponseStatusCode = statusCode
         };
 

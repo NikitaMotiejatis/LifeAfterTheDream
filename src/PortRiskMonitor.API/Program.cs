@@ -86,9 +86,9 @@ try
         // Each new strategy is a new class — existing code is never modified
         return strategyName switch
         {
-            "MaxRisk"       => new MaxRiskStrategy(),       // Takes worst single KRI score
-            "AverageRisk"   => new AverageRiskStrategy(),   // Simple arithmetic mean
-            _               => new DefaultWeightedStrategy() // Default: weighted sum
+            "MaxRisk" => new MaxRiskStrategy(),       // Takes worst single KRI score
+            "AverageRisk" => new AverageRiskStrategy(),   // Simple arithmetic mean
+            _ => new DefaultWeightedStrategy() // Default: weighted sum
         };
     });
 

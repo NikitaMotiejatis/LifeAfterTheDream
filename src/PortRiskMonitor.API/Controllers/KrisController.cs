@@ -25,10 +25,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Application.DTOs;
-using PortRiskMonitor.Application.DTOs.Read;
-using PortRiskMonitor.Application.DTOs.Write;
-using PortRiskMonitor.Application.DTOs.Shared;
 using PortRiskMonitor.Application.DTOs.Enums;
+using PortRiskMonitor.Application.DTOs.Read;
+using PortRiskMonitor.Application.DTOs.Shared;
+using PortRiskMonitor.Application.DTOs.Write;
 using PortRiskMonitor.Application.Interfaces;
 
 namespace PortRiskMonitor.API.Controllers;
@@ -44,7 +44,7 @@ public class KrisController : ControllerBase
     public KrisController(IKriService kriService, ILogger<KrisController> logger)
     {
         _kriService = kriService;
-        _logger     = logger;
+        _logger = logger;
     }
 
     // ── GET /api/kris ─────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ public class KrisController : ControllerBase
     public async Task<IActionResult> GetKriById([FromRoute] Guid id)
     {
         var kris = await _kriService.GetAllKrisAsync();
-        var kri  = kris.FirstOrDefault(k => k.Id == id);
+        var kri = kris.FirstOrDefault(k => k.Id == id);
 
         if (kri == null) return NotFound(new { message = $"KRI with id {id} not found" });
 

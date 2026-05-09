@@ -26,9 +26,9 @@ public class AppDbContext : DbContext
 
     // ── Tables ────────────────────────────────────────────────────────────────
     public DbSet<KriDefinition> KriDefinitions => Set<KriDefinition>();
-    public DbSet<KriReading>    KriReadings     => Set<KriReading>();
-    public DbSet<Alert>         Alerts          => Set<Alert>();
-    public DbSet<AuditLog>      AuditLogs       => Set<AuditLog>();
+    public DbSet<KriReading> KriReadings => Set<KriReading>();
+    public DbSet<Alert> Alerts => Set<Alert>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

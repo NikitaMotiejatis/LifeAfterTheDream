@@ -99,7 +99,7 @@ public class KriRepository : IKriRepository
 
     public async Task<KriDefinition> CreateAsync(KriDefinition kri)
     {
-        kri.Id        = Guid.NewGuid();
+        kri.Id = Guid.NewGuid();
         kri.CreatedAt = DateTime.UtcNow;
         kri.UpdatedAt = DateTime.UtcNow;
 
@@ -147,7 +147,7 @@ public class KriRepository : IKriRepository
 
     public async Task<KriReading> AddReadingAsync(KriReading reading)
     {
-        reading.Id        = Guid.NewGuid();
+        reading.Id = Guid.NewGuid();
         reading.Timestamp = DateTime.UtcNow;
 
         _context.KriReadings.Add(reading);
@@ -162,7 +162,7 @@ public class KriRepository : IKriRepository
 
         foreach (var reading in readingsList)
         {
-            reading.Id        = Guid.NewGuid();
+            reading.Id = Guid.NewGuid();
             reading.Timestamp = DateTime.UtcNow;
         }
 

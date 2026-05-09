@@ -8,7 +8,7 @@ public record UpdateKriDto(
     double GreenMax,
     double YellowMax,
     double Weight,
-    bool   HigherIsWorse,
+    bool HigherIsWorse,
     double MockBaseline,
     double MockVariance,
     string MockPattern,

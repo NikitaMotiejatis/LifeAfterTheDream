@@ -10,10 +10,10 @@
 // ============================================================
 
 using PortRiskMonitor.Application.DTOs;
-using PortRiskMonitor.Application.DTOs.Read;
-using PortRiskMonitor.Application.DTOs.Write;
-using PortRiskMonitor.Application.DTOs.Shared;
 using PortRiskMonitor.Application.DTOs.Enums;
+using PortRiskMonitor.Application.DTOs.Read;
+using PortRiskMonitor.Application.DTOs.Shared;
+using PortRiskMonitor.Application.DTOs.Write;
 using PortRiskMonitor.Application.Interfaces;
 
 namespace PortRiskMonitor.Application.Services;
@@ -33,7 +33,7 @@ public class RiskScoreEngine : IRiskScoreEngine
         double value,
         double greenMax,
         double yellowMax,
-        bool   higherIsWorse)
+        bool higherIsWorse)
     {
         if (higherIsWorse)
         {
@@ -53,7 +53,7 @@ public class RiskScoreEngine : IRiskScoreEngine
         double value,
         double greenMax,
         double yellowMax,
-        bool   higherIsWorse)
+        bool higherIsWorse)
     {
         // Invert value for lower-is-worse metrics
         if (!higherIsWorse)
@@ -89,10 +89,10 @@ public class RiskScoreEngine : IRiskScoreEngine
 
         var description = level switch
         {
-            RiskLevelDto.Green  => "Normal Operations",
+            RiskLevelDto.Green => "Normal Operations",
             RiskLevelDto.Yellow => "Monitor Closely",
-            RiskLevelDto.Red    => "Action Required",
-            _                   => "Unknown"
+            RiskLevelDto.Red => "Action Required",
+            _ => "Unknown"
         };
 
         return new CompositeScoreDto(score, level, description);
