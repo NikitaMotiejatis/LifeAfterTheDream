@@ -10,6 +10,5 @@ using System.Collections.Generic;
 public interface IIndicatorScore
 {
     double GetScoreValue();
-    string FormatScore(double score);
     ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null);
 }
