@@ -12,10 +12,10 @@
 // ============================================================
 
 using PortRiskMonitor.Application.DTOs;
-using PortRiskMonitor.Application.DTOs.Read;
-using PortRiskMonitor.Application.DTOs.Write;
-using PortRiskMonitor.Application.DTOs.Shared;
 using PortRiskMonitor.Application.DTOs.Enums;
+using PortRiskMonitor.Application.DTOs.Read;
+using PortRiskMonitor.Application.DTOs.Shared;
+using PortRiskMonitor.Application.DTOs.Write;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.Entities;
 using PortRiskMonitor.Infrastructure.Repositories;
@@ -24,18 +24,18 @@ namespace PortRiskMonitor.Application.Services;
 
 public class KriService : IKriService
 {
-    private readonly IKriRepository    _kriRepo;
-    private readonly IAlertService     _alertService;
-    private readonly IRiskScoreEngine  _riskEngine;
+    private readonly IKriRepository _kriRepo;
+    private readonly IAlertService _alertService;
+    private readonly IRiskScoreEngine _riskEngine;
 
     public KriService(
-        IKriRepository   kriRepo,
-        IAlertService    alertService,
+        IKriRepository kriRepo,
+        IAlertService alertService,
         IRiskScoreEngine riskEngine)
     {
-        _kriRepo      = kriRepo;
+        _kriRepo = kriRepo;
         _alertService = alertService;
-        _riskEngine   = riskEngine;
+        _riskEngine = riskEngine;
     }
 
     public async Task<IEnumerable<KriDefinitionDto>> GetAllKrisAsync()

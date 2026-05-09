@@ -72,7 +72,7 @@ public class AlertRepository : IAlertRepository
 
     public async Task<Alert> CreateAsync(Alert alert)
     {
-        alert.Id          = Guid.NewGuid();
+        alert.Id = Guid.NewGuid();
         alert.TriggeredAt = DateTime.UtcNow;
 
         _context.Alerts.Add(alert);

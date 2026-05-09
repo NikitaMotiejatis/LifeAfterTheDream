@@ -3,15 +3,15 @@
 // MockDataBackgroundService.cs — Simulates live KRI data
 // ============================================================
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
 using PortRiskMonitor.Application.DTOs;
-using PortRiskMonitor.Application.DTOs.Read;
-using PortRiskMonitor.Application.DTOs.Write;
-using PortRiskMonitor.Application.DTOs.Shared;
 using PortRiskMonitor.Application.DTOs.Enums;
+using PortRiskMonitor.Application.DTOs.Read;
+using PortRiskMonitor.Application.DTOs.Shared;
+using PortRiskMonitor.Application.DTOs.Write;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.Entities;
 using PortRiskMonitor.Infrastructure.Repositories;
@@ -23,12 +23,12 @@ namespace PortRiskMonitor.Application.Services;
 // ────────────────────────────────────────────────────────────
 public class AlertService : IAlertService
 {
-    private readonly IAlertRepository  _alertRepo;
-    private readonly IRiskScoreEngine  _riskEngine;
+    private readonly IAlertRepository _alertRepo;
+    private readonly IRiskScoreEngine _riskEngine;
 
     public AlertService(IAlertRepository alertRepo, IRiskScoreEngine riskEngine)
     {
-        _alertRepo  = alertRepo;
+        _alertRepo = alertRepo;
         _riskEngine = riskEngine;
     }
 
@@ -62,11 +62,11 @@ public class AlertService : IAlertService
     }
 
     public async Task EvaluateAndUpdateAlertsAsync(
-        Guid   kriId,
+        Guid kriId,
         double newValue,
         double greenMax,
         double yellowMax,
-        bool   higherIsWorse)
+        bool higherIsWorse)
     {
         // TODO: Implement alert evaluation logic:
         //
@@ -104,30 +104,30 @@ public class AlertService : IAlertService
 public class MockDataBackgroundService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly IConfiguration       _config;
+    private readonly IConfiguration _config;
     private readonly ILogger<MockDataBackgroundService> _logger;
 
     // In-memory state for pattern generation
     // These are fields on the Singleton BackgroundService — ok because they
     // are only accessed from the single background thread (no concurrency issue here)
-    private readonly Dictionary<Guid, double> _currentValues  = new();
-    private          int                      _tickCount       = 0;
-    private          string                   _activeScenario  = "Normal";
+    private readonly Dictionary<Guid, double> _currentValues = new();
+    private int _tickCount = 0;
+    private string _activeScenario = "Normal";
 
     public MockDataBackgroundService(
         IServiceScopeFactory scopeFactory,
-        IConfiguration       config,
+        IConfiguration config,
         ILogger<MockDataBackgroundService> logger)
     {
-        _scopeFactory    = scopeFactory;
-        _config          = config;
-        _logger          = logger;
-        _activeScenario  = config["MockData:DefaultScenario"] ?? "Normal";
+        _scopeFactory = scopeFactory;
+        _config = config;
+        _logger = logger;
+        _activeScenario = config["MockData:DefaultScenario"] ?? "Normal";
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var enabled         = _config["MockData:Enabled"] != "false";
+        var enabled = _config["MockData:Enabled"] != "false";
         var intervalSeconds = int.TryParse(_config["MockData:IntervalSeconds"], out var s) ? s : 30;
 
         if (!enabled)
@@ -166,10 +166,10 @@ public class MockDataBackgroundService : BackgroundService
         // IMPORTANT: Must create a new scope for each DB interaction.
         // BackgroundService is Singleton, but DbContext is Scoped.
         // Never inject DbContext directly into a Singleton — use IServiceScopeFactory.
-        using var scope   = _scopeFactory.CreateScope();
-        var kriRepo        = scope.ServiceProvider.GetRequiredService<IKriRepository>();
-        var alertService   = scope.ServiceProvider.GetRequiredService<IAlertService>();
-        var riskEngine     = scope.ServiceProvider.GetRequiredService<IRiskScoreEngine>();
+        using var scope = _scopeFactory.CreateScope();
+        var kriRepo = scope.ServiceProvider.GetRequiredService<IKriRepository>();
+        var alertService = scope.ServiceProvider.GetRequiredService<IAlertService>();
+        var riskEngine = scope.ServiceProvider.GetRequiredService<IRiskScoreEngine>();
 
         var kris = await kriRepo.GetAllAsync();
 
@@ -187,10 +187,10 @@ public class MockDataBackgroundService : BackgroundService
             readings.Add(new KriReading
             {
                 KriDefinitionId = kri.Id,
-                Value           = newValue,
+                Value = newValue,
                 NormalizedScore = 0, // TODO: set calculated score
-                RiskLevel       = "Green", // TODO: set calculated level
-                IsSimulated     = true
+                RiskLevel = "Green", // TODO: set calculated level
+                IsSimulated = true
             });
 
             // TODO: Evaluate and update alerts for the new value
@@ -232,8 +232,8 @@ public class MockDataBackgroundService : BackgroundService
 
     private async Task SeedDefaultKrisAsync(CancellationToken ct)
     {
-        using var scope  = _scopeFactory.CreateScope();
-        var kriRepo      = scope.ServiceProvider.GetRequiredService<IKriRepository>();
+        using var scope = _scopeFactory.CreateScope();
+        var kriRepo = scope.ServiceProvider.GetRequiredService<IKriRepository>();
 
         var existing = await kriRepo.GetAllAsync();
         if (existing.Any())

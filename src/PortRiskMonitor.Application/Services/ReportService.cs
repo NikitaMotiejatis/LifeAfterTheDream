@@ -2,34 +2,34 @@
 // ReportService.cs — Generates the risk report snapshot
 // ============================================================
 
+using Microsoft.Extensions.Configuration;
 using PortRiskMonitor.Application.DTOs;
-using PortRiskMonitor.Application.DTOs.Read;
-using PortRiskMonitor.Application.DTOs.Write;
-using PortRiskMonitor.Application.DTOs.Shared;
 using PortRiskMonitor.Application.DTOs.Enums;
+using PortRiskMonitor.Application.DTOs.Read;
+using PortRiskMonitor.Application.DTOs.Shared;
+using PortRiskMonitor.Application.DTOs.Write;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.Repositories;
-using Microsoft.Extensions.Configuration;
 
 namespace PortRiskMonitor.Application.Services;
 
 public class ReportService : IReportService
 {
-    private readonly IKriRepository   _kriRepo;
+    private readonly IKriRepository _kriRepo;
     private readonly IAlertRepository _alertRepo;
     private readonly IRiskScoreEngine _riskEngine;
-    private readonly IConfiguration   _config;
+    private readonly IConfiguration _config;
 
     public ReportService(
-        IKriRepository   kriRepo,
+        IKriRepository kriRepo,
         IAlertRepository alertRepo,
         IRiskScoreEngine riskEngine,
-        IConfiguration   config)
+        IConfiguration config)
     {
-        _kriRepo    = kriRepo;
-        _alertRepo  = alertRepo;
+        _kriRepo = kriRepo;
+        _alertRepo = alertRepo;
         _riskEngine = riskEngine;
-        _config     = config;
+        _config = config;
     }
 
     public async Task<RiskReportDto> GenerateReportAsync()
