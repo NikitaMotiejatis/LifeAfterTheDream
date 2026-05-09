@@ -35,8 +35,7 @@ public class CustomsDwellTimeService : ICustomsDwellTimeService
     public float GetAverageDwellHours()
     {
         UpdatePhaseIfNeeded();
-        var noise = (float)(Random.Shared.NextDouble() * 4 - 2);
-        return Math.Max(4f, _currentAvgDwell + noise);
+        return Math.Max(4f, _currentAvgDwell);
     }
 
     public uint GetPendingCount() => _currentPhase == "Inspection" ? InspectionPendingCount : NormalPendingCount;

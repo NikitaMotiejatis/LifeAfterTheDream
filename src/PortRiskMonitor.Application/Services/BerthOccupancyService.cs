@@ -45,8 +45,7 @@ public class BerthOccupancyService : IBerthOccupancyService
         var combinedWave = (morningWave + eveningWave) / 2.0;
 
         var occupied = (uint)Math.Round((NormalOccupancyPct + AmplitudePct * (float)combinedWave) / 100f * TotalBerths);
-        var noise    = Random.Shared.Next(-2, 3);
-        return (uint)Math.Clamp((int)occupied + noise, 0, (int)TotalBerths);
+        return (uint)Math.Clamp((int)occupied, 0, (int)TotalBerths);
     }
 
     public uint GetTotalCount() => TotalBerths;
