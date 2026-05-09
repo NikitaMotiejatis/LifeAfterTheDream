@@ -79,19 +79,16 @@ public class WeatherConditionService : IWeatherConditionService
     // ── IIndicatorScore ────────────────────────────────────────────────
     double IIndicatorScore.GetScoreValue() => CalculateScore(GetCachedSnapshot());
 
-    string IIndicatorScore.FormatScore(double score)
-    {
-        var level = _riskCalculator.EvaluateRiskLevel(score, GreenMax, YellowMax, true);
-        var snapshot = GetCachedSnapshot();
-        return $"Weather Risk: {score:F0}/100 ({level}) | " +
-               $"Wind: {snapshot.WindSpeedKnt}m/s | " +
-               $"Water: {snapshot.WaterLevelCm:F0}cm | " +
-               $"{snapshot.ConditionCode}";
-    }
-
     ICollection<(DateTime Timestamp, double Score)> IIndicatorScore.GetScores(DateTime? from = null, DateTime? to = null)
     {
         // TODO: Query KriReadings table filtered to Weather KRI definition ID
+        // return _db.KriReadings
+        //     .Where(r => r.KriDefinitionId == _indicator.Id
+        //              && r.Timestamp >= (from ?? DateTime.UtcNow.AddDays(-30))
+        //              && r.Timestamp <= (to ?? DateTime.UtcNow))
+        //     .OrderBy(r => r.Timestamp)
+        //     .Select(r => (r.Timestamp, (float)r.Value))
+        //     .ToList();
         throw new NotImplementedException("TODO: wire up KRI definition ID");
     }
 
