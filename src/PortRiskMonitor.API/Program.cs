@@ -76,6 +76,13 @@ try
     builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<IRiskScoreEngine, RiskScoreEngine>();
 
+    // Indicator Services
+    builder.Services.AddScoped<IBerthOccupancyService, BerthOccupancyService>();
+    builder.Services.AddScoped<IVesselDelayRateService, VesselDelayRateService>();
+    builder.Services.AddScoped<ICustomsDwellTimeService, CustomsDwellTimeService>();
+    builder.Services.AddHttpClient<WeatherConditionService>();
+    builder.Services.AddScoped<IWeatherConditionService, WeatherConditionService>();
+
     // NFR: Extensibility — Strategy Pattern for risk score calculation
     // To swap algorithm: change "RiskScoring:Strategy" in appsettings.json
     // No code recompilation needed — only config change

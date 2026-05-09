@@ -23,10 +23,10 @@ namespace PortRiskMonitor.Application.Services;
 
 internal record WeatherSnapshot
 {
-    public ushort WindSpeedKnt { get; init; }
-    public float WaterLevelCm { get; init; }
-    public sbyte TemperatureC { get; init; }
-    public byte HumidityPercent { get; init; }
+    public double WindSpeedKnt { get; init; }
+    public double WaterLevelCm { get; init; }
+    public double TemperatureC { get; init; }
+    public double HumidityPercent { get; init; }
     public string ConditionCode { get; init; } = "clear";
     public DateTime FetchedAt { get; init; }
 }
@@ -93,10 +93,10 @@ public class WeatherConditionService : IWeatherConditionService
     }
 
     // ── IWeatherConditionService ──────────────────────────────────────────────
-    ushort IWeatherConditionService.GetWindSpeedKnt() => GetCachedSnapshot().WindSpeedKnt;
-    float IWeatherConditionService.GetWaterLevelCm() => GetCachedSnapshot().WaterLevelCm;
-    sbyte IWeatherConditionService.GetTemperatureC() => GetCachedSnapshot().TemperatureC;
-    byte IWeatherConditionService.GetHumidityPercent() => GetCachedSnapshot().HumidityPercent;
+    double IWeatherConditionService.GetWindSpeedKnt() => GetCachedSnapshot().WindSpeedKnt;
+    double IWeatherConditionService.GetWaterLevelCm() => GetCachedSnapshot().WaterLevelCm;
+    double IWeatherConditionService.GetTemperatureC() => GetCachedSnapshot().TemperatureC;
+    double IWeatherConditionService.GetHumidityPercent() => GetCachedSnapshot().HumidityPercent;
     string IWeatherConditionService.GetConditionCode() => GetCachedSnapshot().ConditionCode;
 
     // ── Score formula ─────────────────────────────────────────────────────────
@@ -203,10 +203,10 @@ public class WeatherConditionService : IWeatherConditionService
 
         return new WeatherSnapshot
         {
-            WindSpeedKnt = (ushort)Math.Round(WindSpeedKnt),
-            WaterLevelCm = (float)latestHydro.WaterLevelCm,
-            TemperatureC = (sbyte)Math.Round(latestCondition.AirTemperature),
-            HumidityPercent = (byte)latestCondition.RelativeHumidity,
+            WindSpeedKnt = WindSpeedKnt,
+            WaterLevelCm = latestHydro.WaterLevelCm,
+            TemperatureC = temperatureC,
+            HumidityPercent = latestCondition.RelativeHumidity,
             ConditionCode = latestCondition.ConditionCode,
             FetchedAt = DateTime.UtcNow
         };
@@ -247,7 +247,7 @@ internal class StationObservation
     public double AirTemperature { get; set; }
 
     [JsonPropertyName("relativeHumidity")]
-    public int RelativeHumidity { get; set; }
+    public double RelativeHumidity { get; set; }
 
     [JsonPropertyName("conditionCode")]
     public string ConditionCode { get; set; } = "clear";
