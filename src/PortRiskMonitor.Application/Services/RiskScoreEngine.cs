@@ -9,7 +9,6 @@
 // No DB calls, no side effects. Easy to unit test.
 // ============================================================
 
-using PortRiskMonitor.Application.DTOs.Enums;
 using PortRiskMonitor.Application.DTOs.Read;
 using PortRiskMonitor.Application.DTOs.Shared;
 using PortRiskMonitor.Application.Interfaces;
