@@ -1,9 +1,9 @@
-using System.Collections.Generic;
 using PortRiskMonitor.Application.DTOs.Read;
+using RiskMonitor.Logic;
 
 namespace PortRiskMonitor.Application.Interfaces;
 
-public interface IVesselDelayRateService : IIndicatorScore
+public interface IVesselDelayRateService : IKriScore<double>
 {
     uint GetDelayedCount();
     uint GetTotalCount();

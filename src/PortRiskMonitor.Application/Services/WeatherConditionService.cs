@@ -77,9 +77,9 @@ public class WeatherConditionService : IWeatherConditionService
     }
 
     // ── IIndicatorScore ────────────────────────────────────────────────
-    double IIndicatorScore.GetScoreValue() => CalculateScore(GetCachedSnapshot());
+    public double GetScoreValue() => CalculateScore(GetCachedSnapshot());
 
-    ICollection<(DateTime Timestamp, double Score)> IIndicatorScore.GetScores(DateTime? from = null, DateTime? to = null)
+    public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
     {
         // TODO: Query KriReadings table filtered to Weather KRI definition ID
         // return _db.KriReadings

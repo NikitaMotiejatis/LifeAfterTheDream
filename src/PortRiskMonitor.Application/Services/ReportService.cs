@@ -3,13 +3,12 @@
 // ============================================================
 
 using Microsoft.Extensions.Configuration;
-using PortRiskMonitor.Application.DTOs;
-using PortRiskMonitor.Application.DTOs.Enums;
 using PortRiskMonitor.Application.DTOs.Read;
 using PortRiskMonitor.Application.DTOs.Shared;
-using PortRiskMonitor.Application.DTOs.Write;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.Repositories;
+
+using RiskMonitor.DTOs;
 
 namespace PortRiskMonitor.Application.Services;
 
@@ -68,8 +67,8 @@ public class ReportService : IReportService
                 kriCards.Add(card);
                 scoreInputs.Add(new KriScoreInputDto(KriId: kri.Id, NormalizedScore: normalizedScore, Weight: kri.Weight));
 
-                if (riskLevel == RiskLevelDto.Green) greenCount++;
-                else if (riskLevel == RiskLevelDto.Yellow) { yellowCount++; breachingKris.Add(card); }
+                if (riskLevel == RiskLevel.Low) greenCount++;
+                else if (riskLevel == RiskLevel.Medium) { yellowCount++; breachingKris.Add(card); }
                 else { redCount++; breachingKris.Add(card); }
             }
             else

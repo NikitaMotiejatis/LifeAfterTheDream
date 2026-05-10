@@ -9,12 +9,12 @@
 // No DB calls, no side effects. Easy to unit test.
 // ============================================================
 
-using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.DTOs.Enums;
 using PortRiskMonitor.Application.DTOs.Read;
 using PortRiskMonitor.Application.DTOs.Shared;
-using PortRiskMonitor.Application.DTOs.Write;
 using PortRiskMonitor.Application.Interfaces;
+
+using RiskMonitor.DTOs;
 
 namespace PortRiskMonitor.Application.Services;
 
@@ -29,7 +29,7 @@ public class RiskScoreEngine : IRiskScoreEngine
         _strategy = strategy;
     }
 
-    public RiskLevelDto EvaluateRiskLevel(
+    public RiskLevel EvaluateRiskLevel(
         double value,
         double greenMax,
         double yellowMax,
@@ -37,15 +37,15 @@ public class RiskScoreEngine : IRiskScoreEngine
     {
         if (higherIsWorse)
         {
-            if (value <= greenMax) return RiskLevelDto.Green;
-            if (value <= yellowMax) return RiskLevelDto.Yellow;
-            return RiskLevelDto.Red;
+            if (value <= greenMax) return RiskLevel.Low;
+            if (value <= yellowMax) return RiskLevel.Medium;
+            return RiskLevel.High;
         }
         else
         {
-            if (value >= greenMax) return RiskLevelDto.Green;
-            if (value >= yellowMax) return RiskLevelDto.Yellow;
-            return RiskLevelDto.Red;
+            if (value >= greenMax) return RiskLevel.Low;
+            if (value >= yellowMax) return RiskLevel.Medium;
+            return RiskLevel.High;
         }
     }
 
@@ -83,15 +83,15 @@ public class RiskScoreEngine : IRiskScoreEngine
         // This method just interprets the result and adds the description label
         var score = _strategy.Calculate(inputs);
 
-        var level = score <= 33 ? RiskLevelDto.Green
-                  : score <= 66 ? RiskLevelDto.Yellow
-                  : RiskLevelDto.Red;
+        var level = score <= 33 ? RiskLevel.Low
+                  : score <= 66 ? RiskLevel.Medium
+                  : RiskLevel.High;
 
         var description = level switch
         {
-            RiskLevelDto.Green => "Normal Operations",
-            RiskLevelDto.Yellow => "Monitor Closely",
-            RiskLevelDto.Red => "Action Required",
+            RiskLevel.Low => "Normal Operations",
+            RiskLevel.Medium => "Monitor Closely",
+            RiskLevel.High => "Action Required",
             _ => "Unknown"
         };
 

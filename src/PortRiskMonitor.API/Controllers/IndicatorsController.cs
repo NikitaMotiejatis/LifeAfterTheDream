@@ -1,6 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using PortRiskMonitor.Application.DTOs.Enums;
-using PortRiskMonitor.Application.DTOs.Read;
 using PortRiskMonitor.Application.Interfaces;
 
 namespace PortRiskMonitor.API.Controllers;

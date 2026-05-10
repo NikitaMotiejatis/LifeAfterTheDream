@@ -1,4 +1,4 @@
-using PortRiskMonitor.Application.DTOs.Enums;
+using RiskMonitor.DTOs;
 
 namespace PortRiskMonitor.Application.DTOs.Read;
 
@@ -7,7 +7,7 @@ public record KriReadingDto(
     Guid KriDefinitionId,
     double Value,
     double NormalizedScore,
-    RiskLevelDto RiskLevel,
+    RiskLevel RiskLevel,
     DateTime Timestamp,
     bool IsSimulated
 );

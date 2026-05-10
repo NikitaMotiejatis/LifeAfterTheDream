@@ -31,7 +31,7 @@ public class BerthOccupancyService : IBerthOccupancyService
         _db = db;
     }
 
-    public float GetScoreValue() =>
+    public double GetScoreValue() =>
         GetOccupiedCount() / (float)GetTotalCount() * 100f;
 
     public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
@@ -68,11 +68,4 @@ public class BerthOccupancyService : IBerthOccupancyService
 
         return berths;
     }
-
-    uint IBerthOccupancyService.GetOccupiedCount() => GetOccupiedCount();
-    uint IBerthOccupancyService.GetTotalCount() => GetTotalCount();
-    ICollection<BerthStatusDto> IBerthOccupancyService.GetBerthDetails() => GetBerthDetails();
-
-    double IIndicatorScore.GetScoreValue() => GetScoreValue();
-    ICollection<(DateTime Timestamp, double Score)> IIndicatorScore.GetScores(DateTime? from, DateTime? to) => GetScores(from, to);
 }

@@ -24,7 +24,7 @@ public class VesselDelayRateService : IVesselDelayRateService
         _db = db;
     }
 
-    public float GetScoreValue() => GetDelayedCount() / (float)GetTotalCount() * 100f;
+    public double GetScoreValue() => GetDelayedCount() / (float)GetTotalCount() * 100f;
 
     public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
     {
@@ -99,10 +99,4 @@ public class VesselDelayRateService : IVesselDelayRateService
         _lastUpdate = DateTime.UtcNow;
         return _currentDelayRate;
     }
-
-    double IIndicatorScore.GetScoreValue() => GetScoreValue();
-    ICollection<(DateTime Timestamp, double Score)> IIndicatorScore.GetScores(DateTime? from, DateTime? to) => GetScores(from, to);
-    uint IVesselDelayRateService.GetDelayedCount() => GetDelayedCount();
-    uint IVesselDelayRateService.GetTotalCount() => GetTotalCount();
-    ICollection<VesselDelayDto> IVesselDelayRateService.GetDelayDetails() => GetDelayDetails();
 }

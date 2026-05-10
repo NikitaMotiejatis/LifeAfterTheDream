@@ -8,11 +8,12 @@
 //   - Swapping implementations without changing controller code
 // ============================================================
 
-using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.DTOs.Enums;
 using PortRiskMonitor.Application.DTOs.Read;
 using PortRiskMonitor.Application.DTOs.Shared;
 using PortRiskMonitor.Application.DTOs.Write;
+
+using RiskMonitor.DTOs;
 
 namespace PortRiskMonitor.Application.Interfaces;
 
@@ -52,7 +53,7 @@ public interface IKriService
 public interface IRiskScoreEngine
 {
     // Determines the risk level for a single KRI value given its thresholds
-    RiskLevelDto EvaluateRiskLevel(double value, double greenMax, double yellowMax, bool higherIsWorse);
+    RiskLevel EvaluateRiskLevel(double value, double greenMax, double yellowMax, bool higherIsWorse);
 
     // Normalizes a raw KRI value to a 0-100 score for the composite calculation
     double NormalizeScore(double value, double greenMax, double yellowMax, bool higherIsWorse);

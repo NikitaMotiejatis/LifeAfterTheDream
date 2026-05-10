@@ -67,13 +67,9 @@ try
 
     // Repositories (Data Access Layer)
     builder.Services.AddScoped<IKriRepository, KriRepository>();
-    builder.Services.AddScoped<IAlertRepository, AlertRepository>();
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
     // Application Services (Business Logic Layer)
-    builder.Services.AddScoped<IKriService, KriService>();
-    builder.Services.AddScoped<IAlertService, AlertService>();
-    builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<IRiskScoreEngine, RiskScoreEngine>();
 
     // Indicator Services

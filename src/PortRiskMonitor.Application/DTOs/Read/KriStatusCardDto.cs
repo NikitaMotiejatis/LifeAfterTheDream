@@ -1,4 +1,4 @@
-using PortRiskMonitor.Application.DTOs.Enums;
+using RiskMonitor.DTOs;
 
 namespace PortRiskMonitor.Application.DTOs.Read;
 
@@ -8,7 +8,7 @@ public record KriStatusCardDto(
     string Unit,
     double CurrentValue,
     double NormalizedScore,
-    RiskLevelDto RiskLevel,
+    RiskLevel RiskLevel,
     bool HasActiveAlert,
     string? TrendDirection, // "Improving" | "Worsening" | "Stable"
     DateTime LastUpdated

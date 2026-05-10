@@ -1,9 +1,9 @@
-using System.Collections.Generic;
 using PortRiskMonitor.Application.DTOs.Enums;
+using RiskMonitor.Logic;
 
 namespace PortRiskMonitor.Application.Interfaces;
 
-public interface ICustomsDwellTimeService : IIndicatorScore
+public interface ICustomsDwellTimeService : IKriScore<double>
 {
     float GetAverageDwellHours();
     uint GetPendingCount();

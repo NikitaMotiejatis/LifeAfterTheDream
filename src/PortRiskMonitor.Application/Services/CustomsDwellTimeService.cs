@@ -27,7 +27,7 @@ public class CustomsDwellTimeService : ICustomsDwellTimeService
         _db = db;
     }
 
-    public float GetScoreValue() => GetAverageDwellHours();
+    public double GetScoreValue() => GetAverageDwellHours();
 
     public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
         => throw new NotImplementedException("TODO: wire KRI definition ID");
@@ -100,11 +100,4 @@ public class CustomsDwellTimeService : ICustomsDwellTimeService
         _phaseStarted = DateTime.UtcNow;
         _nextPhaseChange = DateTime.UtcNow.AddHours(durationHrs);
     }
-
-    float ICustomsDwellTimeService.GetAverageDwellHours() => GetAverageDwellHours();
-    uint ICustomsDwellTimeService.GetPendingCount() => GetPendingCount();
-    uint ICustomsDwellTimeService.GetOverdueCount() => GetOverdueCount();
-    ICollection<CustomsDwellDto> ICustomsDwellTimeService.GetDwellDetails() => GetDwellDetails();
-    double IIndicatorScore.GetScoreValue() => GetScoreValue();
-    ICollection<(DateTime Timestamp, double Score)> IIndicatorScore.GetScores(DateTime? from, DateTime? to) => GetScores(from, to);
 }
