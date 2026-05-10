@@ -18,4 +18,9 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
   </ItemGroup>
+
+  <Target Name="HuskyRestoreAndInstall" BeforeTargets="Restore;CollectPackageReferences" Condition="'$(HUSKY)' != '0' AND !Exists('$(MSBuildThisFileDirectory)..\..\.husky\_\husky.sh')">
+    <Exec Command="dotnet tool restore" WorkingDirectory="$(MSBuildThisFileDirectory)..\..\" StandardOutputImportance="Low" StandardErrorImportance="High" IgnoreExitCode="true" />
+    <Exec Command="dotnet husky install" WorkingDirectory="$(MSBuildThisFileDirectory)..\..\" StandardOutputImportance="Low" StandardErrorImportance="High" IgnoreExitCode="true" />
+  </Target>
 </Project>
