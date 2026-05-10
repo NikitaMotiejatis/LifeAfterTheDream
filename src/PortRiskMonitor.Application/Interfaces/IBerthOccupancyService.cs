@@ -1,3 +1,4 @@
+using PortRiskMonitor.Infrastructure.BerthOccupancy;
 using RiskMonitor.Logic;
 
 namespace PortRiskMonitor.Application.Interfaces;

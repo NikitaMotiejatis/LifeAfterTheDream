@@ -17,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.API.Filters;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Application.Services;
+using PortRiskMonitor.Infrastructure.BerthOccupancy;
 using PortRiskMonitor.Infrastructure.Data;
 using PortRiskMonitor.Infrastructure.Repositories;
 using PortRiskMonitor.Infrastructure.VesselDelayRate;
@@ -70,6 +71,7 @@ try
     builder.Services.AddScoped<IKriRepository, KriRepository>();
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
     builder.Services.AddScoped<IVesselDelayRateRepo, VesselDelayRateRepo>();
+    builder.Services.AddScoped<IBerthOccupancyRepo, BerthOccupancyRepo>();
 
     // Application Services (Business Logic Layer)
     builder.Services.AddScoped<IRiskScoreEngine, RiskScoreEngine>();
