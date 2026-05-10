@@ -49,13 +49,12 @@ try
 
     // ── Database — Data Access Layer ─────────────────────────────────────────
     // NFR: Data Access — EF Core ORM, transactions scoped to single HTTP request
-    // SQLite is used for PoC (zero config). Swap to SQL Server for production.
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
         ?? "Data Source=port_risk_monitor.db";
 
     builder.Services.AddDbContext<AppDbContext>(options =>
     {
-        options.UseSqlite(connectionString);
+        options.UseSqlServer(connectionString);
         // TODO: Enable sensitive data logging only in Development
         // options.EnableSensitiveDataLogging(builder.Environment.IsDevelopment());
     });

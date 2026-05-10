@@ -244,28 +244,87 @@ public class MockDataBackgroundService : BackgroundService
 
         _logger.LogInformation("Seeding default KRI definitions...");
 
-        // TODO: Implement seeding of the 4 default port KRIs:
-        //
-        // 1. Berth Occupancy Rate
-        //    Unit: "%", GreenMax: 70, YellowMax: 90, Weight: 0.30
-        //    HigherIsWorse: true, MockBaseline: 65, MockVariance: 15, Pattern: "Sinusoidal"
-        //
-        // 2. Vessel Delay Rate
-        //    Unit: "%", GreenMax: 10, YellowMax: 25, Weight: 0.30
-        //    HigherIsWorse: true, MockBaseline: 8, MockVariance: 8, Pattern: "RandomWalk"
-        //
-        // 3. Customs Dwell Time
-        //    Unit: "hours", GreenMax: 24, YellowMax: 72, Weight: 0.20
-        //    HigherIsWorse: true, MockBaseline: 20, MockVariance: 10, Pattern: "StepFunction"
-        //
-        // 4. Weather Risk Score
-        //    Unit: "score", GreenMax: 20, YellowMax: 40, Weight: 0.20
-        //    HigherIsWorse: true, MockBaseline: 15, MockVariance: 12, Pattern: "Spike"
-        //
-        // Create each with: await kriRepo.CreateAsync(new KriDefinition { ... });
+        // Create the 4 KRI Mock definitions
+        var kris = new List<KriDefinition>
+    {
+        new KriDefinition
+        {
+            Id = Guid.NewGuid(),
+            Name = "Berth Occupancy Rate",
+            Unit = "%",
+            Description = "Measures how busy the berths are",
+            FormulaLabel = "OccupiedTime / TotalTime * 100",
+            GreenMax = 70,
+            YellowMax = 90,
+            Weight = 0.30,
+            HigherIsWorse = true,
+            MockBaseline = 65,
+            MockVariance = 15,
+            MockPattern = "Sinusoidal",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        },
+        new KriDefinition
+        {
+            Id = Guid.NewGuid(),
+            Name = "Vessel Delay Rate",
+            Unit = "%",
+            Description = "Percentage of vessels arriving late",
+            FormulaLabel = "LateVessels / TotalVessels * 100",
+            GreenMax = 10,
+            YellowMax = 25,
+            Weight = 0.30,
+            HigherIsWorse = true,
+            MockBaseline = 8,
+            MockVariance = 8,
+            MockPattern = "RandomWalk",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        },
+        new KriDefinition
+        {
+            Id = Guid.NewGuid(),
+            Name = "Customs Dwell Time",
+            Unit = "hours",
+            Description = "Average time cargo waits at customs",
+            FormulaLabel = "SumWaitTime / NumberOfContainers",
+            GreenMax = 24,
+            YellowMax = 72,
+            Weight = 0.20,
+            HigherIsWorse = true,
+            MockBaseline = 20,
+            MockVariance = 10,
+            MockPattern = "StepFunction",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        },
+        new KriDefinition
+        {
+            Id = Guid.NewGuid(),
+            Name = "Weather Risk Score",
+            Unit = "score",
+            Description = "Composite score of weather risks",
+            FormulaLabel = "Weighted sum of wind/wave/visibility",
+            GreenMax = 20,
+            YellowMax = 40,
+            Weight = 0.20,
+            HigherIsWorse = true,
+            MockBaseline = 15,
+            MockVariance = 12,
+            MockPattern = "Spike",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        }
+    };
 
+        // Save each Mock KRI to the database
+        foreach (var kri in kris)
+        {
+            await kriRepo.CreateAsync(kri);
+            _logger.LogInformation($"Seeded KRI: {kri.Name}");
+        }
 
-        throw new NotImplementedException("TODO: Implement SeedDefaultKrisAsync");
+        _logger.LogInformation("All KRI definitions seeded successfully");
     }
 
     // Called by POST /api/scenarios to switch the active demo scenario

@@ -34,8 +34,8 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 
         // Hardcoded SQLite path for design-time only (migrations, scaffolding).
         // This does NOT affect the runtime connection string in appsettings.json.
-        optionsBuilder.UseSqlite("Data Source=port_risk_monitor_designtime.db");
-
+        //optionsBuilder.UseSqlite("Data Source=port_risk_monitor_designtime.db");
+        optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=PortRiskMonitor;Trusted_Connection=True;MultipleActiveResultSets=true");
         return new AppDbContext(optionsBuilder.Options);
     }
 }
