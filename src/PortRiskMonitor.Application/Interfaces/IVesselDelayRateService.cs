@@ -1,4 +1,4 @@
-using PortRiskMonitor.Application.DTOs.Read;
+using PortRiskMonitor.Infrastructure.VesselDelayRate;
 using RiskMonitor.Logic;
 
 namespace PortRiskMonitor.Application.Interfaces;

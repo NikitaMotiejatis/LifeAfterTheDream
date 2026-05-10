@@ -19,6 +19,7 @@ using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Application.Services;
 using PortRiskMonitor.Infrastructure.Data;
 using PortRiskMonitor.Infrastructure.Repositories;
+using PortRiskMonitor.Infrastructure.VesselDelayRate;
 using Serilog;
 
 // ── Serilog bootstrap logger (catches startup errors before full config) ──────
@@ -68,6 +69,7 @@ try
     // Repositories (Data Access Layer)
     builder.Services.AddScoped<IKriRepository, KriRepository>();
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+    builder.Services.AddScoped<IVesselDelayRateRepo, VesselDelayRateRepo>();
 
     // Application Services (Business Logic Layer)
     builder.Services.AddScoped<IRiskScoreEngine, RiskScoreEngine>();
