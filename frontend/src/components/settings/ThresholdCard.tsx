@@ -10,6 +10,9 @@ interface ThresholdCardProps {
   greenHint?: string;
   yellowHint?: string;
   onChange: (field: 'green' | 'yellow', value: number) => void;
+  min?: number;
+  max?: number;
+  errors?: Partial<Record<'green' | 'yellow', string>>;
 }
 
 export default function ThresholdCard({
@@ -20,6 +23,9 @@ export default function ThresholdCard({
   greenHint,
   yellowHint,
   onChange,
+  min,
+  max,
+  errors,
 }: ThresholdCardProps) {
   return (
     <SettingsCard title={title}>
@@ -29,12 +35,18 @@ export default function ThresholdCard({
           hint={greenHint}
           value={thresholds.green}
           onChange={(v) => onChange('green', v)}
+          min={min}
+          max={max}
+          error={errors?.green}
         />
         <SettingsField
           label={yellowLabel}
           hint={yellowHint}
           value={thresholds.yellow}
           onChange={(v) => onChange('yellow', v)}
+          min={min}
+          max={max}
+          error={errors?.yellow}
         />
       </div>
     </SettingsCard>

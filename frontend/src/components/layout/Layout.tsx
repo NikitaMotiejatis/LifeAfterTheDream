@@ -1,13 +1,7 @@
 import { type ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import {
-  LayoutDashboard,
-  BarChart3,
-  Clock,
-  Settings,
-  Ship,
-} from 'lucide-react';
+import { LayoutDashboard, BarChart3, Settings, Ship } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -32,7 +26,6 @@ export default function Layout({ children }: LayoutProps) {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { path: '/history', label: 'History', icon: Clock },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
 

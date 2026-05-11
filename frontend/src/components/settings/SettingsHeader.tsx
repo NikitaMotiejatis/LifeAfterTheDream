@@ -5,6 +5,7 @@ interface SettingsHeaderProps {
   isSaving: boolean;
   onSave: () => void;
   onReset: () => void;
+  hasErrors?: boolean;
 }
 
 export default function SettingsHeader({
@@ -12,6 +13,7 @@ export default function SettingsHeader({
   isSaving,
   onSave,
   onReset,
+  hasErrors,
 }: SettingsHeaderProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -35,7 +37,7 @@ export default function SettingsHeader({
         </button>
         <button
           onClick={onSave}
-          disabled={!isDirty || isSaving}
+          disabled={!isDirty || isSaving || hasErrors}
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-base font-medium text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
           <Save className="w-4 h-4" />

@@ -7,7 +7,6 @@ import Spinner from './components/common/Spinner';
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
-const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -55,16 +54,6 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <AnalyticsPage />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/history"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <HistoryPage />
             </Layout>
           </ProtectedRoute>
         }
