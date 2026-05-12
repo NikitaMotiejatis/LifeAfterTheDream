@@ -22,6 +22,7 @@ using PortRiskMonitor.Infrastructure.CustomsDwellTime;
 using PortRiskMonitor.Infrastructure.Data;
 using PortRiskMonitor.Infrastructure.Repositories;
 using PortRiskMonitor.Infrastructure.VesselDelayRate;
+using PortRiskMonitor.Infrastructure.WeatherCondition;
 using Serilog;
 
 // ── Serilog bootstrap logger (catches startup errors before full config) ──────
@@ -74,6 +75,7 @@ try
     builder.Services.AddScoped<IVesselDelayRateRepo, VesselDelayRateRepo>();
     builder.Services.AddScoped<IBerthOccupancyRepo, BerthOccupancyRepo>();
     builder.Services.AddScoped<ICustomsDwellTimeRepo, CustomsDwellTimeRepo>();
+    builder.Services.AddScoped<IWeatherConditionRepo, WeatherConditionRepo>();
 
     // Application Services (Business Logic Layer)
     builder.Services.AddScoped<IRiskScoreEngine, RiskScoreEngine>();
