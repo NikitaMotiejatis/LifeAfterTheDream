@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+﻿import { useState, useRef, useEffect, useMemo } from 'react';
 import { Calendar, ChevronDown } from 'lucide-react';
 import type { DateRange, DashboardRange } from '../../types/Dashboard';
 
@@ -90,7 +90,7 @@ export default function DashboardDateFilter({ value, onChange }: Props) {
         className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
       >
         <Calendar className="w-4 h-4 text-gray-500" />
-        <span className="max-w-65 truncate">{formatLabel(value)}</span>
+        <span className="max-w-96 truncate">{formatLabel(value)}</span>
         <ChevronDown className="w-4 h-4 text-gray-400" />
       </button>
 

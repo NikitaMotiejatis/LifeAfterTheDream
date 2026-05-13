@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   DashboardData,
   DashboardRange,
   DateRange,
@@ -118,6 +118,11 @@ function sparkLabels(range: DateRange, count: number): string[] {
     month: 720,
     year: 8760,
   };
+
+  const endTime =
+    range.preset === 'custom' && range.to
+      ? new Date(range.to).getTime()
+      : now.getTime();
   const totalHours =
     range.preset === 'custom'
       ? Math.max(
@@ -130,9 +135,7 @@ function sparkLabels(range: DateRange, count: number): string[] {
 
   const labels: string[] = [];
   for (let i = 0; i < count; i++) {
-    const t = new Date(
-      now.getTime() - totalHours * 3600000 * (1 - i / (count - 1)),
-    );
+    const t = new Date(endTime - totalHours * 3600000 * (1 - i / (count - 1)));
     if (totalHours <= 24) {
       labels.push(
         t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) +
