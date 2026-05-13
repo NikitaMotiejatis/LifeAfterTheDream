@@ -37,7 +37,6 @@ function getYAxisDomain(data: TrendDataPoint[]): [number, number] {
   const maxValue = Math.max(...allValues);
   const minValue = Math.min(...allValues);
 
-  // Add 20% padding above and below for comfortable viewing
   const range = maxValue - minValue;
   const padding = range * 0.2;
 
