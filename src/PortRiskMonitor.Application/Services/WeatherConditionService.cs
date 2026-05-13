@@ -31,16 +31,13 @@ public class WeatherConditionService : IWeatherConditionService
     public const float YellowMax = 66f;
 
     private readonly IWeatherConditionRepo _weatherConditionRepo;
-    private readonly IRiskScoreEngine _riskCalculator;
     private readonly ILogger<WeatherConditionService> _logger;
 
     public WeatherConditionService(
         IWeatherConditionRepo weatherConditionRepo,
-        IRiskScoreEngine riskCalculator,
         ILogger<WeatherConditionService> logger)
     {
         _weatherConditionRepo = weatherConditionRepo;
-        _riskCalculator = riskCalculator;
         _logger = logger;
     }
 

@@ -5,12 +5,10 @@ namespace PortRiskMonitor.Application.Services;
 
 public class VesselDelayRateService : IVesselDelayRateService
 {
-    private readonly IRiskScoreEngine _riskCalculator;
     private readonly IVesselDelayRateRepo _vesselDelayRateRepo;
 
-    public VesselDelayRateService(IRiskScoreEngine riskCalculator, IVesselDelayRateRepo vesselDelayRateRepo)
+    public VesselDelayRateService(IVesselDelayRateRepo vesselDelayRateRepo)
     {
-        _riskCalculator = riskCalculator;
         _vesselDelayRateRepo = vesselDelayRateRepo;
     }
 

@@ -78,7 +78,6 @@ try
     builder.Services.AddScoped<IWeatherConditionRepo, WeatherConditionRepo>();
 
     // Application Services (Business Logic Layer)
-    builder.Services.AddScoped<IRiskScoreEngine, RiskScoreEngine>();
 
     // Indicator Services
     builder.Services.AddScoped<IBerthOccupancyService, BerthOccupancyService>();
@@ -87,21 +86,22 @@ try
     builder.Services.AddHttpClient<WeatherConditionService>();
     builder.Services.AddScoped<IWeatherConditionService, WeatherConditionService>();
 
+    // TODO
     // NFR: Extensibility — Strategy Pattern for risk score calculation
     // To swap algorithm: change "RiskScoring:Strategy" in appsettings.json
     // No code recompilation needed — only config change
-    var strategyName = builder.Configuration["RiskScoring:Strategy"] ?? "DefaultWeighted";
-    builder.Services.AddScoped<IRiskScoreStrategy>(sp =>
-    {
-        // TODO: Add more strategy implementations here as the system grows
-        // Each new strategy is a new class — existing code is never modified
-        return strategyName switch
-        {
-            "MaxRisk" => new MaxRiskStrategy(),       // Takes worst single KRI score
-            "AverageRisk" => new AverageRiskStrategy(),   // Simple arithmetic mean
-            _ => new DefaultWeightedStrategy() // Default: weighted sum
-        };
-    });
+    //var strategyName = builder.Configuration["RiskScoring:Strategy"] ?? "DefaultWeighted";
+    //builder.Services.AddScoped<IRiskScoreStrategy>(sp =>
+    //{
+    //    // TODO: Add more strategy implementations here as the system grows
+    //    // Each new strategy is a new class — existing code is never modified
+    //    return strategyName switch
+    //    {
+    //        "MaxRisk" => new MaxRiskStrategy(),       // Takes worst single KRI score
+    //        "AverageRisk" => new AverageRiskStrategy(),   // Simple arithmetic mean
+    //        _ => new DefaultWeightedStrategy() // Default: weighted sum
+    //    };
+    //});
 
     // NFR: Async Communication — BackgroundService for mock data generation
     // Runs in background thread, never blocks HTTP request handlers
@@ -110,7 +110,7 @@ try
 
     // ── FluentValidation ──────────────────────────────────────────────────────
     // TODO: Register all validators — FluentValidation will auto-scan the assembly
-    builder.Services.AddValidatorsFromAssemblyContaining<IKriService>();
+    //builder.Services.AddValidatorsFromAssemblyContaining<IKriService>();
 
     // ── CORS — allow React dev server ─────────────────────────────────────────
     // TODO: Lock down CORS origins for production (remove AllowAnyOrigin)
