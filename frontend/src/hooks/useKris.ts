@@ -1,8 +1,7 @@
 //MOCK DATA in data
 export function useKris() {
   return {
-    data: [
-    ],
+    data: [],
     isLoading: false,
     error: null,
   };
