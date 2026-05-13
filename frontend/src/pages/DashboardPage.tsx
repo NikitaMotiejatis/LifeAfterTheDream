@@ -31,14 +31,14 @@ export default function DashboardPage() {
       {/* KRI Cards */}
       <KriCardsGrid data={data.kriCards} />
 
-      {/* Vessel Schedule */}
-      <VesselScheduleTable data={data.vesselSchedule} />
+      {/* Disruption Trend */}
+      <DisruptionTrendChart data={data.trendData} />
 
       {/* Port Map */}
       <PortMapCard vessels={data.activeVessels} />
 
-      {/* Disruption Trend */}
-      <DisruptionTrendChart data={data.trendData} />
+      {/* Vessel Schedule */}
+      <VesselScheduleTable data={data.vesselSchedule} />
     </div>
   );
 }
