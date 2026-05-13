@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useEffect } from 'react';
+﻿import { type ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LayoutDashboard, BarChart3, Settings, Ship } from 'lucide-react';
@@ -39,7 +39,7 @@ export default function Layout({ children }: LayoutProps) {
     minute: '2-digit',
     second: '2-digit',
   });
-  const formattedDate = time.toLocaleDateString('en-US', {
+  const formattedDate = time.toLocaleDateString('en-GB', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',

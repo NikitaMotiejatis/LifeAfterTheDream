@@ -8,7 +8,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { BarChart as BarChartIcon } from 'lucide-react';
-import type { TrendPointDto } from '../../types/Dashboard';
+import type { TrendPointDto, TimeFrame } from '../../types/Dashboard';
+import TimeFrameFilter from '../dashboard/TimeFrameFilter';
 
 function getBarFill(value: number) {
   if (value <= 33) return '#22c55e';
@@ -41,18 +42,39 @@ function TrendBarShape({ x, y, width, height, payload }: BarShapeProps) {
   );
 }
 
+const xAxisLabelMap: Record<TimeFrame, string> = {
+  '24h': 'Time',
+  '7d': 'Date',
+  '30d': 'Date',
+  '90d': 'Date',
+  '6m': 'Date',
+  '1y': 'Date',
+};
+
 interface Props {
   data: TrendPointDto[];
+  trendTimeFrame: TimeFrame;
+  onTrendTimeFrameChange: (tf: TimeFrame) => void;
 }
 
-export default function DisruptionTrendChart({ data }: Props) {
+export default function DisruptionTrendChart({
+  data,
+  trendTimeFrame,
+  onTrendTimeFrameChange,
+}: Props) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <BarChartIcon className="w-5 h-5 text-blue-600" />
-        <h2 className="text-lg font-semibold text-gray-900">
-          Port Disruption Index – 24h Trend
-        </h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <BarChartIcon className="w-5 h-5 text-blue-600" />
+          <h2 className="text-lg font-semibold text-gray-900">
+            Port Disruption Index Trend
+          </h2>
+        </div>
+        <TimeFrameFilter
+          value={trendTimeFrame}
+          onChange={onTrendTimeFrameChange}
+        />
       </div>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart
@@ -63,9 +85,17 @@ export default function DisruptionTrendChart({ data }: Props) {
           <XAxis
             dataKey="hour"
             tick={{ fontSize: 10 }}
-            interval={2}
+            interval={
+              trendTimeFrame === '30d'
+                ? 4
+                : trendTimeFrame === '6m'
+                  ? 3
+                  : trendTimeFrame === '90d' || trendTimeFrame === '1y'
+                    ? 1
+                    : 2
+            }
             label={{
-              value: 'Hours ago',
+              value: xAxisLabelMap[trendTimeFrame],
               position: 'insideBottomRight',
               offset: -4,
               fontSize: 10,

@@ -7,6 +7,8 @@ import {
   YAxis,
 } from 'recharts';
 
+import type { SparkPoint } from '../../types/Dashboard';
+
 function SparkActiveDot({
   cx,
   cy,
@@ -63,7 +65,7 @@ function SparkActiveDot({
 }
 
 interface Props {
-  data: number[];
+  data: SparkPoint[];
   color?: string;
   gradientId?: string;
   height?: number;
@@ -77,9 +79,7 @@ export default function MiniSparkline({
   height = 80,
   showAxes = true,
 }: Props) {
-  const chartData = data
-    .map((v, i) => ({ i: data.length - 1 - i, v }))
-    .reverse();
+  const chartData = data.map((pt) => ({ label: pt.label, v: pt.value }));
   const totalHeight = showAxes ? height + 44 : height + 24;
   const margin = showAxes
     ? { top: 24, right: 8, bottom: 30, left: 8 }
@@ -100,18 +100,10 @@ export default function MiniSparkline({
           </defs>
           {showAxes && (
             <XAxis
-              dataKey="i"
+              dataKey="label"
               tick={{ fontSize: 8, fill: '#6b7280' }}
               axisLine={false}
               tickLine={false}
-              reversed
-              label={{
-                value: 'Hours Ago',
-                position: 'insideBottom',
-                offset: -18,
-                fontSize: 8,
-                fill: '#6b7280',
-              }}
             />
           )}
           {showAxes && (
