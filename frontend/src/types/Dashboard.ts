@@ -1,7 +1,31 @@
+export type TimeFrame = '24h' | '7d' | '30d' | '90d' | '6m' | '1y';
+
+export type DashboardRange =
+  | '6h'
+  | '12h'
+  | '24h'
+  | '48h'
+  | '72h'
+  | 'week'
+  | 'month'
+  | 'year'
+  | 'custom';
+
+export interface DateRange {
+  preset: DashboardRange;
+  from: string | null; // ISO string, used only when preset === 'custom'
+  to: string | null;
+}
+
+export interface SparkPoint {
+  label: string;
+  value: number;
+}
+
 export interface PortStatusDto {
   disruptionIndex: number;
   riskLevel: string;
-  sparkline: number[];
+  sparkline: SparkPoint[];
 }
 
 export interface WeatherDto {
@@ -24,7 +48,7 @@ export interface KriCardDto {
   value: string;
   formula: string;
   thresholds: ThresholdDto[];
-  sparkline: number[];
+  sparkline: SparkPoint[];
 }
 
 export interface ActiveVesselDto {
@@ -50,6 +74,7 @@ export interface VesselScheduleDto {
 }
 
 export interface DashboardData {
+  periodLabel: string;
   portStatus: PortStatusDto;
   weather: WeatherDto;
   kriCards: KriCardDto[];

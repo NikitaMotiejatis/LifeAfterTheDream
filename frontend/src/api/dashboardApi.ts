@@ -1,29 +1,45 @@
-import type { DashboardData } from '../types/Dashboard';
-import { mockDashboardData } from '../mocks/dashboardMock';
+import type {
+  DashboardData,
+  DateRange,
+  TimeFrame,
+  TrendPointDto,
+} from '../types/Dashboard';
+import { getMockTiles, getMockTrend } from '../mocks/dashboardMock';
 // import axiosInstance from './axiosInstance';
 
 const USE_MOCK = true;
 
-export async function fetchDashboardData(): Promise<DashboardData> {
+export async function fetchDashboardTiles(
+  dateRange: DateRange,
+): Promise<DashboardData> {
   if (USE_MOCK) {
-    // Simulate network delay
-    await new Promise((r) => setTimeout(r, 600));
-    return mockDashboardData;
+    await new Promise((r) => setTimeout(r, 400));
+    return getMockTiles(dateRange);
   }
 
   // TODO: Wire up to real C# backend endpoints
-  // const [portStatus, weather, kriCards, activeVessels, trendData, vesselSchedule] =
+  // const params = { preset: dateRange.preset, from: dateRange.from, to: dateRange.to };
+  // const [portStatus, weather, kriCards, activeVessels, vesselSchedule] =
   //   await Promise.all([
-  //     axiosInstance.get('/dashboard/port-status').then((r) => r.data),
-  //     axiosInstance.get('/dashboard/weather').then((r) => r.data),
-  //     axiosInstance.get('/dashboard/kri-cards').then((r) => r.data),
-  //     axiosInstance.get('/dashboard/active-vessels').then((r) => r.data),
-  //     axiosInstance.get('/dashboard/trend').then((r) => r.data),
-  //     axiosInstance.get('/dashboard/vessel-schedule').then((r) => r.data),
+  //     axiosInstance.get('/dashboard/port-status', { params }).then((r) => r.data),
+  //     axiosInstance.get('/dashboard/weather', { params }).then((r) => r.data),
+  //     axiosInstance.get('/dashboard/kri-cards', { params }).then((r) => r.data),
+  //     axiosInstance.get('/dashboard/active-vessels', { params }).then((r) => r.data),
+  //     axiosInstance.get('/dashboard/vessel-schedule', { params }).then((r) => r.data),
   //   ]);
-  // return { portStatus, weather, kriCards, activeVessels, trendData, vesselSchedule };
+  // return { periodLabel: dateRange.preset, portStatus, weather, kriCards, activeVessels, trendData: [], vesselSchedule };
 
-  throw new Error(
-    'Backend not configured. Set USE_MOCK = true or implement API calls.',
-  );
+  throw new Error('Backend not configured.');
+}
+
+export async function fetchTrendData(
+  trendTimeFrame: TimeFrame,
+): Promise<TrendPointDto[]> {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 300));
+    return getMockTrend(trendTimeFrame);
+  }
+
+  // TODO: axiosInstance.get('/dashboard/trend', { params: { trendTimeFrame } }).then((r) => r.data);
+  throw new Error('Backend not configured.');
 }
