@@ -14,7 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RiskMonitor", "src\RiskMonitor\RiskMonitor.csproj", "{EE507134-6AC3-4888-95F7-B30D5FAF9B3C}"
 EndProject
@@ -81,6 +81,9 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{B2C3D4E5-F6A7-8901-BCDE-F12345678901} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{C3D4E5F6-A7B8-9012-CDEF-123456789012} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{EE507134-6AC3-4888-95F7-B30D5FAF9B3C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
