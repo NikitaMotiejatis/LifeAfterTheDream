@@ -1,6 +1,8 @@
+using RiskMonitor.Logic;
+
 namespace PortRiskMonitor.Application.Interfaces;
 
-public interface IWeatherConditionService : IIndicatorScore
+public interface IWeatherConditionService : IKriScore<double>
 {
     double GetWindSpeedKnt();
     double GetWaterLevelCm();

@@ -1,83 +1,72 @@
-using PortRiskMonitor.Application.DTOs.Enums;
 using PortRiskMonitor.Application.Interfaces;
-using PortRiskMonitor.Infrastructure.Data;
+using PortRiskMonitor.Infrastructure.CustomsDwellTime;
 
 namespace PortRiskMonitor.Application.Services;
 
 public class CustomsDwellTimeService : ICustomsDwellTimeService
 {
-    private const float NormalDwellHours = 18f;
-    private const float InspectionAddedHours = 24f;
-    private const float WeekendBacklogHours = 36f;
+    private const double NormalDwellHours = 18.0;
+    private const double InspectionAddedHours = 24.0;
+    private const double WeekendBacklogHours = 36.0;
     private const uint NormalPendingCount = 45;
     private const uint InspectionPendingCount = 70;
 
-    public const float GreenMax = 24f;
-    public const float YellowMax = 72f;
+    public const double GreenMax = 24f;
+    public const double YellowMax = 72f;
 
-    private static float _currentAvgDwell = NormalDwellHours;
+    private static double _currentAvgDwell = NormalDwellHours;
     private static string _currentPhase = "Normal";
     private static DateTime _phaseStarted = DateTime.UtcNow;
     private static DateTime _nextPhaseChange = DateTime.UtcNow.AddHours(6);
 
-    private readonly AppDbContext _db;
+    private ICustomsDwellTimeRepo _customsDwellTimeRepo;
 
-    public CustomsDwellTimeService(AppDbContext db)
+    public CustomsDwellTimeService(ICustomsDwellTimeRepo customsDwellTimeRepo)
     {
-        _db = db;
+        _customsDwellTimeRepo = customsDwellTimeRepo;
     }
 
-    public float GetScoreValue() => GetAverageDwellHours();
+    public double GetScoreValue()
+        => GetAverageDwellHours();
 
     public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
-        => throw new NotImplementedException("TODO: wire KRI definition ID");
+        => _customsDwellTimeRepo
+            .GetAllReadings()
+            .Where(details => (from ?? DateTime.MinValue) <= details.MeasuredAt && details.MeasuredAt <= (to ?? DateTime.MaxValue))
+            .Select(details => (Timestamp: details.MeasuredAt, Score: details.Value))
+            .ToArray();
 
-    public float GetAverageDwellHours()
+    public double GetAverageDwellHours()
     {
         UpdatePhaseIfNeeded();
         return Math.Max(4f, _currentAvgDwell);
     }
 
-    public uint GetPendingCount() => _currentPhase == "Inspection" ? InspectionPendingCount : NormalPendingCount;
+    public uint GetPendingCount()
+        => _currentPhase == "Inspection"
+            ? InspectionPendingCount
+            : NormalPendingCount;
 
     public uint GetOverdueCount()
     {
         var avg = GetAverageDwellHours();
         if (avg < 24) return 0;
-        if (avg < 48) return (uint)(GetPendingCount() * 0.05f);
-        if (avg < 72) return (uint)(GetPendingCount() * 0.15f);
+        if (avg < 48) return (uint)(GetPendingCount() * 0.05);
+        if (avg < 72) return (uint)(GetPendingCount() * 0.15);
         return (uint)(GetPendingCount() * 0.35f);
     }
 
     public ICollection<CustomsDwellDto> GetDwellDetails()
-    {
-        var count = (int)GetPendingCount();
-        var avgDwell = GetAverageDwellHours();
-
-        var cargoTypes = new[] { "Container", "Container", "Container", "Container", "Bulk", "Bulk", "Bulk", "Liquid", "RoRo", "RoRo" };
-
-        var details = new List<CustomsDwellDto>();
-        for (int i = 0; i < Math.Min(count, 20); i++)
-        {
-            var dwellHours = Math.Max(1f, avgDwell + (float)(Random.Shared.NextDouble() * 20 - 10));
-            var status = dwellHours > 72 ? "Overdue"
-                           : _currentPhase == "Inspection" && i % 4 == 0 ? "UnderInspection"
-                           : "Normal";
-
-            details.Add(new CustomsDwellDto(
-                CargoRef: $"KLJ-{DateTime.UtcNow:yyyyMMdd}-{1000 + i}",
-                CargoType: cargoTypes[i % cargoTypes.Length],
-                ArrivedAtCustoms: DateTime.UtcNow.AddHours(-dwellHours),
-                DwellHours: dwellHours,
-                Status: status
-            ));
-        }
-        return details;
-    }
+        => _customsDwellTimeRepo.GetDwellDetails(
+                GetPendingCount(),
+                GetAverageDwellHours(),
+                _currentPhase
+            );
 
     private void UpdatePhaseIfNeeded()
     {
-        if (DateTime.UtcNow < _nextPhaseChange) return;
+        if (DateTime.UtcNow < _nextPhaseChange)
+            return;
 
         var now = DateTime.UtcNow;
         var dayOfWeek = now.DayOfWeek;
@@ -88,23 +77,16 @@ public class CustomsDwellTimeService : ICustomsDwellTimeService
         else if (dayOfWeek == DayOfWeek.Friday && hour >= 16)
             SetPhase("WeekendBacklog", WeekendBacklogHours, 64);
         else if (dayOfWeek == DayOfWeek.Monday && hour < 8)
-            SetPhase("WeekendBacklog", WeekendBacklogHours - (float)(now - _phaseStarted).TotalHours, 8);
+            SetPhase("WeekendBacklog", WeekendBacklogHours - (now - _phaseStarted).TotalHours, 8);
         else
             SetPhase("Normal", NormalDwellHours, 4 + Random.Shared.Next(0, 4));
     }
 
-    private static void SetPhase(string phase, float dwell, int durationHrs)
+    private static void SetPhase(string phase, double dwell, int durationHrs)
     {
         _currentPhase = phase;
         _currentAvgDwell = dwell;
         _phaseStarted = DateTime.UtcNow;
         _nextPhaseChange = DateTime.UtcNow.AddHours(durationHrs);
     }
-
-    float ICustomsDwellTimeService.GetAverageDwellHours() => GetAverageDwellHours();
-    uint ICustomsDwellTimeService.GetPendingCount() => GetPendingCount();
-    uint ICustomsDwellTimeService.GetOverdueCount() => GetOverdueCount();
-    ICollection<CustomsDwellDto> ICustomsDwellTimeService.GetDwellDetails() => GetDwellDetails();
-    double IIndicatorScore.GetScoreValue() => GetScoreValue();
-    ICollection<(DateTime Timestamp, double Score)> IIndicatorScore.GetScores(DateTime? from, DateTime? to) => GetScores(from, to);
 }

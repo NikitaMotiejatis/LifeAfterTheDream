@@ -1,6 +1,4 @@
-using System;
-
-namespace PortRiskMonitor.Application.Interfaces;
+namespace PortRiskMonitor.Infrastructure.BerthOccupancy;
 
 public record BerthStatusDto(
     string BerthId,

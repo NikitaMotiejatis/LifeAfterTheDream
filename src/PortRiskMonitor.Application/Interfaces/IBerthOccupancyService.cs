@@ -1,8 +1,9 @@
-using System.Collections.Generic;
+using PortRiskMonitor.Infrastructure.BerthOccupancy;
+using RiskMonitor.Logic;
 
 namespace PortRiskMonitor.Application.Interfaces;
 
-public interface IBerthOccupancyService : IIndicatorScore
+public interface IBerthOccupancyService : IKriScore<double>
 {
     uint GetOccupiedCount();
     uint GetTotalCount();

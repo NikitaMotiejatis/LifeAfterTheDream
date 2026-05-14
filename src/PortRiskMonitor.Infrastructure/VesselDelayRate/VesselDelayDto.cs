@@ -1,12 +1,9 @@
-using System;
-
-namespace PortRiskMonitor.Application.DTOs.Read;
+namespace PortRiskMonitor.Infrastructure.VesselDelayRate;
 
 public record VesselDelayDto(
     string VesselName,
     string VesselType,
     DateTime ScheduledTime,
     DateTime? ActualTime,
-    double DelayHours,
     string Status
 );

@@ -1,6 +1,4 @@
-using System;
-
-namespace PortRiskMonitor.Application.DTOs.Enums;
+namespace PortRiskMonitor.Infrastructure.CustomsDwellTime;
 
 public record CustomsDwellDto(
     string CargoRef,

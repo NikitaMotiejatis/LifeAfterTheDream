@@ -13,23 +13,11 @@
 //   Baseline water level: 490 cm (Baltic chart datum, Klaipėda)
 // ============================================================
 
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using PortRiskMonitor.Application.Interfaces;
-using PortRiskMonitor.Infrastructure.Data;
+using PortRiskMonitor.Infrastructure.WeatherCondition;
 
 namespace PortRiskMonitor.Application.Services;
-
-internal record WeatherSnapshot
-{
-    public double WindSpeedKnt { get; init; }
-    public double WaterLevelCm { get; init; }
-    public double TemperatureC { get; init; }
-    public double HumidityPercent { get; init; }
-    public string ConditionCode { get; init; } = "clear";
-    public DateTime FetchedAt { get; init; }
-}
 
 public class WeatherConditionService : IWeatherConditionService
 {
@@ -42,71 +30,40 @@ public class WeatherConditionService : IWeatherConditionService
     public const float GreenMax = 33f;
     public const float YellowMax = 66f;
 
-    // ── API endpoints ─────────────────────────────────────────────────────────
-    private const string KlaipedaPortUrl = "https://portofklaipeda.lt/wp-json/api/meteo_data?method=";
-    private const string PortWindUrl = KlaipedaPortUrl + "wind_speed";
-    private const string PortTempUrl = KlaipedaPortUrl + "air_temparature";
-    private const string PortPressureUrl = KlaipedaPortUrl + "air_presure";
-    private const string HydroUrl = "https://api.meteo.lt/v1/hydro-stations/klaipedos-juru-uosto-vms/observations/measured/latest";
-    private const string ConditionUrl = "https://api.meteo.lt/v1/stations/klaipedos-ams/observations/latest";
-
-    private readonly HttpClient _httpClient;
-    private readonly IRiskScoreEngine _riskCalculator;
-    private readonly AppDbContext _db;
+    private readonly IWeatherConditionRepo _weatherConditionRepo;
     private readonly ILogger<WeatherConditionService> _logger;
 
-    // 10-minute cache — weather changes slowly
-    private WeatherSnapshot? _cachedSnapshot;
-    private DateTime _cacheExpiry = DateTime.MinValue;
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
     public WeatherConditionService(
-        HttpClient httpClient,
-        IRiskScoreEngine riskCalculator,
-        AppDbContext db,
+        IWeatherConditionRepo weatherConditionRepo,
         ILogger<WeatherConditionService> logger)
     {
-        _httpClient = httpClient;
-        _riskCalculator = riskCalculator;
-        _db = db;
+        _weatherConditionRepo = weatherConditionRepo;
         _logger = logger;
     }
 
-    // ── IIndicatorScore ────────────────────────────────────────────────
-    double IIndicatorScore.GetScoreValue() => CalculateScore(GetCachedSnapshot());
+    public double GetScoreValue()
+        => CalculateScore(_weatherConditionRepo.GetLatestWeatherSnapshot());
 
-    ICollection<(DateTime Timestamp, double Score)> IIndicatorScore.GetScores(DateTime? from = null, DateTime? to = null)
-    {
-        // TODO: Query KriReadings table filtered to Weather KRI definition ID
-        // return _db.KriReadings
-        //     .Where(r => r.KriDefinitionId == _indicator.Id
-        //              && r.Timestamp >= (from ?? DateTime.UtcNow.AddDays(-30))
-        //              && r.Timestamp <= (to ?? DateTime.UtcNow))
-        //     .OrderBy(r => r.Timestamp)
-        //     .Select(r => (r.Timestamp, (float)r.Value))
-        //     .ToList();
-        throw new NotImplementedException("TODO: wire up KRI definition ID");
-    }
+    public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
+        => _weatherConditionRepo
+            .GetAllReadings()
+            .Where(details => (from ?? DateTime.MinValue) <= details.MeasuredAt && details.MeasuredAt <= (to ?? DateTime.MaxValue))
+            .Select(details => (Timestamp: details.MeasuredAt, Score: details.Value))
+            .ToArray();
 
-    // ── IWeatherConditionService ──────────────────────────────────────────────
-    double IWeatherConditionService.GetWindSpeedKnt() => GetCachedSnapshot().WindSpeedKnt;
-    double IWeatherConditionService.GetWaterLevelCm() => GetCachedSnapshot().WaterLevelCm;
-    double IWeatherConditionService.GetTemperatureC() => GetCachedSnapshot().TemperatureC;
-    double IWeatherConditionService.GetHumidityPercent() => GetCachedSnapshot().HumidityPercent;
-    string IWeatherConditionService.GetConditionCode() => GetCachedSnapshot().ConditionCode;
+    public double GetWindSpeedKnt() => _weatherConditionRepo.GetLatestWeatherSnapshot().WindSpeedKnt;
+    public double GetWaterLevelCm() => _weatherConditionRepo.GetLatestWeatherSnapshot().WaterLevelCm;
+    public double GetTemperatureC() => _weatherConditionRepo.GetLatestWeatherSnapshot().TemperatureC;
+    public double GetHumidityPercent() => _weatherConditionRepo.GetLatestWeatherSnapshot().HumidityPercent;
+    public string GetConditionCode() => _weatherConditionRepo.GetLatestWeatherSnapshot().ConditionCode;
 
-    // ── Score formula ─────────────────────────────────────────────────────────
     private static double CalculateScore(WeatherSnapshot s)
     {
         var windScore = Math.Min(s.WindSpeedKnt / MaxWindKnt * 100f, 100f);
         var waterLevelScore = Math.Min(Math.Abs(s.WaterLevelCm - WaterLevelBaseline) / MaxWaterDeviation * 100f, 100f);
         var conditionScore = MapConditionToScore(s.ConditionCode);
 
-        return windScore * 0.50f + waterLevelScore * 0.30f + conditionScore * 0.20f;
+        return windScore * 0.5 + waterLevelScore * 0.3 + conditionScore * 0.2;
     }
 
     // conditionCode values from meteo.lt match these keys directly
@@ -138,117 +95,5 @@ public class WeatherConditionService : IWeatherConditionService
             => 0f
     };
 
-    // ── Cache ─────────────────────────────────────────────────────────────────
-
-    private WeatherSnapshot GetCachedSnapshot()
-    {
-        if (_cachedSnapshot != null && DateTime.UtcNow < _cacheExpiry)
-            return _cachedSnapshot;
-
-        try
-        {
-            _cachedSnapshot = FetchSnapshotAsync().GetAwaiter().GetResult();
-            _cacheExpiry = DateTime.UtcNow.AddMinutes(10);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to fetch weather data. Retaining last cached value.");
-
-            if (_cachedSnapshot is null)
-                throw; // no fallback available on first call
-        }
-
-        return _cachedSnapshot!;
-    }
-
-    // ── HTTP fetch ────────────────────────────────────────────────────────────
-
-    private async Task<WeatherSnapshot> FetchSnapshotAsync()
-    {
-        var (windTask, tempTask, pressureTask, hydroTask, conditionTask) = (
-            _httpClient.GetStringAsync(PortWindUrl),
-            _httpClient.GetStringAsync(PortTempUrl),
-            _httpClient.GetStringAsync(PortPressureUrl),
-            _httpClient.GetStringAsync(HydroUrl),
-            _httpClient.GetStringAsync(ConditionUrl)
-        );
-
-        await Task.WhenAll(windTask, tempTask, pressureTask, hydroTask, conditionTask);
-        // 1. Wind — Port of Klaipėda API
-        //    Response is an array of [timestamp, value] tuples (both strings).
-        //    Index 0 = timestamp, index 1 = wind speed in m/s.
-        var portReadings = JsonSerializer.Deserialize<string[][]>(windTask.Result, JsonOptions);
-        var latestPort = portReadings?.LastOrDefault() ?? throw new InvalidOperationException("Port API returned no wind readings");
-        var WindSpeedKnt = double.Parse(latestPort[1], System.Globalization.CultureInfo.InvariantCulture);
-
-        // 2. Temperature - Port of Klaipėda API
-        //    Similar format to wind speed; index 1 = air temperature in °C.
-        var tempReadings = JsonSerializer.Deserialize<string[][]>(tempTask.Result, JsonOptions);
-        var temperature = tempReadings?.LastOrDefault() ?? throw new InvalidOperationException("Port API returned no temperature readings");
-        var temperatureC = double.Parse(temperature[1], System.Globalization.CultureInfo.InvariantCulture);
-
-        // 3. Pressure - Port of Klaipėda API
-        //    Similar format; index 1 = air pressure in hPa.
-        var pressureReadings = JsonSerializer.Deserialize<string[][]>(pressureTask.Result, JsonOptions);
-        var pressure = pressureReadings?.LastOrDefault() ?? throw new InvalidOperationException("Port API returned no pressure readings");
-        var pressureHpa = double.Parse(pressure[1], System.Globalization.CultureInfo.InvariantCulture);
-
-        // 4. Water level — meteo.lt hydro station
-        var hydroResponse = JsonSerializer.Deserialize<MeteoLtHydroResponse>(hydroTask.Result, JsonOptions);
-        var latestHydro = hydroResponse?.Observations?.LastOrDefault() ?? throw new InvalidOperationException("Hydro API returned no observations");
-
-        // 5. Conditions — meteo.lt AMS station
-        var conditionResponse = JsonSerializer.Deserialize<MeteoLtStationResponse>(conditionTask.Result, JsonOptions);
-        var latestCondition = conditionResponse?.Observations?.LastOrDefault() ?? throw new InvalidOperationException("AMS API returned no observations");
-
-        return new WeatherSnapshot
-        {
-            WindSpeedKnt = WindSpeedKnt,
-            WaterLevelCm = latestHydro.WaterLevelCm,
-            TemperatureC = temperatureC,
-            HumidityPercent = latestCondition.RelativeHumidity,
-            ConditionCode = latestCondition.ConditionCode,
-            FetchedAt = DateTime.UtcNow
-        };
-    }
 }
 
-// ── JSON response shapes ──────────────────────────────────────────────────────
-
-// meteo.lt hydro station
-internal class MeteoLtHydroResponse
-{
-    [JsonPropertyName("observations")]
-    public List<HydroObservation>? Observations { get; set; }
-}
-
-internal class HydroObservation
-{
-    [JsonPropertyName("observationTimeUtc")]
-    public string ObservationTimeUtc { get; set; } = "";
-
-    [JsonPropertyName("waterLevel")]
-    public double WaterLevelCm { get; set; }
-}
-
-// meteo.lt AMS station
-internal class MeteoLtStationResponse
-{
-    [JsonPropertyName("observations")]
-    public List<StationObservation>? Observations { get; set; }
-}
-
-internal class StationObservation
-{
-    [JsonPropertyName("observationTimeUtc")]
-    public string ObservationTimeUtc { get; set; } = "";
-
-    [JsonPropertyName("airTemperature")]
-    public double AirTemperature { get; set; }
-
-    [JsonPropertyName("relativeHumidity")]
-    public double RelativeHumidity { get; set; }
-
-    [JsonPropertyName("conditionCode")]
-    public string ConditionCode { get; set; } = "clear";
-}
