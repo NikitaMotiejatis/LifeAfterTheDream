@@ -1,0 +1,33 @@
+{
+  "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
+  "tasks": [
+    {
+      "name": "dotnet-format-api",
+      "group": "pre-commit",
+      "command": "dotnet",
+      "args": [ "format", "src/PortRiskMonitor.API/PortRiskMonitor.API.csproj", "--verify-no-changes", "--include", "${staged}" ],
+      "include": [ "src/PortRiskMonitor.API/**/*.cs" ]
+    },
+    {
+      "name": "dotnet-format-application",
+      "group": "pre-commit",
+      "command": "dotnet",
+      "args": [ "format", "src/PortRiskMonitor.Application/PortRiskMonitor.Application.csproj", "--verify-no-changes", "--include", "${staged}" ],
+      "include": [ "src/PortRiskMonitor.Application/**/*.cs" ]
+    },
+    {
+      "name": "dotnet-format-infrastructure",
+      "group": "pre-commit",
+      "command": "dotnet",
+      "args": [ "format", "src/PortRiskMonitor.Infrastructure/PortRiskMonitor.Infrastructure.csproj", "--verify-no-changes", "--include", "${staged}" ],
+      "include": [ "src/PortRiskMonitor.Infrastructure/**/*.cs" ]
+    },
+    {
+      "name": "dotnet-format-riskmonitor",
+      "group": "pre-commit",
+      "command": "dotnet",
+      "args": [ "format", "src/RiskMonitor/RiskMonitor.csproj", "--verify-no-changes", "--include", "${staged}" ],
+      "include": [ "src/RiskMonitor/**/*.cs" ]
+    }
+  ]
+}

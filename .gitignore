@@ -1,0 +1,25 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.db
+*.db-shm
+*.db-wal
+logs/
+
+## EF Core migrations — keep the Migrations folder but ignore the snapshot binary
+*.mdf
+*.ldf
+
+## Rider
+.idea/
+
+## VS Code
+.vscode/
+
+## Node / React (Person B's territory)
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
