@@ -17,7 +17,7 @@ public class WeatherConditionRepo : IWeatherConditionRepo
     private readonly HttpClient _httpClient;
 
     private WeatherSnapshot? _cachedSnapshot;
-    private TimeSpan _cacheRefreshInterval = TimeSpan.FromMinutes(1.0);
+    private TimeSpan _cacheRefreshInterval = TimeSpan.FromMinutes(5.0);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -39,7 +39,7 @@ public class WeatherConditionRepo : IWeatherConditionRepo
 
     public WeatherSnapshot GetLatestWeatherSnapshot()
     {
-        if (_cachedSnapshot is not null && _cachedSnapshot.RecordedAt + _cacheRefreshInterval < DateTime.UtcNow)
+        if (_cachedSnapshot is not null && DateTime.UtcNow - _cachedSnapshot.RecordedAt < _cacheRefreshInterval)
             return _cachedSnapshot;
 
         var newSnapshot = FetchSnapshotAsync().GetAwaiter().GetResult();
