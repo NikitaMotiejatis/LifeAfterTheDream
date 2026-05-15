@@ -26,28 +26,8 @@ interface TrendChartProps {
   yellowThreshold: number;
 }
 
-function getYAxisDomain(data: TrendDataPoint[]): [number, number] {
-  // Collect all non-null values
-  const allValues = data
-    .flatMap((point) => [point.historical, point.forecast])
-    .filter((val): val is number => val !== null);
-
-  if (allValues.length === 0) return [0, 100];
-
-  const maxValue = Math.max(...allValues);
-  const minValue = Math.min(...allValues);
-
-  const range = maxValue - minValue;
-  const padding = range * 0.2;
-
-  let yMin = Math.max(0, minValue - padding);
-  let yMax = maxValue + padding;
-
-  if (yMax - yMin < 10) {
-    yMax = yMin + 10;
-  }
-
-  return [yMin, yMax];
+function getYAxisDomain(): [number, number] {
+  return [0, 100];
 }
 
 export default function TrendChart({
@@ -57,7 +37,7 @@ export default function TrendChart({
   greenThreshold,
   yellowThreshold,
 }: TrendChartProps) {
-  const yAxisDomain = getYAxisDomain(data);
+  const yAxisDomain = getYAxisDomain();
   const [yMin, yMax] = yAxisDomain;
 
   return (
