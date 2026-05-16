@@ -11,14 +11,14 @@ using PortRiskMonitor.Infrastructure.Data;
 namespace PortRiskMonitor.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260503103748_InitialCreate")]
+    [Migration("20260516141841_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
 
             modelBuilder.Entity("PortRiskMonitor.Infrastructure.Entities.Alert", b =>
                 {
@@ -171,7 +171,8 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("BLOB");
+                        .HasColumnType("BLOB")
+                        .HasDefaultValueSql("randomblob(8)");
 
                     b.Property<string>("Unit")
                         .IsRequired()

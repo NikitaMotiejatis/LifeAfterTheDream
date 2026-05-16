@@ -25,6 +25,15 @@ using PortRiskMonitor.Infrastructure.VesselDelayRate;
 using PortRiskMonitor.Infrastructure.WeatherCondition;
 using Serilog;
 
+// ── Storage note ─────────────────────────────────────────────────────────────
+// Historical data is stored in the same SQLite DB using EF Core (KriDefinitions
+// + KriReadings tables). To migrate to Postgres:
+//   1. Change connection string in appsettings.json
+//   2. Replace `options.UseSqlite(...)` with `options.UseNpgsql(...)`
+//   3. Add the Npgsql.EntityFrameworkCore.PostgreSQL NuGet package
+//   4. Run `dotnet ef migrations add PostgresMigration`
+// Zero application-layer code needs to change.
+
 // ── Serilog bootstrap logger (catches startup errors before full config) ──────
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -167,8 +176,9 @@ try
         await db.Database.MigrateAsync();
         Log.Information("Database migrations applied successfully");
 
-        // TODO: Call SeedData.SeedAsync(db) here to insert demo KRI definitions
-        // await SeedData.SeedAsync(db);
+        // Seed KRI definitions + 30 days of hourly historical readings for development.
+        // SeedData.SeedAsync is idempotent — it checks AnyAsync() first and skips if data exists.
+        await SeedData.SeedAsync(db);
     }
 
     // ── HTTP Pipeline ─────────────────────────────────────────────────────────

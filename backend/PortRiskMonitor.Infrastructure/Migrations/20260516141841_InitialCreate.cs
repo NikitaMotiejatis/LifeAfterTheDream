@@ -51,7 +51,7 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                     MockPattern = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "BLOB", rowVersion: true, nullable: false)
+                    RowVersion = table.Column<byte[]>(type: "BLOB", rowVersion: true, nullable: false, defaultValueSql: "randomblob(8)")
                 },
                 constraints: table =>
                 {

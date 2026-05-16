@@ -55,26 +55,19 @@ public class KriRepository : IKriRepository
 
     public async Task<IEnumerable<KriReading>> GetLatestReadingsAsync()
     {
-        // TODO: Implement this efficiently.
-        // Naive approach (N+1 problem — DO NOT USE IN PRODUCTION):
-        //   var kris = await _context.KriDefinitions.ToListAsync();
-        //   foreach (var kri in kris) { var latest = _context.KriReadings.Last()... }
-        //
-        // Correct approach: single query using GroupBy or ROW_NUMBER window function.
-        // EF Core 8 supports this via GroupBy with Select:
-        return await _context.KriReadings
+        // Find the latest timestamp per KRI in a subquery, then join back to get
+        // the full reading row with its navigation property.
+        // Works reliably with SQLite -- avoids GroupBy + Include which EF Core rejects.
+        var latestTimestamps = _context.KriReadings
             .GroupBy(r => r.KriDefinitionId)
-            .Select(g => g.OrderByDescending(r => r.Timestamp).First())
-            .Include(r => r.KriDefinition) // load the parent KRI data for display
+            .Select(g => new { KriDefinitionId = g.Key, Timestamp = g.Max(r => r.Timestamp) });
+
+        return await _context.KriReadings
+            .Include(r => r.KriDefinition)
+            .Where(r => latestTimestamps
+                .Any(l => l.KriDefinitionId == r.KriDefinitionId && l.Timestamp == r.Timestamp))
             .AsNoTracking()
             .ToListAsync();
-
-        // TODO: If the above GroupBy causes issues with SQLite translation,
-        //       fall back to: SELECT * FROM KriReadings WHERE Id IN (
-        //           SELECT Id FROM KriReadings GROUP BY KriDefinitionId
-        //           HAVING Timestamp = MAX(Timestamp)
-        //       )
-        //       Use _context.KriReadings.FromSqlRaw() with a safe parameterized query.
     }
 
     public async Task<IEnumerable<KriReading>> GetReadingsAsync(

@@ -42,8 +42,9 @@ public class AppDbContext : DbContext
             // Optimistic concurrency token
             // EF Core adds "WHERE RowVersion = @p" to every UPDATE statement
             entity.Property(e => e.RowVersion)
-                .IsRowVersion()
-                .IsConcurrencyToken();
+            .IsRowVersion()
+            .IsConcurrencyToken()
+            .HasDefaultValueSql("randomblob(8)");
 
             // Index on Name for faster lookups in the KRI Manager list
             entity.HasIndex(e => e.Name)

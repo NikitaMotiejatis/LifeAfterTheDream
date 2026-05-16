@@ -15,7 +15,7 @@ namespace PortRiskMonitor.Infrastructure.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
 
             modelBuilder.Entity("PortRiskMonitor.Infrastructure.Entities.Alert", b =>
                 {
@@ -168,7 +168,8 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("BLOB");
+                        .HasColumnType("BLOB")
+                        .HasDefaultValueSql("randomblob(8)");
 
                     b.Property<string>("Unit")
                         .IsRequired()
