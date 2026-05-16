@@ -14,13 +14,6 @@ public class VesselDelayRateService : IVesselDelayRateService
 
     public double GetScoreValue() => 100.0 * (double)GetDelayedCount() / (double)GetTotalCount();
 
-    public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
-        => _vesselDelayRateRepo
-            .GetAllReadings()
-            .Where(details => (from ?? DateTime.MinValue) <= details.MeasuredAt && details.MeasuredAt <= (to ?? DateTime.MaxValue))
-            .Select(details => (Timestamp: details.MeasuredAt, Score: details.Value))
-            .ToArray();
-
     public uint GetDelayedCount()
         => (uint)_vesselDelayRateRepo
             .GetDelayDetails()

@@ -1,8 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using RiskMonitor.Entities;
-
 namespace PortRiskMonitor.Infrastructure.WeatherCondition;
 
 public class WeatherConditionRepo : IWeatherConditionRepo
@@ -30,13 +28,6 @@ public class WeatherConditionRepo : IWeatherConditionRepo
     {
         _httpClient = httpClient;
     }
-
-    public ICollection<KriReading> GetAllReadings()
-        => new List<KriReading>();
-
-    public ICollection<Alert> GetAllAlerts()
-        => new List<Alert>();
-
     public WeatherSnapshot GetLatestWeatherSnapshot()
     {
         if (_cachedSnapshot is not null && DateTime.UtcNow - _cachedSnapshot.RecordedAt < _cacheRefreshInterval)

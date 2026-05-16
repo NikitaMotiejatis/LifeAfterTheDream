@@ -1,5 +1,3 @@
-using RiskMonitor.Entities;
-
 namespace PortRiskMonitor.Infrastructure.BerthOccupancy;
 
 public class BerthOccupancyRepo : IBerthOccupancyRepo
@@ -9,14 +7,6 @@ public class BerthOccupancyRepo : IBerthOccupancyRepo
 
     public ICollection<BerthStatusDto> GetBerthDetails()
         => _berthsStatus;
-
-    public ICollection<KriReading> GetAllReadings()
-        => new List<KriReading>();
-
-    public ICollection<Alert> GetAllAlerts()
-        => new List<Alert>();
-
-
     private static List<BerthStatusDto> generateMockData()
     {
         var mockData = new List<BerthStatusDto>();

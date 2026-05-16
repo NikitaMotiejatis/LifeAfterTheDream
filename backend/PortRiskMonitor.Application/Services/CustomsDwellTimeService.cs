@@ -27,14 +27,13 @@ public class CustomsDwellTimeService : ICustomsDwellTimeService
     }
 
     public double GetScoreValue()
-        => GetAverageDwellHours();
-
-    public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
-        => _customsDwellTimeRepo
-            .GetAllReadings()
-            .Where(details => (from ?? DateTime.MinValue) <= details.MeasuredAt && details.MeasuredAt <= (to ?? DateTime.MaxValue))
-            .Select(details => (Timestamp: details.MeasuredAt, Score: details.Value))
-            .ToArray();
+    {
+        UpdatePhaseIfNeeded();
+        var avgDwell = GetAverageDwellHours();
+        var pending = GetPendingCount();
+        var overdue = GetOverdueCount();
+        return Math.Min(100.0, (avgDwell / 72.0) * 50 + (pending / 100.0) * 30 + (overdue / 50.0) * 20);
+    }
 
     public double GetAverageDwellHours()
     {

@@ -1,8 +1,6 @@
-using RiskMonitor.Repositories;
-
 namespace PortRiskMonitor.Infrastructure.BerthOccupancy;
 
-public interface IBerthOccupancyRepo : IKriRepository
+public interface IBerthOccupancyRepo
 {
     public ICollection<BerthStatusDto> GetBerthDetails();
 }

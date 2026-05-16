@@ -1,8 +1,6 @@
-using RiskMonitor.Repositories;
-
 namespace PortRiskMonitor.Infrastructure.WeatherCondition;
 
-public interface IWeatherConditionRepo : IKriRepository
+public interface IWeatherConditionRepo
 {
     public WeatherSnapshot GetLatestWeatherSnapshot();
 }

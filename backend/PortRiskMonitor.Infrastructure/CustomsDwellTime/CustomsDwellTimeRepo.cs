@@ -1,5 +1,3 @@
-using RiskMonitor.Entities;
-
 namespace PortRiskMonitor.Infrastructure.CustomsDwellTime;
 
 public class CustomsDwellTimeRepo : ICustomsDwellTimeRepo
@@ -28,10 +26,4 @@ public class CustomsDwellTimeRepo : ICustomsDwellTimeRepo
 
         return details;
     }
-
-    public ICollection<KriReading> GetAllReadings()
-        => new List<KriReading>();
-
-    public ICollection<Alert> GetAllAlerts()
-        => new List<Alert>();
 }

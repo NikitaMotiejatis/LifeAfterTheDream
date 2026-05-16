@@ -2,7 +2,7 @@ namespace RiskMonitor.DTOs;
 
 public enum RiskLevel
 {
-    Low,
-    Medium,
-    High
+    Green,   // Low risk — within acceptable operating range
+    Yellow,  // Medium risk — attention required
+    Red      // High risk — action required, escalate
 }

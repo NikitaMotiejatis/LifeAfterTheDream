@@ -17,49 +17,6 @@ namespace PortRiskMonitor.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
 
-            modelBuilder.Entity("PortRiskMonitor.Infrastructure.Entities.Alert", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("KriDefinitionId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("KriName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Level")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("ResolvedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<double>("TriggerValue")
-                        .HasColumnType("REAL");
-
-                    b.Property<DateTime>("TriggeredAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("KriDefinitionId");
-
-                    b.HasIndex("ResolvedAt")
-                        .HasDatabaseName("IX_Alerts_ResolvedAt");
-
-                    b.ToTable("Alerts");
-                });
-
             modelBuilder.Entity("PortRiskMonitor.Infrastructure.Entities.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -120,10 +77,53 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                     b.HasIndex("UserIdentifier")
                         .HasDatabaseName("IX_AuditLogs_UserIdentifier");
 
-                    b.ToTable("AuditLogs");
+                    b.ToTable("AuditLogs", (string)null);
                 });
 
-            modelBuilder.Entity("PortRiskMonitor.Infrastructure.Entities.KriDefinition", b =>
+            modelBuilder.Entity("RiskMonitor.Entities.Alert", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("KriId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("KriName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("TriggerValue")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("TriggeredAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KriId");
+
+                    b.HasIndex("ResolvedAt")
+                        .HasDatabaseName("IX_Alerts_ResolvedAt");
+
+                    b.ToTable("Alerts", (string)null);
+                });
+
+            modelBuilder.Entity("RiskMonitor.Entities.Kri", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -134,12 +134,7 @@ namespace PortRiskMonitor.Infrastructure.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FormulaLabel")
-                        .IsRequired()
-                        .HasMaxLength(200)
+                        .HasMaxLength(1024)
                         .HasColumnType("TEXT");
 
                     b.Property<double>("GreenMax")
@@ -161,7 +156,7 @@ namespace PortRiskMonitor.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
+                        .HasMaxLength(128)
                         .HasColumnType("TEXT");
 
                     b.Property<byte[]>("RowVersion")
@@ -170,6 +165,11 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("BLOB")
                         .HasDefaultValueSql("randomblob(8)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Unit")
                         .IsRequired()
@@ -189,12 +189,16 @@ namespace PortRiskMonitor.Infrastructure.Migrations
 
                     b.HasIndex("Name")
                         .IsUnique()
-                        .HasDatabaseName("IX_KriDefinitions_Name");
+                        .HasDatabaseName("IX_Kris_Name");
 
-                    b.ToTable("KriDefinitions");
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Kris_Slug");
+
+                    b.ToTable("Kris", (string)null);
                 });
 
-            modelBuilder.Entity("PortRiskMonitor.Infrastructure.Entities.KriReading", b =>
+            modelBuilder.Entity("RiskMonitor.Entities.KriReading", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -203,11 +207,8 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                     b.Property<bool>("IsSimulated")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid>("KriDefinitionId")
+                    b.Property<Guid>("KriId")
                         .HasColumnType("TEXT");
-
-                    b.Property<double>("NormalizedScore")
-                        .HasColumnType("REAL");
 
                     b.Property<string>("RiskLevel")
                         .IsRequired()
@@ -222,38 +223,36 @@ namespace PortRiskMonitor.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("KriDefinitionId", "Timestamp")
+                    b.HasIndex("KriId", "Timestamp")
                         .HasDatabaseName("IX_KriReadings_KriId_Timestamp");
 
-                    b.ToTable("KriReadings");
+                    b.ToTable("KriReadings", (string)null);
                 });
 
-            modelBuilder.Entity("PortRiskMonitor.Infrastructure.Entities.Alert", b =>
+            modelBuilder.Entity("RiskMonitor.Entities.Alert", b =>
                 {
-                    b.HasOne("PortRiskMonitor.Infrastructure.Entities.KriDefinition", "KriDefinition")
-                        .WithMany("Alerts")
-                        .HasForeignKey("KriDefinitionId")
+                    b.HasOne("RiskMonitor.Entities.Kri", "Kri")
+                        .WithMany()
+                        .HasForeignKey("KriId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("KriDefinition");
+                    b.Navigation("Kri");
                 });
 
-            modelBuilder.Entity("PortRiskMonitor.Infrastructure.Entities.KriReading", b =>
+            modelBuilder.Entity("RiskMonitor.Entities.KriReading", b =>
                 {
-                    b.HasOne("PortRiskMonitor.Infrastructure.Entities.KriDefinition", "KriDefinition")
+                    b.HasOne("RiskMonitor.Entities.Kri", "Kri")
                         .WithMany("Readings")
-                        .HasForeignKey("KriDefinitionId")
+                        .HasForeignKey("KriId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("KriDefinition");
+                    b.Navigation("Kri");
                 });
 
-            modelBuilder.Entity("PortRiskMonitor.Infrastructure.Entities.KriDefinition", b =>
+            modelBuilder.Entity("RiskMonitor.Entities.Kri", b =>
                 {
-                    b.Navigation("Alerts");
-
                     b.Navigation("Readings");
                 });
 #pragma warning restore 612, 618

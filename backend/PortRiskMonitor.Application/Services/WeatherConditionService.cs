@@ -44,13 +44,6 @@ public class WeatherConditionService : IWeatherConditionService
     public double GetScoreValue()
         => CalculateScore(_weatherConditionRepo.GetLatestWeatherSnapshot());
 
-    public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
-        => _weatherConditionRepo
-            .GetAllReadings()
-            .Where(details => (from ?? DateTime.MinValue) <= details.MeasuredAt && details.MeasuredAt <= (to ?? DateTime.MaxValue))
-            .Select(details => (Timestamp: details.MeasuredAt, Score: details.Value))
-            .ToArray();
-
     public double GetWindSpeedKnt() => _weatherConditionRepo.GetLatestWeatherSnapshot().WindSpeedKnt;
     public double GetWaterLevelCm() => _weatherConditionRepo.GetLatestWeatherSnapshot().WaterLevelCm;
     public double GetTemperatureC() => _weatherConditionRepo.GetLatestWeatherSnapshot().TemperatureC;

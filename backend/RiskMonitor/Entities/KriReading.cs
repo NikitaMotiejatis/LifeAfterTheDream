@@ -8,16 +8,20 @@ public class KriReading
     [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
 
+    // ── Foreign key ────────────────────────────────────────────────────────────
+    public Guid KriId { get; set; }
+
+    // ── The measurement ────────────────────────────────────────────────────────
     [Column(TypeName = "REAL")]
     public double Value { get; set; }
 
-    [Required]
-    public DateTime MeasuredAt { get; set; } = DateTime.UtcNow;
+    [MaxLength(10)]
+    public string RiskLevel { get; set; } = "Green";
 
-    [Timestamp]
-    public byte[] RowVersion { get; set; } = null!;
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
-    public Kri Indicator { get; set; } = null!;
+    public bool IsSimulated { get; set; } = true;
 
-    public ICollection<Alert> AlertsRaised = new List<Alert>();
+    // ── Navigation ─────────────────────────────────────────────────────────────
+    public Kri Kri { get; set; } = null!;
 }

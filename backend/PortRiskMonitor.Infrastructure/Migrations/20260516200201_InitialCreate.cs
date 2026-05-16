@@ -34,14 +34,14 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "KriDefinitions",
+                name: "Kris",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 1024, nullable: false),
                     Unit = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    FormulaLabel = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    Slug = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     GreenMax = table.Column<double>(type: "REAL", nullable: false),
                     YellowMax = table.Column<double>(type: "REAL", nullable: false),
                     Weight = table.Column<double>(type: "REAL", nullable: false),
@@ -55,7 +55,7 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_KriDefinitions", x => x.Id);
+                    table.PrimaryKey("PK_Kris", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -63,8 +63,8 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    KriDefinitionId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    KriName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    KriId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    KriName = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
                     Level = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false),
                     TriggerValue = table.Column<double>(type: "REAL", nullable: false),
                     TriggeredAt = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -75,9 +75,9 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_Alerts", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Alerts_KriDefinitions_KriDefinitionId",
-                        column: x => x.KriDefinitionId,
-                        principalTable: "KriDefinitions",
+                        name: "FK_Alerts_Kris_KriId",
+                        column: x => x.KriId,
+                        principalTable: "Kris",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -87,9 +87,8 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    KriDefinitionId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    KriId = table.Column<Guid>(type: "TEXT", nullable: false),
                     Value = table.Column<double>(type: "REAL", nullable: false),
-                    NormalizedScore = table.Column<double>(type: "REAL", nullable: false),
                     RiskLevel = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false),
                     Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false),
                     IsSimulated = table.Column<bool>(type: "INTEGER", nullable: false)
@@ -98,17 +97,17 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_KriReadings", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_KriReadings_KriDefinitions_KriDefinitionId",
-                        column: x => x.KriDefinitionId,
-                        principalTable: "KriDefinitions",
+                        name: "FK_KriReadings_Kris_KriId",
+                        column: x => x.KriId,
+                        principalTable: "Kris",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Alerts_KriDefinitionId",
+                name: "IX_Alerts_KriId",
                 table: "Alerts",
-                column: "KriDefinitionId");
+                column: "KriId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Alerts_ResolvedAt",
@@ -126,15 +125,21 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 column: "UserIdentifier");
 
             migrationBuilder.CreateIndex(
-                name: "IX_KriDefinitions_Name",
-                table: "KriDefinitions",
+                name: "IX_KriReadings_KriId_Timestamp",
+                table: "KriReadings",
+                columns: new[] { "KriId", "Timestamp" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Kris_Name",
+                table: "Kris",
                 column: "Name",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_KriReadings_KriId_Timestamp",
-                table: "KriReadings",
-                columns: new[] { "KriDefinitionId", "Timestamp" });
+                name: "IX_Kris_Slug",
+                table: "Kris",
+                column: "Slug",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -150,7 +155,7 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 name: "KriReadings");
 
             migrationBuilder.DropTable(
-                name: "KriDefinitions");
+                name: "Kris");
         }
     }
 }

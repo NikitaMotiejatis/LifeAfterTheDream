@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using RiskMonitor.Entities;
 
 using RiskMonitor.DTOs;
 
@@ -9,13 +11,30 @@ public class Alert
     [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    [Required]
-    public DateTime RaisedAt { get; set; } = DateTime.UtcNow;
+    // ── Which KRI triggered this alert ────────────────────────────────────────
+    public Guid KriId { get; set; }
 
-    [Timestamp]
-    public byte[] RowVersion { get; set; } = null!;
+    // Denormalized for display without a JOIN
+    [Required, MaxLength(128)]
+    public string KriName { get; set; } = string.Empty;
 
-    public RiskLevel RiskLevel { get; set; }
+    // ── Severity ───────────────────────────────────────────────────────────────
+    [MaxLength(10)]
+    public string Level { get; set; } = "Yellow"; // "Yellow" | "Red"
 
-    public KriReading Reading { get; set; } = null!;
+    [Column(TypeName = "REAL")]
+    public double TriggerValue { get; set; }
+
+    // ── Lifecycle ──────────────────────────────────────────────────────────────
+    public DateTime TriggeredAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ResolvedAt { get; set; }
+
+    [MaxLength(500)]
+    public string Message { get; set; } = string.Empty;
+
+    [NotMapped]
+    public bool IsActive => ResolvedAt == null;
+
+    // ── Navigation ─────────────────────────────────────────────────────────────
+    public Kri Kri { get; set; } = null!;
 }

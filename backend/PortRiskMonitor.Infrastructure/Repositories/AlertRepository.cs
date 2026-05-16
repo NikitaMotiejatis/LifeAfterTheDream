@@ -8,6 +8,7 @@
 using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Infrastructure.Data;
 using PortRiskMonitor.Infrastructure.Entities;
+using RiskMonitor.Entities;
 
 namespace PortRiskMonitor.Infrastructure.Repositories;
 
@@ -65,7 +66,7 @@ public class AlertRepository : IAlertRepository
         // same KRI at the same level if the KRI stays in the red/yellow band
         return await _context.Alerts
             .FirstOrDefaultAsync(a =>
-                a.KriDefinitionId == kriId &&
+                a.KriId == kriId &&
                 a.Level == level &&
                 a.ResolvedAt == null);
     }
@@ -95,7 +96,7 @@ public class AlertRepository : IAlertRepository
     public async Task<IEnumerable<Alert>> GetAlertsForKriAsync(Guid kriId, int take = 10)
     {
         return await _context.Alerts
-            .Where(a => a.KriDefinitionId == kriId)
+            .Where(a => a.KriId == kriId)
             .OrderByDescending(a => a.TriggeredAt)
             .Take(take)
             .AsNoTracking()

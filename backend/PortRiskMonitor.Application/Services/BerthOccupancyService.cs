@@ -15,13 +15,6 @@ public class BerthOccupancyService : IBerthOccupancyService
     public double GetScoreValue()
         => 100.0 * (double)GetOccupiedCount() / (double)GetTotalCount();
 
-    public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
-        => _berthOccupancyRepo
-            .GetAllReadings()
-            .Where(details => (from ?? DateTime.MinValue) <= details.MeasuredAt && details.MeasuredAt <= (to ?? DateTime.MaxValue))
-            .Select(details => (Timestamp: details.MeasuredAt, Score: details.Value))
-            .ToArray();
-
     public uint GetOccupiedCount()
         => (uint)_berthOccupancyRepo
             .GetBerthDetails()

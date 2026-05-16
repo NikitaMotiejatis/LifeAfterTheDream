@@ -1,5 +1,3 @@
-using RiskMonitor.Entities;
-
 namespace PortRiskMonitor.Infrastructure.VesselDelayRate;
 
 public class VesselDelayRateRepo : IVesselDelayRateRepo
@@ -9,14 +7,6 @@ public class VesselDelayRateRepo : IVesselDelayRateRepo
 
     public ICollection<VesselDelayDto> GetDelayDetails()
         => _vesselDelays;
-
-    public ICollection<KriReading> GetAllReadings()
-        => new List<KriReading>();
-
-    public ICollection<Alert> GetAllAlerts()
-        => new List<Alert>();
-
-
     private static List<VesselDelayDto> generateMockData()
     {
         var mockData = new List<VesselDelayDto>();
