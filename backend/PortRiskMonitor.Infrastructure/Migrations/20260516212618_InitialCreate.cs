@@ -40,18 +40,13 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 1024, nullable: false),
-                    Unit = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
+                    Unit = table.Column<string>(type: "TEXT", maxLength: 16, nullable: false),
                     Slug = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    GreenMax = table.Column<double>(type: "REAL", nullable: false),
-                    YellowMax = table.Column<double>(type: "REAL", nullable: false),
-                    Weight = table.Column<double>(type: "REAL", nullable: false),
-                    HigherIsWorse = table.Column<bool>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "BLOB", rowVersion: true, nullable: false, defaultValueSql: "randomblob(8)"),
                     MockBaseline = table.Column<double>(type: "REAL", nullable: false),
                     MockVariance = table.Column<double>(type: "REAL", nullable: false),
-                    MockPattern = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "BLOB", rowVersion: true, nullable: false, defaultValueSql: "randomblob(8)")
+                    MockPattern = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -87,11 +82,9 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    KriId = table.Column<Guid>(type: "TEXT", nullable: false),
                     Value = table.Column<double>(type: "REAL", nullable: false),
-                    RiskLevel = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false),
                     Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    IsSimulated = table.Column<bool>(type: "INTEGER", nullable: false)
+                    KriId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {

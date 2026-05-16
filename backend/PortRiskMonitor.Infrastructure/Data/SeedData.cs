@@ -16,16 +16,16 @@ namespace PortRiskMonitor.Infrastructure.Data;
 public static class SeedData
 {
     // Slugs used by GET /api/history/{slug}
-    public const string BerthSlug        = "berth";
-    public const string VesselDelaySlug  = "vessel-delays";
-    public const string WeatherSlug      = "weather";
-    public const string CustomsSlug      = "customs";
+    public const string BerthSlug = "berth";
+    public const string VesselDelaySlug = "vessel-delays";
+    public const string WeatherSlug = "weather";
+    public const string CustomsSlug = "customs";
 
     public static async Task SeedAsync(AppDbContext db)
     {
         if (await db.Kris.AnyAsync()) return;
 
-        var now  = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
         var from = now.AddDays(-30);
 
         // ── KRI definitions ────────────────────────────────────────────────────
@@ -38,15 +38,10 @@ public static class SeedData
                 Description  = "Percentage of berths currently occupied by vessels.",
                 Unit         = "%",
                 Slug         = BerthSlug,
-                GreenMax     = 70,
-                YellowMax    = 90,
-                Weight       = 0.25,
-                HigherIsWorse = true,
                 MockBaseline = 60,
                 MockVariance = 30,
                 MockPattern  = "Sinusoidal",
                 CreatedAt    = now,
-                UpdatedAt    = now,
             },
             new()
             {
@@ -55,15 +50,10 @@ public static class SeedData
                 Description  = "Percentage of scheduled vessels with a delayed arrival.",
                 Unit         = "%",
                 Slug         = VesselDelaySlug,
-                GreenMax     = 20,
-                YellowMax    = 40,
-                Weight       = 0.25,
-                HigherIsWorse = true,
                 MockBaseline = 22,
                 MockVariance = 18,
                 MockPattern  = "RandomWalk",
                 CreatedAt    = now,
-                UpdatedAt    = now,
             },
             new()
             {
@@ -72,15 +62,10 @@ public static class SeedData
                 Description  = "Composite weather risk score (wind speed, water level, condition code).",
                 Unit         = "score",
                 Slug         = WeatherSlug,
-                GreenMax     = 33,
-                YellowMax    = 66,
-                Weight       = 0.25,
-                HigherIsWorse = true,
                 MockBaseline = 18,
                 MockVariance = 28,
                 MockPattern  = "Sinusoidal",
                 CreatedAt    = now,
-                UpdatedAt    = now,
             },
             new()
             {
@@ -89,23 +74,18 @@ public static class SeedData
                 Description  = "Average hours cargo spends in customs clearance.",
                 Unit         = "hours",
                 Slug         = CustomsSlug,
-                GreenMax     = 24,
-                YellowMax    = 72,
-                Weight       = 0.25,
-                HigherIsWorse = true,
                 MockBaseline = 18,
                 MockVariance = 40,
                 MockPattern  = "StepFunction",
                 CreatedAt    = now,
-                UpdatedAt    = now,
             },
         };
 
         await db.Kris.AddRangeAsync(kris);
 
         // ── Historical readings — 30 days × 1/hour ─────────────────────────────
-        var rng      = new Random(42); // fixed seed = reproducible dev data
-        var readings = new List<KriReading>(kris.Count * 24 * 30);
+        var rng = new Random(42); // fixed seed = reproducible dev data
+        var readings = new List<KriReading>(kris.Count * 24 * 365);
 
         foreach (var kri in kris)
             readings.AddRange(GenerateReadings(kri, from, now, rng));
@@ -119,39 +99,28 @@ public static class SeedData
     private static IEnumerable<KriReading> GenerateReadings(
         Kri kri, DateTime from, DateTime to, Random rng)
     {
-        var readings   = new List<KriReading>();
-        var cursor     = from;
-        var walkValue  = kri.MockBaseline;
+        var readings = new List<KriReading>();
+        var cursor = from;
+        var walkValue = kri.MockBaseline;
 
         while (cursor <= to)
         {
             var raw = kri.MockPattern switch
             {
-                "Sinusoidal"   => Sinusoidal(kri, cursor, rng),
-                "RandomWalk"   => RandomWalk(ref walkValue, kri, rng),
+                "Sinusoidal" => Sinusoidal(kri, cursor, rng),
+                "RandomWalk" => RandomWalk(ref walkValue, kri, rng),
                 "StepFunction" => StepFunction(kri, cursor, rng),
-                _              => Sinusoidal(kri, cursor, rng),
+                _ => Sinusoidal(kri, cursor, rng),
             };
 
-            var value     = Math.Round(Math.Clamp(raw, 0, 120), 2);
-            var riskLevel = value <= kri.GreenMax  ? "Green"
-                          : value <= kri.YellowMax ? "Yellow"
-                          : "Red";
-
-            var normalized = value <= kri.GreenMax
-                ? value / kri.GreenMax * 33.0
-                : value <= kri.YellowMax
-                    ? 33.0 + (value - kri.GreenMax) / (kri.YellowMax - kri.GreenMax) * 33.0
-                    : Math.Min(66.0 + (value - kri.YellowMax) / (120.0 - kri.YellowMax) * 34.0, 100.0);
+            var value = Math.Round(Math.Clamp(raw, 0, 120), 2);
 
             readings.Add(new KriReading
             {
-                Id              = Guid.NewGuid(),
-                KriId           = kri.Id,
-                Value           = value,
-                RiskLevel       = riskLevel,
-                Timestamp       = cursor,
-                IsSimulated     = true,
+                Id = Guid.NewGuid(),
+                KriId = kri.Id,
+                Value = value,
+                Timestamp = cursor,
             });
 
             cursor = cursor.AddHours(1);
@@ -160,9 +129,9 @@ public static class SeedData
         return readings;
     }
 
-    // ── Patterns ───────────────────────────────────────────────────────────────
-
-    /// <summary>Peaks at shift-change hours (06:00 and 18:00 UTC).</summary>
+    /// <summary>
+    /// Peaks at shift-change hours (06:00 and 18:00 UTC).
+    /// </summary>
     private static double Sinusoidal(Kri kri, DateTime t, Random rng)
     {
         var cycle = Math.Sin(2 * Math.PI * t.Hour / 24.0) * (kri.MockVariance * 0.55);
@@ -170,7 +139,9 @@ public static class SeedData
         return kri.MockBaseline + cycle + noise;
     }
 
-    /// <summary>Drifts randomly with mean-reversion toward the baseline.</summary>
+    /// <summary>
+    /// Drifts randomly with mean-reversion toward the baseline.
+    /// </summary>
     private static double RandomWalk(ref double current, Kri kri, Random rng)
     {
         current += (rng.NextDouble() - 0.5) * kri.MockVariance * 0.25;
@@ -178,14 +149,16 @@ public static class SeedData
         return current;
     }
 
-    /// <summary>Holds baseline, spikes on Mon/Thu inspection days and Friday evening backlog.</summary>
+    /// <summary>
+    /// Holds baseline, spikes on Mon/Thu inspection days and Friday evening backlog.
+    /// </summary>
     private static double StepFunction(Kri kri, DateTime t, Random rng)
     {
-        var isInspection    = t.DayOfWeek is DayOfWeek.Monday or DayOfWeek.Thursday
+        var isInspection = t.DayOfWeek is DayOfWeek.Monday or DayOfWeek.Thursday
                               && t.Hour is >= 8 and <= 18;
         var isWeekendBacklog = t.DayOfWeek == DayOfWeek.Friday && t.Hour >= 16;
 
-        var level = isInspection     ? kri.MockBaseline + kri.MockVariance * 0.7
+        var level = isInspection ? kri.MockBaseline + kri.MockVariance * 0.7
                   : isWeekendBacklog ? kri.MockBaseline + kri.MockVariance * 0.9
                   : kri.MockBaseline;
 

@@ -11,7 +11,7 @@ using PortRiskMonitor.Infrastructure.Data;
 namespace PortRiskMonitor.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260516200201_InitialCreate")]
+    [Migration("20260516212618_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -140,12 +140,6 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                         .HasMaxLength(1024)
                         .HasColumnType("TEXT");
 
-                    b.Property<double>("GreenMax")
-                        .HasColumnType("REAL");
-
-                    b.Property<bool>("HigherIsWorse")
-                        .HasColumnType("INTEGER");
-
                     b.Property<double>("MockBaseline")
                         .HasColumnType("REAL");
 
@@ -176,17 +170,8 @@ namespace PortRiskMonitor.Infrastructure.Migrations
 
                     b.Property<string>("Unit")
                         .IsRequired()
-                        .HasMaxLength(20)
+                        .HasMaxLength(16)
                         .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<double>("Weight")
-                        .HasColumnType("REAL");
-
-                    b.Property<double>("YellowMax")
-                        .HasColumnType("REAL");
 
                     b.HasKey("Id");
 
@@ -207,15 +192,7 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsSimulated")
-                        .HasColumnType("INTEGER");
-
                     b.Property<Guid>("KriId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("RiskLevel")
-                        .IsRequired()
-                        .HasMaxLength(10)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("Timestamp")

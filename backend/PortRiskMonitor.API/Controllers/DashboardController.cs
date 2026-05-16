@@ -1,19 +1,5 @@
-// ============================================================
-// HistoryController.cs — Historical KRI data
-//
-// Routes:
-//   GET /api/history                  — latest reading for every indicator
-//   GET /api/history/{slug}           — time-series for one indicator
-//
-// Query params for the detail route:
-//   from  (DateTime UTC)  default: 30 days ago
-//   to    (DateTime UTC)  default: now
-//   take  (int)           default: 500, max: 2000
-//
-// Valid slugs: berth | vessel-delays | weather | customs
-// ============================================================
-
 using Microsoft.AspNetCore.Mvc;
+using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.Data;
 using RiskMonitor.Repositories;
 
@@ -22,8 +8,9 @@ namespace PortRiskMonitor.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public class HistoryController : ControllerBase
+public class DashboardController : ControllerBase
 {
+    private readonly IPortStatusService _portStatusService;
     private readonly IKriRepository _repo;
 
     private static readonly HashSet<string> ValidSlugs =
@@ -34,7 +21,18 @@ public class HistoryController : ControllerBase
         SeedData.CustomsSlug,
     ];
 
-    public HistoryController(IKriRepository repo) => _repo = repo;
+    public DashboardController(
+            IPortStatusService portStatusService,
+            IKriRepository repo)
+    {
+        _portStatusService = portStatusService;
+        _repo = repo;
+    }
+
+    [HttpGet("/trend")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTrend([FromQuery] string trendTimeFrame)
+        => Ok(_portStatusService.GetTrend(trendTimeFrame));
 
     // ── GET /api/history ──────────────────────────────────────────────────────
     //    [HttpGet]

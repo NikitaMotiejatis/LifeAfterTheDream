@@ -1,7 +1,25 @@
+using PortRiskMonitor.Infrastructure.Data;
+using RiskMonitor.Entities;
+
 namespace PortRiskMonitor.Infrastructure.CustomsDwellTime;
 
 public class CustomsDwellTimeRepo : ICustomsDwellTimeRepo
 {
+    private readonly AppDbContext _db;
+
+    public CustomsDwellTimeRepo(AppDbContext db)
+    {
+        _db = db;
+    }
+
+    public async Task<Kri> GetKri()
+        => _db.Kris
+            .First(kri => kri.Slug == "customs");
+
+    public async Task<IEnumerable<KriReading>> GetAllReadings()
+        => _db.KriReadings
+            .Where(r => r.Kri.Slug == "customs");
+
     public ICollection<CustomsDwellDto> GetDwellDetails(uint count, double averageDwell, string phase)
     {
         var cargoTypes = new[] { "Container", "Container", "Container", "Container", "Bulk", "Bulk", "Bulk", "Liquid", "RoRo", "RoRo" };

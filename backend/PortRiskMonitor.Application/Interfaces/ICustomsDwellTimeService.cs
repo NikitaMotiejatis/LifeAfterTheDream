@@ -1,9 +1,9 @@
 using PortRiskMonitor.Infrastructure.CustomsDwellTime;
-using RiskMonitor.Logic;
+using RiskMonitor.Services;
 
 namespace PortRiskMonitor.Application.Interfaces;
 
-public interface ICustomsDwellTimeService : IKriScore<double>
+public interface ICustomsDwellTimeService : IKriService
 {
     double GetAverageDwellHours();
     uint GetPendingCount();

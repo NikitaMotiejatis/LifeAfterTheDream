@@ -16,10 +16,11 @@
 using Microsoft.Extensions.Logging;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.WeatherCondition;
+using RiskMonitor.Services;
 
 namespace PortRiskMonitor.Application.Services;
 
-public class WeatherConditionService : IWeatherConditionService
+public class WeatherConditionService : KriService, IWeatherConditionService
 {
     // ── Operational thresholds ────────────────────────────────────────────────
     private const float MaxWindKnt = 25f;   // crane halt
@@ -36,13 +37,11 @@ public class WeatherConditionService : IWeatherConditionService
     public WeatherConditionService(
         IWeatherConditionRepo weatherConditionRepo,
         ILogger<WeatherConditionService> logger)
+        : base(weatherConditionRepo)
     {
         _weatherConditionRepo = weatherConditionRepo;
         _logger = logger;
     }
-
-    public double GetScoreValue()
-        => CalculateScore(_weatherConditionRepo.GetLatestWeatherSnapshot());
 
     public double GetWindSpeedKnt() => _weatherConditionRepo.GetLatestWeatherSnapshot().WindSpeedKnt;
     public double GetWaterLevelCm() => _weatherConditionRepo.GetLatestWeatherSnapshot().WaterLevelCm;

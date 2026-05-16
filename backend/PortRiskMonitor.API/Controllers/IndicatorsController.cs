@@ -28,47 +28,67 @@ public class IndicatorsController : ControllerBase
     // GET /api/indicators/berth
     [HttpGet("berth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public IActionResult GetBerth() => Ok(new
+    public async Task<IActionResult> GetBerth()
     {
-        score = _berth.GetScoreValue(),
-        occupiedCount = _berth.GetOccupiedCount(),
-        totalCount = _berth.GetTotalCount(),
-        details = _berth.GetBerthDetails()
-    });
+        var score = await _berth.GetLatestScore();
+
+        return Ok(new
+        {
+            score,
+            occupiedCount = _berth.GetOccupiedCount(),
+            totalCount = _berth.GetTotalCount(),
+            details = _berth.GetBerthDetails()
+        });
+    }
 
     // GET /api/indicators/vessel-delays
     [HttpGet("vessel-delays")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public IActionResult GetVesselDelays() => Ok(new
+    public async Task<IActionResult> GetVesselDelays()
     {
-        score = _vessels.GetScoreValue(),
-        delayedCount = _vessels.GetDelayedCount(),
-        totalCount = _vessels.GetTotalCount(),
-        details = _vessels.GetDelayDetails()
-    });
+        var score = await _vessels.GetLatestScore();
+
+        return Ok(new
+        {
+            score,
+            delayedCount = _vessels.GetDelayedCount(),
+            totalCount = _vessels.GetTotalCount(),
+            details = _vessels.GetDelayDetails()
+        });
+    }
 
     // GET /api/indicators/weather
     [HttpGet("weather")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public IActionResult GetWeather() => Ok(new
+    public async Task<IActionResult> GetWeather()
     {
-        score = _weather.GetScoreValue(),
-        windSpeedKnt = _weather.GetWindSpeedKnt(),
-        waterLevelCm = _weather.GetWaterLevelCm(),
-        temperatureC = _weather.GetTemperatureC(),
-        humidityPercent = _weather.GetHumidityPercent(),
-        conditionCode = _weather.GetConditionCode()
-    });
+        var score = await _weather.GetLatestScore();
+
+        return Ok(new
+        {
+            score,
+            windSpeedKnt = _weather.GetWindSpeedKnt(),
+            waterLevelCm = _weather.GetWaterLevelCm(),
+            temperatureC = _weather.GetTemperatureC(),
+            humidityPercent = _weather.GetHumidityPercent(),
+            conditionCode = _weather.GetConditionCode()
+        });
+    }
 
     // GET /api/indicators/customs
     [HttpGet("customs")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public IActionResult GetCustoms() => Ok(new
+    public async Task<IActionResult> GetCustoms()
     {
-        score = _customs.GetScoreValue(),
-        avgDwellHours = _customs.GetAverageDwellHours(),
-        pendingCount = _customs.GetPendingCount(),
-        overdueCount = _customs.GetOverdueCount(),
-        details = _customs.GetDwellDetails()
-    });
+        var score = await _customs.GetLatestScore();
+
+        return Ok(new
+        {
+            score,
+            avgDwellHours = _customs.GetAverageDwellHours(),
+            pendingCount = _customs.GetPendingCount(),
+            overdueCount = _customs.GetOverdueCount(),
+            details = _customs.GetDwellDetails()
+        });
+    }
 }

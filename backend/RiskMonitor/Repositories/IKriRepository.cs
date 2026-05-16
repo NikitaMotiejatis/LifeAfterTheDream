@@ -4,18 +4,23 @@ namespace RiskMonitor.Repositories;
 
 public interface IKriRepository
 {
-    // ── KRI definitions ────────────────────────────────────────────────────────
-    Task<IEnumerable<Kri>> GetAllAsync();
-    Task<Kri?> GetByIdAsync(Guid id);
-    Task<Kri?> GetBySlugAsync(string slug);
+    Task<Kri> GetKri();
+    Task<IEnumerable<KriReading>> GetAllReadings();
 
-    Task<Kri> CreateAsync(Kri kri);
-    Task<Kri> UpdateAsync(Kri kri);
-    Task DeleteAsync(Guid id);
+    Task<KriReading?> GetLatestReading()
+        => GetAllReadings()
+            .ContinueWith(task => task.Result
+                .OrderBy(r => r.Timestamp)
+                .LastOrDefault()
+            );
 
-    // ── Readings ───────────────────────────────────────────────────────────────
-    Task<IEnumerable<KriReading>> GetLatestReadingsAsync();
-    Task<IEnumerable<KriReading>> GetReadingsAsync(Guid kriId, DateTime from, DateTime to, int take = 1000);
-    Task<KriReading> AddReadingAsync(KriReading reading);
-    Task AddReadingsBatchAsync(IEnumerable<KriReading> readings);
+    Task<IEnumerable<KriReading>> GetReadings(DateTime? from, DateTime? to)
+        => GetAllReadings()
+            .ContinueWith(task => task.Result
+                .Where(r =>
+                    (from ?? DateTime.MinValue) <= r.Timestamp
+                    && r.Timestamp <= (to ?? DateTime.MaxValue)
+                ).OrderBy(r => r.Timestamp)
+                .AsEnumerable()
+            );
 }

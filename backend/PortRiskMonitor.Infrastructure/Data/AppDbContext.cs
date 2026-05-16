@@ -90,23 +90,4 @@ public class AppDbContext : DbContext
                 .HasDatabaseName("IX_AuditLogs_UserIdentifier");
         });
     }
-
-    // ── Auto-update UpdatedAt before every save ────────────────────────────────
-    public override int SaveChanges()
-    {
-        UpdateTimestamps();
-        return base.SaveChanges();
-    }
-
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        UpdateTimestamps();
-        return base.SaveChangesAsync(cancellationToken);
-    }
-
-    private void UpdateTimestamps()
-    {
-        foreach (var entry in ChangeTracker.Entries<Kri>().Where(e => e.State == EntityState.Modified))
-            entry.Entity.UpdatedAt = DateTime.UtcNow;
-    }
 }

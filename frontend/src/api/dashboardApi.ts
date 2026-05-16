@@ -5,7 +5,7 @@ import type {
   TrendPointDto,
 } from '../types/Dashboard';
 import { getMockTiles, getMockTrend } from '../mocks/dashboardMock';
-// import axiosInstance from './axiosInstance';
+import axiosInstance from './axiosInstance';
 
 const USE_MOCK = true;
 
@@ -40,6 +40,5 @@ export async function fetchTrendData(
     return getMockTrend(trendTimeFrame);
   }
 
-  // TODO: axiosInstance.get('/dashboard/trend', { params: { trendTimeFrame } }).then((r) => r.data);
-  throw new Error('Backend not configured.');
+  return axiosInstance.get('/dashboard/trend', { params: { trendTimeFrame } }).then((r) => r.data as TrendPointDto[]);
 }

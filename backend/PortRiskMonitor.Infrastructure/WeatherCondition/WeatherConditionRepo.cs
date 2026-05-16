@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using PortRiskMonitor.Infrastructure.Data;
+using RiskMonitor.Entities;
 
 namespace PortRiskMonitor.Infrastructure.WeatherCondition;
 
@@ -12,10 +14,11 @@ public class WeatherConditionRepo : IWeatherConditionRepo
     private const string HydroUrl = "https://api.meteo.lt/v1/hydro-stations/klaipedos-juru-uosto-vms/observations/measured/latest";
     private const string ConditionUrl = "https://api.meteo.lt/v1/stations/klaipedos-ams/observations/latest";
 
+    private readonly AppDbContext _db;
     private readonly HttpClient _httpClient;
 
     private WeatherSnapshot? _cachedSnapshot;
-    private TimeSpan _cacheRefreshInterval = TimeSpan.FromMinutes(5.0);
+    private TimeSpan _cacheRefreshInterval = TimeSpan.FromMinutes(5);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -24,10 +27,20 @@ public class WeatherConditionRepo : IWeatherConditionRepo
         RespectRequiredConstructorParameters = true,
     };
 
-    public WeatherConditionRepo(HttpClient httpClient)
+    public WeatherConditionRepo(AppDbContext db, HttpClient httpClient)
     {
+        _db = db;
         _httpClient = httpClient;
     }
+
+    public async Task<Kri> GetKri()
+        => _db.Kris
+            .First(kri => kri.Slug == "weather");
+
+    public async Task<IEnumerable<KriReading>> GetAllReadings()
+        => _db.KriReadings
+            .Where(r => r.Kri.Slug == "weather");
+
     public WeatherSnapshot GetLatestWeatherSnapshot()
     {
         if (_cachedSnapshot is not null && DateTime.UtcNow - _cachedSnapshot.RecordedAt < _cacheRefreshInterval)

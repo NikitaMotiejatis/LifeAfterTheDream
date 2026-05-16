@@ -20,6 +20,15 @@ public class KriRepository : IKriRepository
 
     // ── KRI definitions ────────────────────────────────────────────────────────
 
+    public async Task<Kri> GetKri()
+        => new Kri
+        {
+            Name = "",
+            Description = "",
+        };
+    public async Task<IEnumerable<KriReading>> GetAllReadings()
+        => await _db.KriReadings.ToListAsync();
+
     public async Task<IEnumerable<Kri>> GetAllAsync()
         => await _db.Kris
             .OrderByDescending(k => k.CreatedAt)
@@ -38,7 +47,6 @@ public class KriRepository : IKriRepository
     {
         kri.Id = Guid.NewGuid();
         kri.CreatedAt = DateTime.UtcNow;
-        kri.UpdatedAt = DateTime.UtcNow;
         _db.Kris.Add(kri);
         await _db.SaveChangesAsync();
         return kri;

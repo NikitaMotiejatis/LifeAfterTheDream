@@ -1,8 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using RiskMonitor.Entities;
-
 using RiskMonitor.DTOs;
+using RiskMonitor.Entities;
 
 namespace RiskMonitor.Entities;
 

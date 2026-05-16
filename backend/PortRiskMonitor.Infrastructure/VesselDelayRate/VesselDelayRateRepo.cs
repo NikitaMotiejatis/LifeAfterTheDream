@@ -1,12 +1,30 @@
+using PortRiskMonitor.Infrastructure.Data;
+using RiskMonitor.Entities;
+
 namespace PortRiskMonitor.Infrastructure.VesselDelayRate;
 
 public class VesselDelayRateRepo : IVesselDelayRateRepo
 {
-    private List<VesselDelayDto> _vesselDelays = generateMockData();
+    private readonly AppDbContext _db;
 
+    public VesselDelayRateRepo(AppDbContext db)
+    {
+        _db = db;
+    }
+
+    public async Task<Kri> GetKri()
+        => _db.Kris
+            .First(kri => kri.Slug == "vessel-delays");
+
+    public async Task<IEnumerable<KriReading>> GetAllReadings()
+        => _db.KriReadings
+            .Where(r => r.Kri.Slug == "vessel-delays");
+
+    private List<VesselDelayDto> _vesselDelays = generateMockData();
 
     public ICollection<VesselDelayDto> GetDelayDetails()
         => _vesselDelays;
+
     private static List<VesselDelayDto> generateMockData()
     {
         var mockData = new List<VesselDelayDto>();

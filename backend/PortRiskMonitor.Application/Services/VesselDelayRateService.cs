@@ -1,13 +1,15 @@
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.VesselDelayRate;
+using RiskMonitor.Services;
 
 namespace PortRiskMonitor.Application.Services;
 
-public class VesselDelayRateService : IVesselDelayRateService
+public class VesselDelayRateService : KriService, IVesselDelayRateService
 {
     private readonly IVesselDelayRateRepo _vesselDelayRateRepo;
 
     public VesselDelayRateService(IVesselDelayRateRepo vesselDelayRateRepo)
+        : base(vesselDelayRateRepo)
     {
         _vesselDelayRateRepo = vesselDelayRateRepo;
     }

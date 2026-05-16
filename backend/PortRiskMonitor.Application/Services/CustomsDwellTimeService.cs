@@ -1,9 +1,10 @@
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.CustomsDwellTime;
+using RiskMonitor.Services;
 
 namespace PortRiskMonitor.Application.Services;
 
-public class CustomsDwellTimeService : ICustomsDwellTimeService
+public class CustomsDwellTimeService : KriService, ICustomsDwellTimeService
 {
     private const double NormalDwellHours = 18.0;
     private const double InspectionAddedHours = 24.0;
@@ -22,17 +23,9 @@ public class CustomsDwellTimeService : ICustomsDwellTimeService
     private ICustomsDwellTimeRepo _customsDwellTimeRepo;
 
     public CustomsDwellTimeService(ICustomsDwellTimeRepo customsDwellTimeRepo)
+        : base(customsDwellTimeRepo)
     {
         _customsDwellTimeRepo = customsDwellTimeRepo;
-    }
-
-    public double GetScoreValue()
-    {
-        UpdatePhaseIfNeeded();
-        var avgDwell = GetAverageDwellHours();
-        var pending = GetPendingCount();
-        var overdue = GetOverdueCount();
-        return Math.Min(100.0, (avgDwell / 72.0) * 50 + (pending / 100.0) * 30 + (overdue / 50.0) * 20);
     }
 
     public double GetAverageDwellHours()

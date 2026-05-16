@@ -157,6 +157,8 @@ try
         }
     });
 
+    builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
+
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
