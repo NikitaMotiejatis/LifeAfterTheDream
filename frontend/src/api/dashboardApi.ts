@@ -4,6 +4,7 @@ import type {
   KriCardDto,
   TimeFrame,
   TrendPointDto,
+  WeatherDto,
 } from '../types/Dashboard';
 import { getMockTiles, getMockTrend } from '../mocks/dashboardMock';
 import axiosInstance from './axiosInstance';
@@ -24,16 +25,23 @@ export async function fetchDashboardTiles(
     from: dateRange.from,
     to: dateRange.to,
   };
+
   const dashboardTiles = getMockTiles(dateRange);
+
   dashboardTiles.kriCards = await axiosInstance
     .get('/dashboard/kri-cards', { params })
     .then((r) => r.data as KriCardDto[]);
+
   dashboardTiles.kriCards.map((c) => {
     c.formula = '';
     c.thresholds = [];
 
     return c;
   });
+
+  dashboardTiles.weather = await axiosInstance
+    .get('/dashboard/weather')
+    .then((r) => r.data as WeatherDto);
 
   console.log(dashboardTiles);
 

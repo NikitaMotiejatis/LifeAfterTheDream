@@ -11,17 +11,20 @@ public class IndicatorsController : ControllerBase
     private readonly IBerthOccupancyService _berth;
     private readonly IVesselDelayRateService _vessels;
     private readonly IWeatherConditionService _weather;
+    private readonly IWeatherFetcherService _weatherFetcher;
     private readonly ICustomsDwellTimeService _customs;
 
     public IndicatorsController(
         IBerthOccupancyService berth,
         IVesselDelayRateService vessels,
         IWeatherConditionService weather,
+        IWeatherFetcherService weatherFetcher,
         ICustomsDwellTimeService customs)
     {
         _berth = berth;
         _vessels = vessels;
         _weather = weather;
+        _weatherFetcher = weatherFetcher;
         _customs = customs;
     }
 
@@ -67,11 +70,11 @@ public class IndicatorsController : ControllerBase
         return Ok(new
         {
             score,
-            windSpeedKnt = _weather.GetWindSpeedKnt(),
-            waterLevelCm = _weather.GetWaterLevelCm(),
-            temperatureC = _weather.GetTemperatureC(),
-            humidityPercent = _weather.GetHumidityPercent(),
-            conditionCode = _weather.GetConditionCode()
+            windSpeedKnt = _weatherFetcher.GetWindSpeedKnt(),
+            waterLevelCm = _weatherFetcher.GetWaterLevelCm(),
+            temperatureC = _weatherFetcher.GetTemperatureC(),
+            humidityPercent = _weatherFetcher.GetHumidityPercent(),
+            conditionCode = _weatherFetcher.GetConditionCode()
         });
     }
 

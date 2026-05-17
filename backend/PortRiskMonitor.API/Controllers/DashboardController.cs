@@ -12,6 +12,7 @@ public class DashboardController : ControllerBase
 {
     private readonly IPortRiskMonitorService _portRiskMonitorService;
     //private readonly IPortStatusService _portStatusService;
+    private readonly IWeatherFetcherService _weatherFetcer;
     private readonly IKriRepository _repo;
 
     private static readonly HashSet<string> ValidSlugs =
@@ -24,10 +25,12 @@ public class DashboardController : ControllerBase
 
     public DashboardController(
             IPortRiskMonitorService portRiskMonitorService,
+            IWeatherFetcherService weatherFetcer,
             IKriRepository repo)
     {
         _portRiskMonitorService = portRiskMonitorService;
         //_portStatusService = portStatusService;
+        _weatherFetcer = weatherFetcer;
         _repo = repo;
     }
 
@@ -36,13 +39,25 @@ public class DashboardController : ControllerBase
     //public async Task<IActionResult> GetTrend([FromQuery] string trendTimeFrame)
     //    => Ok(_portStatusService.GetTrend(trendTimeFrame));
 
+    [HttpGet("weather")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetWeather()
+    {
+        var weatherSnapshot = await _weatherFetcer.GetLatestWeatherSnapshot();
+        return Ok(new
+        {
+            windSpeedKts = weatherSnapshot.WindSpeedKnt,
+            waveHeightM = 0.01 * weatherSnapshot.WaterLevelCm,
+            temperatureC = weatherSnapshot.TemperatureC,
+            humidityPercent = weatherSnapshot.HumidityPercent,
+            description = weatherSnapshot.ConditionCode,
+        });
+    }
+
     [HttpGet("kri-cards")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetKriCards([FromQuery] string preset, [FromQuery] string? from, [FromQuery] string? to)
-    {
-        var kriCards = await _portRiskMonitorService.GetKriCards(preset, from, to);
-        return Ok(kriCards.ToArray());
-    }
+        => Ok((await _portRiskMonitorService.GetKriCards(preset, from, to)).ToArray());
 
     // ── GET /api/history ──────────────────────────────────────────────────────
     //    [HttpGet]

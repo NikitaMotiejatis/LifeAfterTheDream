@@ -89,6 +89,8 @@ try
     builder.Services.AddScoped<ICustomsDwellTimeRepo, CustomsDwellTimeRepo>();
     builder.Services.AddScoped<IWeatherConditionRepo, WeatherConditionRepo>();
 
+    builder.Services.AddSingleton<IWeatherFetcherService, WeatherFetcherService>();
+
     // Application Services (Business Logic Layer)
     builder.Services.AddScoped<IPortRiskMonitorService, PortRiskMonitorService>();
 

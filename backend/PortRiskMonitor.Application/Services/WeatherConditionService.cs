@@ -14,6 +14,7 @@
 // ============================================================
 
 using Microsoft.Extensions.Logging;
+using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.WeatherCondition;
 using RiskMonitor.Services;
@@ -42,12 +43,6 @@ public class WeatherConditionService : KriService, IWeatherConditionService
         _weatherConditionRepo = weatherConditionRepo;
         _logger = logger;
     }
-
-    public double GetWindSpeedKnt() => _weatherConditionRepo.GetLatestWeatherSnapshot().WindSpeedKnt;
-    public double GetWaterLevelCm() => _weatherConditionRepo.GetLatestWeatherSnapshot().WaterLevelCm;
-    public double GetTemperatureC() => _weatherConditionRepo.GetLatestWeatherSnapshot().TemperatureC;
-    public double GetHumidityPercent() => _weatherConditionRepo.GetLatestWeatherSnapshot().HumidityPercent;
-    public string GetConditionCode() => _weatherConditionRepo.GetLatestWeatherSnapshot().ConditionCode;
 
     private static double CalculateScore(WeatherSnapshot s)
     {
