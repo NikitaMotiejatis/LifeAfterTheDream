@@ -58,7 +58,7 @@ export interface ActiveVesselDto {
 }
 
 export interface TrendPointDto {
-  hour: string;
+  label: string;
   value: number;
 }
 

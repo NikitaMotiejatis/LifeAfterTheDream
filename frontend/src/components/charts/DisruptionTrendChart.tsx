@@ -83,7 +83,7 @@ export default function DisruptionTrendChart({
         >
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis
-            dataKey="hour"
+            dataKey="label"
             tick={{ fontSize: 10 }}
             interval={
               trendTimeFrame === '30d'

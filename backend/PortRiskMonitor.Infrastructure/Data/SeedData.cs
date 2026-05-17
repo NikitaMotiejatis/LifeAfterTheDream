@@ -16,6 +16,7 @@ namespace PortRiskMonitor.Infrastructure.Data;
 public static class SeedData
 {
     // Slugs used by GET /api/history/{slug}
+    public const string PortStatusSlug = "port-status";
     public const string BerthSlug = "berth";
     public const string VesselDelaySlug = "vessel-delays";
     public const string WeatherSlug = "weather";
@@ -26,11 +27,23 @@ public static class SeedData
         if (await db.Kris.AnyAsync()) return;
 
         var now = DateTime.UtcNow;
-        var from = now.AddDays(-30);
+        var from = now.AddYears(-1);
 
         // ── KRI definitions ────────────────────────────────────────────────────
         var kris = new List<Kri>
         {
+            new()
+            {
+                Id           = Guid.NewGuid(),
+                Name         = "Port Disruption Index",
+                Description  = "Index encompassing all other indicators to show combined disruption level.",
+                Unit         = "",
+                Slug         = PortStatusSlug,
+                MockBaseline = 50,
+                MockVariance = 50,
+                MockPattern  = "Sinusoidal",
+                CreatedAt    = now,
+            },
             new()
             {
                 Id           = Guid.NewGuid(),
@@ -60,7 +73,7 @@ public static class SeedData
                 Id           = Guid.NewGuid(),
                 Name         = "Weather Condition Score",
                 Description  = "Composite weather risk score (wind speed, water level, condition code).",
-                Unit         = "score",
+                Unit         = "",
                 Slug         = WeatherSlug,
                 MockBaseline = 18,
                 MockVariance = 28,
@@ -72,7 +85,7 @@ public static class SeedData
                 Id           = Guid.NewGuid(),
                 Name         = "Customs Dwell Time",
                 Description  = "Average hours cargo spends in customs clearance.",
-                Unit         = "hours",
+                Unit         = "h",
                 Slug         = CustomsSlug,
                 MockBaseline = 18,
                 MockVariance = 40,
@@ -83,9 +96,8 @@ public static class SeedData
 
         await db.Kris.AddRangeAsync(kris);
 
-        // ── Historical readings — 30 days × 1/hour ─────────────────────────────
         var rng = new Random(42); // fixed seed = reproducible dev data
-        var readings = new List<KriReading>(kris.Count * 24 * 365);
+        var readings = new List<KriReading>(kris.Count * 2 * 24 * 365);
 
         foreach (var kri in kris)
             readings.AddRange(GenerateReadings(kri, from, now, rng));

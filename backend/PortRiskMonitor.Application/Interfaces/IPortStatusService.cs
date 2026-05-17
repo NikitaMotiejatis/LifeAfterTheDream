@@ -1,6 +1,10 @@
+using PortRiskMonitor.Application.DTOs;
+using RiskMonitor.Services;
+
 namespace PortRiskMonitor.Application.Interfaces;
 
-public interface IPortStatusService
+public interface IPortStatusService : IKriService
 {
-    ICollection<(string hour, double value)> GetTrend(string trendTimeFrame);
+    Task<PortStatusDto> GetPortStatus(string preset, string? from, string? to);
+    Task<IEnumerable<DataPoint>> GetTrend(string trendTimeFrame);
 }

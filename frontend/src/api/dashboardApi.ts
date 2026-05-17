@@ -2,24 +2,17 @@ import type {
   DashboardData,
   DateRange,
   KriCardDto,
+  PortStatusDto,
   TimeFrame,
   TrendPointDto,
   WeatherDto,
 } from '../types/Dashboard';
-import { getMockTiles, getMockTrend } from '../mocks/dashboardMock';
+import { getMockTiles } from '../mocks/dashboardMock';
 import axiosInstance from './axiosInstance';
-
-const USE_MOCK = true;
 
 export async function fetchDashboardTiles(
   dateRange: DateRange,
 ): Promise<DashboardData> {
-  //if (USE_MOCK) {
-  //  await new Promise((r) => setTimeout(r, 400));
-  //  return getMockTiles(dateRange);
-  //}
-  //
-
   const params = {
     preset: dateRange.preset,
     from: dateRange.from,
@@ -27,6 +20,14 @@ export async function fetchDashboardTiles(
   };
 
   const dashboardTiles = getMockTiles(dateRange);
+  
+  dashboardTiles.portStatus = await axiosInstance
+    .get('/dashboard/port-status', { params })
+    .then((r) => r.data as PortStatusDto),
+
+  dashboardTiles.weather = await axiosInstance
+    .get('/dashboard/weather')
+    .then((r) => r.data as WeatherDto);
 
   dashboardTiles.kriCards = await axiosInstance
     .get('/dashboard/kri-cards', { params })
@@ -39,36 +40,13 @@ export async function fetchDashboardTiles(
     return c;
   });
 
-  dashboardTiles.weather = await axiosInstance
-    .get('/dashboard/weather')
-    .then((r) => r.data as WeatherDto);
-
-  console.log(dashboardTiles);
-
-  // TODO: Wire up to real C# backend endpoints
-  // const params = { preset: dateRange.preset, from: dateRange.from, to: dateRange.to };
-  // const [portStatus, weather, kriCards, activeVessels, vesselSchedule] =
-  //   await Promise.all([
-  //     axiosInstance.get('/dashboard/port-status', { params }).then((r) => r.data),
-  //     axiosInstance.get('/dashboard/weather', { params }).then((r) => r.data),
-  //     axiosInstance.get('/dashboard/kri-cards', { params }).then((r) => r.data),
-  //     axiosInstance.get('/dashboard/active-vessels', { params }).then((r) => r.data),
-  //     axiosInstance.get('/dashboard/vessel-schedule', { params }).then((r) => r.data),
-  //   ]);
-  // return { periodLabel: dateRange.preset, portStatus, weather, kriCards, activeVessels, trendData: [], vesselSchedule };
-
   return dashboardTiles;
 }
 
 export async function fetchTrendData(
   trendTimeFrame: TimeFrame,
 ): Promise<TrendPointDto[]> {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 300));
-    return getMockTrend(trendTimeFrame);
-  }
-
-  return axiosInstance
+  return await axiosInstance
     .get('/dashboard/trend', { params: { trendTimeFrame } })
     .then((r) => r.data as TrendPointDto[]);
 }

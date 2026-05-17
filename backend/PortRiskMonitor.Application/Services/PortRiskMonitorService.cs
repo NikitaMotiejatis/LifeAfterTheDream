@@ -44,7 +44,7 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
         catch (Exception e) { }
 #pragma warning restore CS0168
 
-        var rawData = await GetKrisWithReadings(fromDateTime, toDateTime, (kri) => true)
+        var rawData = await GetKrisWithReadings(fromDateTime, toDateTime, (kri) => kri.Slug != "port-status")
             .Select(x => new
             {
                 Slug = x.Kri.Slug,
@@ -57,7 +57,8 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
                 SparklineData = x.Readings
                     .Select(r => new { r.Timestamp, r.Value })
                     .ToList()
-            }).ToListAsync();
+            }).OrderBy(x => x.Slug)
+            .ToListAsync();
 
         return rawData
             .Select(x => new KriCardDto(
@@ -67,10 +68,11 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
                     ? $"{x.LatestValue.Value} {x.Unit}"
                     : "Not Available",
                 Sparkline: x.SparklineData
-                    .Select(s => new DataPoint(
-                        Label: s.Timestamp.ToString(format, provider),
-                        Value: s.Value
-                    )).ToList()
+                    .Select(s => new DataPoint
+                    {
+                        Label = s.Timestamp.ToString(format, provider),
+                        Value = s.Value,
+                    }).ToList()
             ));
     }
 }
