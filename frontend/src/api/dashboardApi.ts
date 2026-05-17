@@ -20,14 +20,13 @@ export async function fetchDashboardTiles(
   };
 
   const dashboardTiles = getMockTiles(dateRange);
-  
-  dashboardTiles.portStatus = await axiosInstance
-    .get('/dashboard/port-status', { params })
-    .then((r) => r.data as PortStatusDto),
 
-  dashboardTiles.weather = await axiosInstance
-    .get('/dashboard/weather')
-    .then((r) => r.data as WeatherDto);
+  ((dashboardTiles.portStatus = await axiosInstance
+    .get('/dashboard/port-status', { params })
+    .then((r) => r.data as PortStatusDto)),
+    (dashboardTiles.weather = await axiosInstance
+      .get('/dashboard/weather')
+      .then((r) => r.data as WeatherDto)));
 
   dashboardTiles.kriCards = await axiosInstance
     .get('/dashboard/kri-cards', { params })

@@ -54,7 +54,7 @@ public class PortStatusService : KriService, IPortStatusService
         var sparkline = rawScores
             .Select(s => new PortStatusDto.SparkPoint
             {
-                Label = s.Timestamp.ToString(),
+                Label = s.Timestamp.ToLocalTime().ToString(format, provider),
                 Value = s.Value,
             }).ToList();
 
@@ -127,15 +127,15 @@ public class PortStatusService : KriService, IPortStatusService
         Func<DateTime, string> dateToStr = trendTimeFrame switch
         {
             "7d" or "30d" or "90d" => (dt) => dt.ToLocalTime().ToString("MMM dd"),
-            "6m" or "1y"           => (dt) => dt.ToLocalTime().ToString("yyyy MMM"),
-            "24h" or _             => (dt) => dt.ToLocalTime().ToString("HH:mm"),
+            "6m" or "1y" => (dt) => dt.ToLocalTime().ToString("yyyy MMM"),
+            "24h" or _ => (dt) => dt.ToLocalTime().ToString("HH:mm"),
         };
 
         var buckets = trendTimeFrame switch
         {
             "7d" or "30d" or "90d" => Enumerable.Range(0, bucketCount).Select(b => from.AddDays(b)),
-            "6m" or "1y"           => Enumerable.Range(0, bucketCount).Select(b => from.AddMonths(b)),
-            "24h" or _             => Enumerable.Range(0, bucketCount).Select(b => from.AddHours(b)),
+            "6m" or "1y" => Enumerable.Range(0, bucketCount).Select(b => from.AddMonths(b)),
+            "24h" or _ => Enumerable.Range(0, bucketCount).Select(b => from.AddHours(b)),
         };
 
         return buckets

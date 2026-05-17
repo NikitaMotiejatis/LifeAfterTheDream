@@ -85,7 +85,7 @@ public static class SeedData
                 Id           = Guid.NewGuid(),
                 Name         = "Customs Dwell Time",
                 Description  = "Average hours cargo spends in customs clearance.",
-                Unit         = "h",
+                Unit         = " h",
                 Slug         = CustomsSlug,
                 MockBaseline = 18,
                 MockVariance = 40,

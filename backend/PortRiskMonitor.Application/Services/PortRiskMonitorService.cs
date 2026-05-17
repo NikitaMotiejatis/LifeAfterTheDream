@@ -26,12 +26,15 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
 
         var fromDateTime = preset switch
         {
-            "7d" => now.AddDays(-7),
-            "30d" => now.AddDays(-30),
-            "90d" => now.AddDays(-90),
-            "6m" => now.AddMonths(-6),
-            "1y" => now.AddYears(-1),
-            "24h" or _ => now.AddHours(-24),
+            "6h" => now.AddHours(-6),
+            "12h" => now.AddHours(-12),
+            "24h" => now.AddHours(-24),
+            "48h" => now.AddHours(-48),
+            "72h" => now.AddHours(-72),
+            "week" => now.AddDays(-7),
+            "month" => now.AddMonths(-1),
+            "year" => now.AddYears(-1),
+            _ => now.AddHours(-24),
         };
         var toDateTime = now;
 
@@ -65,12 +68,12 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
                 Id: x.Slug,
                 Title: x.Name,
                 Value: x.LatestValue.HasValue
-                    ? $"{x.LatestValue.Value} {x.Unit}"
+                    ? $"{String.Format("{0:0.0}", x.LatestValue.Value)}{x.Unit}"
                     : "Not Available",
                 Sparkline: x.SparklineData
                     .Select(s => new DataPoint
                     {
-                        Label = s.Timestamp.ToString(format, provider),
+                        Label = s.Timestamp.ToLocalTime().ToString(format, provider),
                         Value = s.Value,
                     }).ToList()
             ));

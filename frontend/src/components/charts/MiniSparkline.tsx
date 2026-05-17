@@ -17,7 +17,7 @@ function SparkActiveDot({
 }: {
   cx?: number;
   cy?: number;
-  payload?: { v: number };
+  payload?: { value: number };
   color: string;
 }) {
   if (cx == null || cy == null || !payload) return null;
@@ -58,7 +58,7 @@ function SparkActiveDot({
         fontSize={9}
         dominantBaseline="middle"
       >
-        {payload.v}
+        {payload.value.toFixed(1)}
       </text>
     </g>
   );
@@ -79,7 +79,6 @@ export default function MiniSparkline({
   height = 80,
   showAxes = true,
 }: Props) {
-  const chartData = data.map((pt) => ({ label: pt.label, v: pt.value }));
   const totalHeight = showAxes ? height + 44 : height + 24;
   const margin = showAxes
     ? { top: 24, right: 8, bottom: 30, left: 8 }
@@ -88,7 +87,7 @@ export default function MiniSparkline({
     <div style={{ overflow: 'visible', position: 'relative' }}>
       <ResponsiveContainer width="100%" height={totalHeight}>
         <AreaChart
-          data={chartData}
+          data={data}
           margin={margin}
           style={{ outline: 'none', overflow: 'visible' }}
         >
@@ -117,7 +116,7 @@ export default function MiniSparkline({
           <Tooltip content={() => null} cursor={false} />
           <Area
             type="monotone"
-            dataKey="v"
+            dataKey="value"
             stroke={color}
             strokeWidth={2}
             fill={`url(#${gradientId})`}
