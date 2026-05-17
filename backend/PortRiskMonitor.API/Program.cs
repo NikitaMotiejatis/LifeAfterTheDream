@@ -21,6 +21,7 @@ using PortRiskMonitor.Infrastructure.BerthOccupancy;
 using PortRiskMonitor.Infrastructure.CustomsDwellTime;
 using PortRiskMonitor.Infrastructure.Data;
 using PortRiskMonitor.Infrastructure.Repositories;
+using PortRiskMonitor.Infrastructure.RiskMonitor;
 using PortRiskMonitor.Infrastructure.VesselDelayRate;
 using PortRiskMonitor.Infrastructure.WeatherCondition;
 using RiskMonitor.Repositories;
@@ -82,12 +83,14 @@ try
     // Repositories (Data Access Layer)
     builder.Services.AddScoped<IKriRepository, KriRepository>(); // IKriRepository = RiskMonitor.Repositories.IKriRepository
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+    builder.Services.AddScoped<IRiskMonitorRepository, PortRiskMonitorRepo>();
     builder.Services.AddScoped<IVesselDelayRateRepo, VesselDelayRateRepo>();
     builder.Services.AddScoped<IBerthOccupancyRepo, BerthOccupancyRepo>();
     builder.Services.AddScoped<ICustomsDwellTimeRepo, CustomsDwellTimeRepo>();
     builder.Services.AddScoped<IWeatherConditionRepo, WeatherConditionRepo>();
 
     // Application Services (Business Logic Layer)
+    builder.Services.AddScoped<IPortRiskMonitorService, PortRiskMonitorService>();
 
     // Indicator Services
     builder.Services.AddScoped<IBerthOccupancyService, BerthOccupancyService>();

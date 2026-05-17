@@ -26,8 +26,8 @@ public class KriRepository : IKriRepository
             Name = "",
             Description = "",
         };
-    public async Task<IEnumerable<KriReading>> GetAllReadings()
-        => await _db.KriReadings.ToListAsync();
+    public IQueryable<KriReading> GetAllReadings()
+        => _db.KriReadings;
 
     public async Task<IEnumerable<Kri>> GetAllAsync()
         => await _db.Kris

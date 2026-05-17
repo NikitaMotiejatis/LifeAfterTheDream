@@ -1,6 +1,7 @@
 import type {
   DashboardData,
   DateRange,
+  KriCardDto,
   TimeFrame,
   TrendPointDto,
 } from '../types/Dashboard';
@@ -12,10 +13,29 @@ const USE_MOCK = true;
 export async function fetchDashboardTiles(
   dateRange: DateRange,
 ): Promise<DashboardData> {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 400));
-    return getMockTiles(dateRange);
-  }
+  //if (USE_MOCK) {
+  //  await new Promise((r) => setTimeout(r, 400));
+  //  return getMockTiles(dateRange);
+  //}
+  //
+
+  const params = {
+    preset: dateRange.preset,
+    from: dateRange.from,
+    to: dateRange.to,
+  };
+  const dashboardTiles = getMockTiles(dateRange);
+  dashboardTiles.kriCards = await axiosInstance
+    .get('/dashboard/kri-cards', { params })
+    .then((r) => r.data as KriCardDto[]);
+  dashboardTiles.kriCards.map((c) => {
+    c.formula = '';
+    c.thresholds = [];
+
+    return c;
+  });
+
+  console.log(dashboardTiles);
 
   // TODO: Wire up to real C# backend endpoints
   // const params = { preset: dateRange.preset, from: dateRange.from, to: dateRange.to };
@@ -29,7 +49,7 @@ export async function fetchDashboardTiles(
   //   ]);
   // return { periodLabel: dateRange.preset, portStatus, weather, kriCards, activeVessels, trendData: [], vesselSchedule };
 
-  throw new Error('Backend not configured.');
+  return dashboardTiles;
 }
 
 export async function fetchTrendData(
@@ -40,5 +60,7 @@ export async function fetchTrendData(
     return getMockTrend(trendTimeFrame);
   }
 
-  return axiosInstance.get('/dashboard/trend', { params: { trendTimeFrame } }).then((r) => r.data as TrendPointDto[]);
+  return axiosInstance
+    .get('/dashboard/trend', { params: { trendTimeFrame } })
+    .then((r) => r.data as TrendPointDto[]);
 }

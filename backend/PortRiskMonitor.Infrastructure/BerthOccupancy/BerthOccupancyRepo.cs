@@ -16,7 +16,7 @@ public class BerthOccupancyRepo : IBerthOccupancyRepo
         => _db.Kris
             .First(kri => kri.Slug == "berth");
 
-    public async Task<IEnumerable<KriReading>> GetAllReadings()
+    public IQueryable<KriReading> GetAllReadings()
         => _db.KriReadings
             .Where(r => r.Kri.Slug == "berth");
 

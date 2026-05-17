@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 using RiskMonitor.Entities;
 
 namespace RiskMonitor.Repositories;
@@ -5,22 +7,19 @@ namespace RiskMonitor.Repositories;
 public interface IKriRepository
 {
     Task<Kri> GetKri();
-    Task<IEnumerable<KriReading>> GetAllReadings();
+    IQueryable<KriReading> GetAllReadings();
 
     Task<KriReading?> GetLatestReading()
         => GetAllReadings()
-            .ContinueWith(task => task.Result
-                .OrderBy(r => r.Timestamp)
-                .LastOrDefault()
-            );
+            .OrderByDescending(r => r.Timestamp)
+            .FirstOrDefaultAsync();
 
-    Task<IEnumerable<KriReading>> GetReadings(DateTime? from, DateTime? to)
-        => GetAllReadings()
-            .ContinueWith(task => task.Result
-                .Where(r =>
-                    (from ?? DateTime.MinValue) <= r.Timestamp
-                    && r.Timestamp <= (to ?? DateTime.MaxValue)
-                ).OrderBy(r => r.Timestamp)
-                .AsEnumerable()
-            );
+    IQueryable<KriReading> GetReadings(DateTime? from, DateTime? to)
+    {
+        (from, to) = (from ?? DateTime.MinValue, to ?? DateTime.MaxValue);
+
+        return GetAllReadings()
+            .Where(r => from <= r.Timestamp && r.Timestamp <= to)
+            .OrderBy(r => r.Timestamp);
+    }
 }

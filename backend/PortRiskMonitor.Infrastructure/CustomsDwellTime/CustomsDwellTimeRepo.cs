@@ -16,7 +16,7 @@ public class CustomsDwellTimeRepo : ICustomsDwellTimeRepo
         => _db.Kris
             .First(kri => kri.Slug == "customs");
 
-    public async Task<IEnumerable<KriReading>> GetAllReadings()
+    public IQueryable<KriReading> GetAllReadings()
         => _db.KriReadings
             .Where(r => r.Kri.Slug == "customs");
 

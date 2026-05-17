@@ -37,7 +37,7 @@ public class WeatherConditionRepo : IWeatherConditionRepo
         => _db.Kris
             .First(kri => kri.Slug == "weather");
 
-    public async Task<IEnumerable<KriReading>> GetAllReadings()
+    public IQueryable<KriReading> GetAllReadings()
         => _db.KriReadings
             .Where(r => r.Kri.Slug == "weather");
 

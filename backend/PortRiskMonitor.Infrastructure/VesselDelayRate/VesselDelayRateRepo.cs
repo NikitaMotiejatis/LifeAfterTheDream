@@ -16,7 +16,7 @@ public class VesselDelayRateRepo : IVesselDelayRateRepo
         => _db.Kris
             .First(kri => kri.Slug == "vessel-delays");
 
-    public async Task<IEnumerable<KriReading>> GetAllReadings()
+    public IQueryable<KriReading> GetAllReadings()
         => _db.KriReadings
             .Where(r => r.Kri.Slug == "vessel-delays");
 

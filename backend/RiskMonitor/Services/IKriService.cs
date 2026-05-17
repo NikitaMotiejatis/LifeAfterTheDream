@@ -1,8 +1,10 @@
+using RiskMonitor.DTOs;
+
 namespace RiskMonitor.Services;
 
 public interface IKriService
 {
-    Task<double> GetLatestScore();
-    Task<IEnumerable<(DateTime Timestamp, double Value)>> GetScores(DateTime? from, DateTime? to);
+    Task<double?> GetLatestScore();
+    IQueryable<ScoreInfo> GetScores(DateTime? from, DateTime? to);
 }
 

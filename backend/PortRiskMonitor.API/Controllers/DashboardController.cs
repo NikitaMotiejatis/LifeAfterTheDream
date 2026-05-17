@@ -10,7 +10,8 @@ namespace PortRiskMonitor.API.Controllers;
 [Produces("application/json")]
 public class DashboardController : ControllerBase
 {
-    private readonly IPortStatusService _portStatusService;
+    private readonly IPortRiskMonitorService _portRiskMonitorService;
+    //private readonly IPortStatusService _portStatusService;
     private readonly IKriRepository _repo;
 
     private static readonly HashSet<string> ValidSlugs =
@@ -22,17 +23,26 @@ public class DashboardController : ControllerBase
     ];
 
     public DashboardController(
-            IPortStatusService portStatusService,
+            IPortRiskMonitorService portRiskMonitorService,
             IKriRepository repo)
     {
-        _portStatusService = portStatusService;
+        _portRiskMonitorService = portRiskMonitorService;
+        //_portStatusService = portStatusService;
         _repo = repo;
     }
 
-    [HttpGet("/trend")]
+    //[HttpGet("/trend")]
+    //[ProducesResponseType(StatusCodes.Status200OK)]
+    //public async Task<IActionResult> GetTrend([FromQuery] string trendTimeFrame)
+    //    => Ok(_portStatusService.GetTrend(trendTimeFrame));
+
+    [HttpGet("kri-cards")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetTrend([FromQuery] string trendTimeFrame)
-        => Ok(_portStatusService.GetTrend(trendTimeFrame));
+    public async Task<IActionResult> GetKriCards([FromQuery] string preset, [FromQuery] string? from, [FromQuery] string? to)
+    {
+        var kriCards = await _portRiskMonitorService.GetKriCards(preset, from, to);
+        return Ok(kriCards.ToArray());
+    }
 
     // ── GET /api/history ──────────────────────────────────────────────────────
     //    [HttpGet]
