@@ -103,4 +103,42 @@ public class HistoryController : ControllerBase
             })
         });
     }
+
+    [HttpGet("cards")]
+    public async Task<IActionResult> GetKriCards([FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null, [FromQuery] int take = 20)
+    {
+        var fromDate = from ?? DateTime.UtcNow.AddDays(-1);
+        var toDate = to ?? DateTime.UtcNow;
+
+        var kris = (await _repo.GetAllAsync()).OrderBy(k => k.CreatedAt).ToList();
+        var cards = new List<object>();
+
+        foreach (var kri in kris)
+        {
+            var readings = (await _repo.GetReadingsAsync(kri.Id, fromDate, toDate, 2000)).ToList();
+            var latest = readings.LastOrDefault();
+
+            // Sample down to ~20 points for the sparkline
+            var sparkline = readings.Count <= take ? readings
+                : Enumerable.Range(0, take)
+                    .Select(i => readings[(int)Math.Round((double)i / (take-1) * (readings.Count - 1))]);
+
+            cards.Add(new
+            {
+                id = kri.Slug,
+                title = kri.Name,
+                value = latest is null ? "–" : kri.Unit == "%" ? $"{latest.Value:F1}%" : kri.Unit == "hours" ? $"{latest.Value:F1}h" : $"{latest.Value:F1}",
+                unit = kri.Unit,
+                riskLevel = latest?.RiskLevel ?? "Green",
+                thresholds = new[] {
+                new { label = $"<{kri.GreenMax}",                  color = "#22c55e", severity = "Low"    },
+                new { label = $"{kri.GreenMax}–{kri.YellowMax}",   color = "#eab308", severity = "Medium" },
+                new { label = $">{kri.YellowMax}",                 color = "#ef4444", severity = "High"   },
+            },
+                sparkline = sparkline.Select(r => new { timestamp = r.Timestamp, value = r.Value }),
+            });
+        }
+
+        return Ok(cards);
+    }
 }
