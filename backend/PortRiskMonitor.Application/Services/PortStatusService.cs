@@ -21,8 +21,15 @@ public class PortStatusService : KriService, IPortStatusService
     public async Task<PortStatusDto> GetPortStatus(string preset, string? from, string? to)
     {
         var now = DateTime.UtcNow;
-        var format = "yyyy-MM-ddTHH:mm";
+        var parseFormat = "yyyy-MM-ddTHH:mm";
         var provider = CultureInfo.InvariantCulture;
+
+        var displayFormat = preset switch
+        {
+            "6h" or "12h" or "24h" => "HH:mm",
+            "year" => "MM/yy",
+            _ => "dd/MM",
+        };
 
         var fromDateTime = preset switch
         {
@@ -40,8 +47,8 @@ public class PortStatusService : KriService, IPortStatusService
 
         try
         {
-            fromDateTime = DateTime.ParseExact(from ?? "", format, provider);
-            toDateTime = DateTime.ParseExact(to ?? "", format, provider);
+            fromDateTime = DateTime.ParseExact(from ?? "", parseFormat, provider);
+            toDateTime = DateTime.ParseExact(to ?? "", parseFormat, provider);
         }
 #pragma warning disable CS0168
         catch (Exception e) { }
@@ -49,19 +56,23 @@ public class PortStatusService : KriService, IPortStatusService
 
         var disruptionIndex = await GetLatestScore() ?? 0.0;
 
+        var kri = await _portStatusRepo.GetKri();
+
         var rawScores = await GetScores(fromDateTime, toDateTime).ToListAsync();
 
         var sparkline = rawScores
             .Select(s => new PortStatusDto.SparkPoint
             {
-                Label = s.Timestamp.ToLocalTime().ToString(format, provider),
+                Label = s.Timestamp.ToLocalTime().ToString(displayFormat, provider),
                 Value = s.Value,
             }).ToList();
 
         return new PortStatusDto
         {
             DisruptionIndex = disruptionIndex,
-            RiskLevel = "Moderate",
+            RiskLevel = disruptionIndex <= kri.GreenMax ? "Low" : disruptionIndex <= kri.YellowMax ? "Moderate" : "High",
+            GreenMax = kri.GreenMax,
+            YellowMax = kri.YellowMax,
             Sparkline = sparkline,
         };
     }
@@ -126,8 +137,8 @@ public class PortStatusService : KriService, IPortStatusService
 
         Func<DateTime, string> dateToStr = trendTimeFrame switch
         {
-            "7d" or "30d" or "90d" => (dt) => dt.ToLocalTime().ToString("MMM dd"),
-            "6m" or "1y" => (dt) => dt.ToLocalTime().ToString("yyyy MMM"),
+            "7d" or "30d" or "90d" => (dt) => dt.ToLocalTime().ToString("dd/MM"),
+            "6m" or "1y" => (dt) => dt.ToLocalTime().ToString("MM/yy"),
             "24h" or _ => (dt) => dt.ToLocalTime().ToString("HH:mm"),
         };
 

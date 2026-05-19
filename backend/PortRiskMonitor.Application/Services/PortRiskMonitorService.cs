@@ -21,8 +21,15 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
     public async Task<IEnumerable<KriCardDto>> GetKriCards(string preset, string? from, string? to)
     {
         var now = DateTime.UtcNow;
-        var format = "yyyy-MM-ddTHH:mm";
+        var parseFormat = "yyyy-MM-ddTHH:mm";
         var provider = CultureInfo.InvariantCulture;
+
+        var displayFormat = preset switch
+        {
+            "6h" or "12h" or "24h" => "HH:mm",
+            "year" => "MM/yy",
+            _ => "dd/MM",
+        };
 
         var fromDateTime = preset switch
         {
@@ -40,8 +47,8 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
 
         try
         {
-            fromDateTime = DateTime.ParseExact(from ?? "", format, provider);
-            toDateTime = DateTime.ParseExact(to ?? "", format, provider);
+            fromDateTime = DateTime.ParseExact(from ?? "", parseFormat, provider);
+            toDateTime = DateTime.ParseExact(to ?? "", parseFormat, provider);
         }
 #pragma warning disable CS0168
         catch (Exception e) { }
@@ -53,6 +60,8 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
                 Slug = x.Kri.Slug,
                 Name = x.Kri.Name,
                 Unit = x.Kri.Unit,
+                GreenMax = x.Kri.GreenMax,
+                YellowMax = x.Kri.YellowMax,
                 LatestValue = x.Readings
                     .OrderByDescending(r => r.Timestamp)
                     .Select(r => (double?)r.Value)
@@ -70,12 +79,36 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
                 Value: x.LatestValue.HasValue
                     ? $"{String.Format("{0:0.0}", x.LatestValue.Value)}{x.Unit}"
                     : "Not Available",
+                Formula: "",
+                Thresholds: BuildThresholds(x.GreenMax, x.YellowMax, x.Unit),
+                Severity: GetSeverity(x.LatestValue, x.GreenMax, x.YellowMax),
+                GreenMax: x.GreenMax,
+                YellowMax: x.YellowMax,
                 Sparkline: x.SparklineData
                     .Select(s => new DataPoint
                     {
-                        Label = s.Timestamp.ToLocalTime().ToString(format, provider),
+                        Label = s.Timestamp.ToLocalTime().ToString(displayFormat, provider),
                         Value = s.Value,
                     }).ToList()
             ));
+    }
+
+    private static ThresholdDto[] BuildThresholds(double greenMax, double yellowMax, string unit)
+    {
+        var u = unit.Trim();
+        return new[]
+        {
+            new ThresholdDto($"<{greenMax}{u}", "#22c55e", "Low"),
+            new ThresholdDto($"{greenMax}-{yellowMax}{u}", "#eab308", "Medium"),
+            new ThresholdDto($">{yellowMax}{u}", "#ef4444", "High"),
+        };
+    }
+
+    private static string GetSeverity(double? value, double greenMax, double yellowMax)
+    {
+        if (!value.HasValue) return "Low";
+        if (value.Value <= greenMax) return "Low";
+        if (value.Value <= yellowMax) return "Medium";
+        return "High";
     }
 }

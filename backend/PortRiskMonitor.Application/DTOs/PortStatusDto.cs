@@ -10,6 +10,12 @@ public record PortStatusDto
     [JsonPropertyName("riskLevel")]
     public required string RiskLevel { get; init; }
 
+    [JsonPropertyName("greenMax")]
+    public required double GreenMax { get; init; }
+
+    [JsonPropertyName("yellowMax")]
+    public required double YellowMax { get; init; }
+
     [JsonPropertyName("sparkline")]
     public required ICollection<SparkPoint> Sparkline { get; init; }
 

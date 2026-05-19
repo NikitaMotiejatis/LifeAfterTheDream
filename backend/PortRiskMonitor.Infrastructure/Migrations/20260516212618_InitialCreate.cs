@@ -44,6 +44,8 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                     Slug = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "BLOB", rowVersion: true, nullable: false, defaultValueSql: "randomblob(8)"),
+                    GreenMax = table.Column<double>(type: "REAL", nullable: false),
+                    YellowMax = table.Column<double>(type: "REAL", nullable: false),
                     MockBaseline = table.Column<double>(type: "REAL", nullable: false),
                     MockVariance = table.Column<double>(type: "REAL", nullable: false),
                     MockPattern = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false)
