@@ -21,31 +21,27 @@ function trendLabel(timeFrame: TimeFrame, i: number, len: number): string {
   if (timeFrame === '7d') {
     const d = new Date(now);
     d.setDate(d.getDate() - (len - 1 - i));
-    return d.toLocaleDateString('en-GB', {
-      weekday: 'short',
-      day: '2-digit',
-      month: 'short',
-    });
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
   }
   if (timeFrame === '30d') {
     const d = new Date(now);
     d.setDate(d.getDate() - (len - 1 - i));
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
   }
   if (timeFrame === '90d') {
     const d = new Date(now);
     d.setDate(d.getDate() - (len - 1 - i) * 7);
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
   }
   if (timeFrame === '6m') {
     const d = new Date(now);
     d.setDate(d.getDate() - (len - 1 - i) * 7);
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
   }
   // 1y — monthly buckets
   const d = new Date(now);
   d.setMonth(d.getMonth() - (len - 1 - i));
-  return d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+  return d.toLocaleDateString('en-GB', { month: '2-digit', year: '2-digit' });
 }
 
 const trendLengths: Record<TimeFrame, number> = {
@@ -72,7 +68,7 @@ export function getMockTrend(timeFrame: TimeFrame): TrendPointDto[] {
               ? 30
               : 28;
   return Array.from({ length: len }, (_, i) => ({
-    hour: trendLabel(timeFrame, i, len),
+    label: trendLabel(timeFrame, i, len),
     value: Math.round(seed + Math.sin(i * 0.8) * 12 + Math.cos(i * 0.3) * 6),
   }));
 }
@@ -138,25 +134,15 @@ function sparkLabels(range: DateRange, count: number): string[] {
     const t = new Date(endTime - totalHours * 3600000 * (1 - i / (count - 1)));
     if (totalHours <= 24) {
       labels.push(
-        t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) +
-          ' ' +
-          t.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-      );
-    } else if (totalHours <= 168) {
-      labels.push(
-        t.toLocaleDateString('en-GB', {
-          weekday: 'short',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
       );
     } else if (totalHours <= 720) {
       labels.push(
-        t.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+        t.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }),
       );
     } else {
       labels.push(
-        t.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }),
+        t.toLocaleDateString('en-GB', { month: '2-digit', year: '2-digit' }),
       );
     }
   }

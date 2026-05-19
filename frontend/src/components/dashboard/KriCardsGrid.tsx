@@ -54,10 +54,7 @@ export default function KriCardsGrid({ data }: Props) {
                 greenMax={kri.greenMax}
                 yellowMax={kri.yellowMax}
               />
-              <p className="text-xs text-gray-500 mt-2 font-mono bg-white/60 px-2 py-1 rounded">
-                {kri.formula}
-              </p>
-              <div className="flex gap-3 mt-2">
+              <div className="flex gap-3 mt-1">
                 {kri.thresholds.map((t) => (
                   <span
                     key={t.label}

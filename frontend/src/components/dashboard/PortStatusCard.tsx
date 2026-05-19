@@ -18,7 +18,7 @@ export default function PortStatusCard({ data }: Props) {
       <p className="text-sm text-gray-500 mb-4">
         Aggregated risk assessment across all operations
       </p>
-      <div className="flex items-end justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
             Disruption Index
@@ -30,18 +30,18 @@ export default function PortStatusCard({ data }: Props) {
             {data.riskLevel} risk
           </p>
         </div>
-        <div className="w-56">
+        <div className="w-72">
           <MiniSparkline
             data={data.sparkline}
             color="#f59e0b"
             gradientId="statusFill"
-            height={64}
+            height={90}
             greenMax={data.greenMax}
             yellowMax={data.yellowMax}
           />
         </div>
       </div>
-      <div className="flex gap-3 mt-2">
+      <div className="flex gap-4 mt-4 pt-3">
         <span className="flex items-center gap-1 text-xs text-gray-600">
           <span
             className="w-2.5 h-2.5 rounded-full inline-block"

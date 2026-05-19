@@ -21,8 +21,15 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
     public async Task<IEnumerable<KriCardDto>> GetKriCards(string preset, string? from, string? to)
     {
         var now = DateTime.UtcNow;
-        var format = "yyyy-MM-ddTHH:mm";
+        var parseFormat = "yyyy-MM-ddTHH:mm";
         var provider = CultureInfo.InvariantCulture;
+
+        var displayFormat = preset switch
+        {
+            "6h" or "12h" or "24h" => "HH:mm",
+            "year" => "MM/yy",
+            _ => "dd/MM",
+        };
 
         var fromDateTime = preset switch
         {
@@ -40,8 +47,8 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
 
         try
         {
-            fromDateTime = DateTime.ParseExact(from ?? "", format, provider);
-            toDateTime = DateTime.ParseExact(to ?? "", format, provider);
+            fromDateTime = DateTime.ParseExact(from ?? "", parseFormat, provider);
+            toDateTime = DateTime.ParseExact(to ?? "", parseFormat, provider);
         }
 #pragma warning disable CS0168
         catch (Exception e) { }
@@ -80,7 +87,7 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
                 Sparkline: x.SparklineData
                     .Select(s => new DataPoint
                     {
-                        Label = s.Timestamp.ToLocalTime().ToString(format, provider),
+                        Label = s.Timestamp.ToLocalTime().ToString(displayFormat, provider),
                         Value = s.Value,
                     }).ToList()
             ));
