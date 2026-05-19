@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import Layout from './components/layout/Layout';
 import Spinner from './components/common/Spinner';
 
@@ -82,9 +83,11 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Suspense fallback={<Spinner />}>
-          <AppRoutes />
-        </Suspense>
+        <ToastProvider>
+          <Suspense fallback={<Spinner />}>
+            <AppRoutes />
+          </Suspense>
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   );
