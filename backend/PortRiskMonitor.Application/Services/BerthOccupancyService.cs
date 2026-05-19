@@ -1,26 +1,19 @@
+using System.Data;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.BerthOccupancy;
+using RiskMonitor.Services;
 
 namespace PortRiskMonitor.Application.Services;
 
-public class BerthOccupancyService : IBerthOccupancyService
+public class BerthOccupancyService : KriService, IBerthOccupancyService
 {
-    private IBerthOccupancyRepo _berthOccupancyRepo;
+    private readonly IBerthOccupancyRepo _berthOccupancyRepo;
 
     public BerthOccupancyService(IBerthOccupancyRepo berthOccupancyRepo)
+        : base(berthOccupancyRepo)
     {
         _berthOccupancyRepo = berthOccupancyRepo;
     }
-
-    public double GetScoreValue()
-        => 100.0 * (double)GetOccupiedCount() / (double)GetTotalCount();
-
-    public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
-        => _berthOccupancyRepo
-            .GetAllReadings()
-            .Where(details => (from ?? DateTime.MinValue) <= details.MeasuredAt && details.MeasuredAt <= (to ?? DateTime.MaxValue))
-            .Select(details => (Timestamp: details.MeasuredAt, Score: details.Value))
-            .ToArray();
 
     public uint GetOccupiedCount()
         => (uint)_berthOccupancyRepo

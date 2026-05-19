@@ -1,22 +1,29 @@
+using PortRiskMonitor.Infrastructure.Data;
 using RiskMonitor.Entities;
 
 namespace PortRiskMonitor.Infrastructure.BerthOccupancy;
 
 public class BerthOccupancyRepo : IBerthOccupancyRepo
 {
-    private List<BerthStatusDto> _berthsStatus = generateMockData();
+    private readonly AppDbContext _db;
 
+    public BerthOccupancyRepo(AppDbContext db)
+    {
+        _db = db;
+    }
+
+    public async Task<Kri> GetKri()
+        => _db.Kris
+            .First(kri => kri.Slug == "berth");
+
+    public IQueryable<KriReading> GetAllReadings()
+        => _db.KriReadings
+            .Where(r => r.Kri.Slug == "berth");
+
+    private List<BerthStatusDto> _berthsStatus = generateMockData();
 
     public ICollection<BerthStatusDto> GetBerthDetails()
         => _berthsStatus;
-
-    public ICollection<KriReading> GetAllReadings()
-        => new List<KriReading>();
-
-    public ICollection<Alert> GetAllAlerts()
-        => new List<Alert>();
-
-
     private static List<BerthStatusDto> generateMockData()
     {
         var mockData = new List<BerthStatusDto>();

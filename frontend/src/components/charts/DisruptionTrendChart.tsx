@@ -83,7 +83,7 @@ export default function DisruptionTrendChart({
         >
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis
-            dataKey="hour"
+            dataKey="label"
             tick={{ fontSize: 10 }}
             interval={
               trendTimeFrame === '30d'
@@ -103,7 +103,10 @@ export default function DisruptionTrendChart({
             }}
           />
           <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-          <Tooltip wrapperStyle={{ zIndex: 10 }} />
+          <Tooltip
+            wrapperStyle={{ zIndex: 10 }}
+            formatter={(value: number) => [value.toFixed(1), 'Average PDI']}
+          />
           <Bar dataKey="value" shape={<TrendBarShape />} />
         </BarChart>
       </ResponsiveContainer>

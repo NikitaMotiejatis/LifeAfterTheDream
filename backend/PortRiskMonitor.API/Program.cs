@@ -20,10 +20,22 @@ using PortRiskMonitor.Application.Services;
 using PortRiskMonitor.Infrastructure.BerthOccupancy;
 using PortRiskMonitor.Infrastructure.CustomsDwellTime;
 using PortRiskMonitor.Infrastructure.Data;
+using PortRiskMonitor.Infrastructure.PortStatus;
 using PortRiskMonitor.Infrastructure.Repositories;
+using PortRiskMonitor.Infrastructure.RiskMonitor;
 using PortRiskMonitor.Infrastructure.VesselDelayRate;
 using PortRiskMonitor.Infrastructure.WeatherCondition;
+using RiskMonitor.Repositories;
 using Serilog;
+
+// ── Storage note ─────────────────────────────────────────────────────────────
+// Historical data is stored in the same SQLite DB using EF Core (KriDefinitions
+// + KriReadings tables). To migrate to Postgres:
+//   1. Change connection string in appsettings.json
+//   2. Replace `options.UseSqlite(...)` with `options.UseNpgsql(...)`
+//   3. Add the Npgsql.EntityFrameworkCore.PostgreSQL NuGet package
+//   4. Run `dotnet ef migrations add PostgresMigration`
+// Zero application-layer code needs to change.
 
 // ── Serilog bootstrap logger (catches startup errors before full config) ──────
 Log.Logger = new LoggerConfiguration()
@@ -70,16 +82,22 @@ try
     // NEVER use AddSingleton for DbContext — EF Core is not thread-safe across requests
 
     // Repositories (Data Access Layer)
-    builder.Services.AddScoped<IKriRepository, KriRepository>();
+    builder.Services.AddScoped<IKriRepository, KriRepository>(); // IKriRepository = RiskMonitor.Repositories.IKriRepository
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+    builder.Services.AddScoped<IRiskMonitorRepository, PortRiskMonitorRepo>();
+    builder.Services.AddScoped<IPortStatusRepo, PortStatusRepo>();
     builder.Services.AddScoped<IVesselDelayRateRepo, VesselDelayRateRepo>();
     builder.Services.AddScoped<IBerthOccupancyRepo, BerthOccupancyRepo>();
     builder.Services.AddScoped<ICustomsDwellTimeRepo, CustomsDwellTimeRepo>();
     builder.Services.AddScoped<IWeatherConditionRepo, WeatherConditionRepo>();
 
+    builder.Services.AddSingleton<IWeatherFetcherService, WeatherFetcherService>();
+
     // Application Services (Business Logic Layer)
+    builder.Services.AddScoped<IPortRiskMonitorService, PortRiskMonitorService>();
 
     // Indicator Services
+    builder.Services.AddScoped<IPortStatusService, PortStatusService>();
     builder.Services.AddScoped<IBerthOccupancyService, BerthOccupancyService>();
     builder.Services.AddScoped<IVesselDelayRateService, VesselDelayRateService>();
     builder.Services.AddScoped<ICustomsDwellTimeService, CustomsDwellTimeService>();
@@ -147,6 +165,8 @@ try
         }
     });
 
+    builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
+
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
@@ -167,8 +187,9 @@ try
         await db.Database.MigrateAsync();
         Log.Information("Database migrations applied successfully");
 
-        // TODO: Call SeedData.SeedAsync(db) here to insert demo KRI definitions
-        // await SeedData.SeedAsync(db);
+        // Seed KRI definitions + 30 days of hourly historical readings for development.
+        // SeedData.SeedAsync is idempotent — it checks AnyAsync() first and skips if data exists.
+        await SeedData.SeedAsync(db);
     }
 
     // ── HTTP Pipeline ─────────────────────────────────────────────────────────

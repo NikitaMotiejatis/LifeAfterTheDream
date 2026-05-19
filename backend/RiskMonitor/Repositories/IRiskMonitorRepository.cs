@@ -4,7 +4,7 @@ namespace RiskMonitor.Repositories;
 
 public interface IRiskMonitorRepository
 {
-    ICollection<Kri> GetAllIndicators();
-    ICollection<KriReading> GetAllReadings();
-    ICollection<Alert> GetAllAlerts();
+    IQueryable<Kri> GetAllIndicators();
+    IQueryable<KriReading> GetAllReadings();
+    IQueryable<Alert> GetAllAlerts();
 }

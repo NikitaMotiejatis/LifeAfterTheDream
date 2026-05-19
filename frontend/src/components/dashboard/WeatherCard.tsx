@@ -18,22 +18,22 @@ export default function WeatherCard({ data }: Props) {
         <Metric
           icon={Wind}
           label="Wind Speed"
-          value={`${data.windSpeedKts} kts`}
+          value={`${data.windSpeedKts.toFixed(1)} kts`}
         />
         <Metric
           icon={Waves}
           label="Wave Height"
-          value={`${data.waveHeightM} m`}
+          value={`${data.waveHeightM.toFixed(1)} m`}
         />
         <Metric
           icon={Thermometer}
           label="Temperature"
-          value={`${data.temperatureC}°C`}
+          value={`${data.temperatureC.toFixed(1)} °C`}
         />
         <Metric
           icon={Droplets}
           label="Humidity"
-          value={`${data.humidityPercent}%`}
+          value={`${data.humidityPercent.toFixed(1)}%`}
         />
       </div>
       <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded">

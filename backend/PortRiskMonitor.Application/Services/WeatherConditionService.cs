@@ -14,12 +14,14 @@
 // ============================================================
 
 using Microsoft.Extensions.Logging;
+using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.WeatherCondition;
+using RiskMonitor.Services;
 
 namespace PortRiskMonitor.Application.Services;
 
-public class WeatherConditionService : IWeatherConditionService
+public class WeatherConditionService : KriService, IWeatherConditionService
 {
     // ── Operational thresholds ────────────────────────────────────────────────
     private const float MaxWindKnt = 25f;   // crane halt
@@ -36,26 +38,11 @@ public class WeatherConditionService : IWeatherConditionService
     public WeatherConditionService(
         IWeatherConditionRepo weatherConditionRepo,
         ILogger<WeatherConditionService> logger)
+        : base(weatherConditionRepo)
     {
         _weatherConditionRepo = weatherConditionRepo;
         _logger = logger;
     }
-
-    public double GetScoreValue()
-        => CalculateScore(_weatherConditionRepo.GetLatestWeatherSnapshot());
-
-    public ICollection<(DateTime Timestamp, double Score)> GetScores(DateTime? from = null, DateTime? to = null)
-        => _weatherConditionRepo
-            .GetAllReadings()
-            .Where(details => (from ?? DateTime.MinValue) <= details.MeasuredAt && details.MeasuredAt <= (to ?? DateTime.MaxValue))
-            .Select(details => (Timestamp: details.MeasuredAt, Score: details.Value))
-            .ToArray();
-
-    public double GetWindSpeedKnt() => _weatherConditionRepo.GetLatestWeatherSnapshot().WindSpeedKnt;
-    public double GetWaterLevelCm() => _weatherConditionRepo.GetLatestWeatherSnapshot().WaterLevelCm;
-    public double GetTemperatureC() => _weatherConditionRepo.GetLatestWeatherSnapshot().TemperatureC;
-    public double GetHumidityPercent() => _weatherConditionRepo.GetLatestWeatherSnapshot().HumidityPercent;
-    public string GetConditionCode() => _weatherConditionRepo.GetLatestWeatherSnapshot().ConditionCode;
 
     private static double CalculateScore(WeatherSnapshot s)
     {

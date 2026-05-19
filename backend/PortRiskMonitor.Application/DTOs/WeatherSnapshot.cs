@@ -1,4 +1,4 @@
-namespace PortRiskMonitor.Infrastructure.WeatherCondition;
+namespace PortRiskMonitor.Application.DTOs;
 
 public record WeatherSnapshot(
     double WindSpeedKnt,

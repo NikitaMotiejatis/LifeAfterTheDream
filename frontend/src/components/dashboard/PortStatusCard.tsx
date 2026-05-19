@@ -27,7 +27,7 @@ export default function PortStatusCard({ data }: Props) {
             {data.disruptionIndex.toFixed(1)}
           </p>
           <p className="text-sm text-amber-600 mt-1 font-medium">
-            {data.riskLevel}
+            {data.riskLevel} risk
           </p>
         </div>
         <div className="w-56">

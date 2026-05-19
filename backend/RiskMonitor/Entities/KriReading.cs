@@ -11,13 +11,9 @@ public class KriReading
     [Column(TypeName = "REAL")]
     public double Value { get; set; }
 
-    [Required]
-    public DateTime MeasuredAt { get; set; } = DateTime.UtcNow;
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
-    [Timestamp]
-    public byte[] RowVersion { get; set; } = null!;
+    public Guid KriId { get; set; }
 
-    public Kri Indicator { get; set; } = null!;
-
-    public ICollection<Alert> AlertsRaised = new List<Alert>();
+    public Kri Kri { get; set; } = null!;
 }
