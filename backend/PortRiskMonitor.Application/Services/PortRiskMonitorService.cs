@@ -3,6 +3,8 @@ using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Interfaces;
+using RiskMonitor.DTOs;
+using RiskMonitor.Extensions;
 using RiskMonitor.Repositories;
 using RiskMonitor.Services;
 
@@ -19,6 +21,62 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
     }
 
     public async Task<IEnumerable<KriCardDto>> GetKriCards(string preset, string? from, string? to)
+    {
+        var (fromDateTime, toDateTime, bucketCount, interval) = ParseFilterInput(preset, from, to);
+        var outputDateTimeFormat = (toDateTime - fromDateTime).Ticks switch
+        {
+            > 10 * 365 * TimeSpan.TicksPerDay => "yyyy",
+            > 5 * 30 * TimeSpan.TicksPerDay => "MM/yyyy",
+            > 3 * TimeSpan.TicksPerDay => "dd/MM",
+            _ => "HH:mm",
+        };
+
+        var krisWithReadings = await _riskMonitorRepo
+            .GetAllIndicators()
+            .Where(kri => kri.Slug != "port-status")
+            .Select(kri => new
+            {
+                Slug = kri.Slug,
+                Name = kri.Name,
+                Unit = kri.Unit,
+                GreenMax = kri.GreenMax,
+                YellowMax = kri.YellowMax,
+                LatestReading = kri.Readings
+                    .OrderByDescending(r => r.Timestamp)
+                    .FirstOrDefault(),
+                Scores = kri.Readings
+                    .Where(r => fromDateTime <= r.Timestamp && r.Timestamp <= toDateTime)
+                    .Select(r => new ScoreInfo
+                    {
+                        Timestamp = r.Timestamp,
+                        Value = r.Value,
+                    })
+                    .BucketScoresEnumerable(fromDateTime, bucketCount, interval)
+                    .ToArray(),
+            })
+            .ToArrayAsync();
+
+        return krisWithReadings
+            .Select(kri => new KriCardDto(
+                Id: kri.Slug,
+                Title: kri.Name,
+                Value: (string.Format("{0:0.0}", kri.LatestReading?.Value) + kri.Unit) ?? "Not Available",
+                Formula: "",
+                Thresholds: BuildThresholds(kri.GreenMax, kri.YellowMax, kri.Unit),
+                Severity: GetSeverity(kri.LatestReading?.Value, kri.GreenMax, kri.YellowMax),
+                GreenMax: kri.GreenMax,
+                YellowMax: kri.YellowMax,
+                Sparkline: kri.Scores
+                    .Select(r => new DataPoint
+                    {
+                        Label = r.Timestamp.ToLocalTime().ToString(outputDateTimeFormat),
+                        Value = r.Value,
+                    })
+                    .ToArray()
+            ));
+    }
+
+    private (DateTime from, DateTime to, int bucketCount, BucketType interval) ParseFilterInput(string preset, string? from, string? to)
     {
         var now = DateTime.UtcNow;
         var parseFormat = "yyyy-MM-ddTHH:mm";
@@ -54,43 +112,16 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
         catch (Exception e) { }
 #pragma warning restore CS0168
 
-        var rawData = await GetKrisWithReadings(fromDateTime, toDateTime, (kri) => kri.Slug != "port-status")
-            .Select(x => new
-            {
-                Slug = x.Kri.Slug,
-                Name = x.Kri.Name,
-                Unit = x.Kri.Unit,
-                GreenMax = x.Kri.GreenMax,
-                YellowMax = x.Kri.YellowMax,
-                LatestValue = x.Readings
-                    .OrderByDescending(r => r.Timestamp)
-                    .Select(r => (double?)r.Value)
-                    .FirstOrDefault(),
-                SparklineData = x.Readings
-                    .Select(r => new { r.Timestamp, r.Value })
-                    .ToList()
-            }).OrderBy(x => x.Slug)
-            .ToListAsync();
+        var totalInterval = toDateTime - fromDateTime;
+        var (bucketCount, interval) = totalInterval.Ticks switch
+        {
+            > 30 * 365 * TimeSpan.TicksPerDay => (totalInterval.Ticks / (365 * TimeSpan.TicksPerDay), BucketType.Year),
+            > 365 * TimeSpan.TicksPerDay => (totalInterval.Ticks / (30 * TimeSpan.TicksPerDay), BucketType.Month),
+            > 21 * TimeSpan.TicksPerDay => (totalInterval.Ticks / TimeSpan.TicksPerDay, BucketType.Day),
+            _ => (totalInterval.Ticks / TimeSpan.TicksPerHour, BucketType.Hour),
+        };
 
-        return rawData
-            .Select(x => new KriCardDto(
-                Id: x.Slug,
-                Title: x.Name,
-                Value: x.LatestValue.HasValue
-                    ? $"{String.Format("{0:0.0}", x.LatestValue.Value)}{x.Unit}"
-                    : "Not Available",
-                Formula: "",
-                Thresholds: BuildThresholds(x.GreenMax, x.YellowMax, x.Unit),
-                Severity: GetSeverity(x.LatestValue, x.GreenMax, x.YellowMax),
-                GreenMax: x.GreenMax,
-                YellowMax: x.YellowMax,
-                Sparkline: x.SparklineData
-                    .Select(s => new DataPoint
-                    {
-                        Label = s.Timestamp.ToLocalTime().ToString(displayFormat, provider),
-                        Value = s.Value,
-                    }).ToList()
-            ));
+        return (fromDateTime, toDateTime, (int)Math.Min(bucketCount, (long)Int32.MaxValue), interval);
     }
 
     private static ThresholdDto[] BuildThresholds(double greenMax, double yellowMax, string unit)

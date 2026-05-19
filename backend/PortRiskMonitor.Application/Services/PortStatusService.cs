@@ -1,9 +1,10 @@
 using System.Globalization;
-using Microsoft.EntityFrameworkCore;
 
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.PortStatus;
+using RiskMonitor.DTOs;
+using RiskMonitor.Extensions;
 using RiskMonitor.Services;
 
 namespace PortRiskMonitor.Application.Services;
@@ -19,6 +20,75 @@ public class PortStatusService : KriService, IPortStatusService
     }
 
     public async Task<PortStatusDto> GetPortStatus(string preset, string? from, string? to)
+    {
+        var (fromDateTime, toDateTime, bucketCount, interval) = ParseFilterInput(preset, from, to);
+        var outputDateTimeFormat = (toDateTime - fromDateTime).Ticks switch
+        {
+            > 10 * 365 * TimeSpan.TicksPerDay => "yyyy",
+            > 5 * 30 * TimeSpan.TicksPerDay => "MM/yyyy",
+            > 3 * TimeSpan.TicksPerDay => "dd/MM",
+            _ => "HH:mm",
+        };
+
+        var disruptionIndex = await GetLatestScore() ?? 0.0;
+        var kri = await _portStatusRepo.GetKri();
+
+        var scores = await _kriRepo
+            .GetAllReadings()
+            .Select(r => new ScoreInfo
+            {
+                Timestamp = r.Timestamp,
+                Value = r.Value,
+            })
+            .BucketScores(fromDateTime, bucketCount, interval);
+
+        var sparkline = scores
+            .Select(s => new PortStatusDto.SparkPoint
+            {
+                Label = s.Timestamp.ToLocalTime().ToString(outputDateTimeFormat),
+                Value = s.Value,
+            }).ToList();
+
+        return new PortStatusDto
+        {
+            DisruptionIndex = disruptionIndex,
+            RiskLevel = disruptionIndex <= kri.GreenMax ? "Low" : disruptionIndex <= kri.YellowMax ? "Moderate" : "High",
+            GreenMax = kri.GreenMax,
+            YellowMax = kri.YellowMax,
+            Sparkline = sparkline,
+        };
+    }
+
+    public async Task<IEnumerable<DataPoint>> GetTrend(string trendTimeFrame)
+    {
+        var (from, bucketCount, interval) = ParseFilterInput(trendTimeFrame);
+        var outputDateTimeFormat = interval switch
+        {
+            BucketType.Hour => "HH:mm",
+            BucketType.Day => "dd/MM",
+            BucketType.Month => "MM/yyyy",
+            BucketType.Year => "yyyy",
+            _ => throw new Exception("Invalid time interval length"),
+        };
+
+        var scores = await _kriRepo
+            .GetAllReadings()
+            .Select(r => new ScoreInfo
+            {
+                Timestamp = r.Timestamp,
+                Value = r.Value,
+            })
+            .BucketScores(from, bucketCount, interval);
+
+        return scores
+            .Select(bucket => new DataPoint
+            {
+                Label = bucket.Timestamp.ToLocalTime().ToString(outputDateTimeFormat),
+                Value = bucket.Value,
+            });
+    }
+
+    private (DateTime from, DateTime to, int bucketCount, BucketType interval) ParseFilterInput(string preset, string? from, string? to)
     {
         var now = DateTime.UtcNow;
         var parseFormat = "yyyy-MM-ddTHH:mm";
@@ -54,106 +124,43 @@ public class PortStatusService : KriService, IPortStatusService
         catch (Exception e) { }
 #pragma warning restore CS0168
 
-        var disruptionIndex = await GetLatestScore() ?? 0.0;
-
-        var kri = await _portStatusRepo.GetKri();
-
-        var rawScores = await GetScores(fromDateTime, toDateTime).ToListAsync();
-
-        var sparkline = rawScores
-            .Select(s => new PortStatusDto.SparkPoint
-            {
-                Label = s.Timestamp.ToLocalTime().ToString(displayFormat, provider),
-                Value = s.Value,
-            }).ToList();
-
-        return new PortStatusDto
+        var totalInterval = toDateTime - fromDateTime;
+        var (bucketCount, interval) = totalInterval.Ticks switch
         {
-            DisruptionIndex = disruptionIndex,
-            RiskLevel = disruptionIndex <= kri.GreenMax ? "Low" : disruptionIndex <= kri.YellowMax ? "Moderate" : "High",
-            GreenMax = kri.GreenMax,
-            YellowMax = kri.YellowMax,
-            Sparkline = sparkline,
+            > 30 * 365 * TimeSpan.TicksPerDay => (totalInterval.Ticks / (365 * TimeSpan.TicksPerDay), BucketType.Year),
+            > 365 * TimeSpan.TicksPerDay => (totalInterval.Ticks / (30 * TimeSpan.TicksPerDay), BucketType.Month),
+            > 21 * TimeSpan.TicksPerDay => (totalInterval.Ticks / TimeSpan.TicksPerDay, BucketType.Day),
+            _ => (totalInterval.Ticks / TimeSpan.TicksPerHour, BucketType.Hour),
         };
+
+        return (fromDateTime, toDateTime, (int)Math.Min(bucketCount, (long)Int32.MaxValue), interval);
     }
 
-    public async Task<IEnumerable<DataPoint>> GetTrend(string trendTimeFrame)
+    private (DateTime from, int bucketCount, BucketType interval) ParseFilterInput(string trendTimeFrame)
     {
         var now = DateTime.UtcNow;
 
-        var bucketCount = trendTimeFrame switch
+        var (bucketCount, interval) = trendTimeFrame switch
         {
-            "7d" => 7,
-            "30d" => 30,
-            "90d" => 90,
-            "6m" => 6,
-            "1y" => 12,
-            "24h" or _ => 24,
+            "24h" => (24, BucketType.Hour),
+            "7d" => (7, BucketType.Day),
+            "30d" => (30, BucketType.Day),
+            "90d" => (90, BucketType.Day),
+            "6m" => (6, BucketType.Month),
+            "1y" => (12, BucketType.Month),
+            _ => throw new Exception("Bad input"),
         };
 
-        var from = trendTimeFrame switch
+        var from = interval switch
         {
-            "7d" or "30d" or "90d"
-                => new DateTime(now.Year, now.Month, now.Day, 0, 0, 0)
-                    .AddDays(1 - bucketCount),
-
-            "6m" or "1y"
-                => new DateTime(now.Year, now.Month, 1, 0, 0, 0)
-                    .AddMonths(1 - bucketCount),
-
-            "24h" or _
-                => new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0)
-                    .AddHours(1 - bucketCount),
+            BucketType.Hour => (new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0)).AddHours(1 - bucketCount),
+            BucketType.Day => (new DateTime(now.Year, now.Month, now.Day)).AddDays(1 - bucketCount),
+            BucketType.Month => (new DateTime(now.Year, now.Month, 1)).AddMonths(1 - bucketCount),
+            BucketType.Year => (new DateTime(now.Year, 1, 1)).AddYears(1 - bucketCount),
+            _ => throw new Exception("Invalid time interval length"),
         };
 
-        var baseQuery = _kriRepo
-            .GetAllReadings()
-            .Where(r => from <= r.Timestamp)
-            .Select(r => new { Timestamp = r.Timestamp, Value = r.Value });
-
-        var scores = trendTimeFrame switch
-        {
-            "7d" or "30d" or "90d" => await baseQuery
-                    .GroupBy(r => new { Year = r.Timestamp.Year, Month = r.Timestamp.Month, Day = r.Timestamp.Day })
-                    .ToDictionaryAsync(
-                        g => new DateTime(g.Key.Year, g.Key.Month, g.Key.Day),
-                        g => g.Average(r => r.Value)
-                    ),
-
-            "6m" or "1y" => await baseQuery
-                    .GroupBy(r => new { Year = r.Timestamp.Year, Month = r.Timestamp.Month })
-                    .ToDictionaryAsync(
-                        g => new DateTime(g.Key.Year, g.Key.Month, 1),
-                        g => g.Average(r => r.Value)
-                    ),
-
-            "24h" or _ => await baseQuery
-                .GroupBy(r => new { Year = r.Timestamp.Year, Month = r.Timestamp.Month, Day = r.Timestamp.Day, Hour = r.Timestamp.Hour })
-                .ToDictionaryAsync(
-                    g => new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, 0, 0),
-                    g => g.Average(r => r.Value)
-                ),
-        };
-
-        Func<DateTime, string> dateToStr = trendTimeFrame switch
-        {
-            "7d" or "30d" or "90d" => (dt) => dt.ToLocalTime().ToString("dd/MM"),
-            "6m" or "1y" => (dt) => dt.ToLocalTime().ToString("MM/yy"),
-            "24h" or _ => (dt) => dt.ToLocalTime().ToString("HH:mm"),
-        };
-
-        var buckets = trendTimeFrame switch
-        {
-            "7d" or "30d" or "90d" => Enumerable.Range(0, bucketCount).Select(b => from.AddDays(b)),
-            "6m" or "1y" => Enumerable.Range(0, bucketCount).Select(b => from.AddMonths(b)),
-            "24h" or _ => Enumerable.Range(0, bucketCount).Select(b => from.AddHours(b)),
-        };
-
-        return buckets
-            .Select(b => new DataPoint
-            {
-                Label = dateToStr(b),
-                Value = scores.GetValueOrDefault(b, 0.0),
-            });
+        return (from, bucketCount, interval);
     }
+
 }
