@@ -70,6 +70,8 @@ interface Props {
   gradientId?: string;
   height?: number;
   showAxes?: boolean;
+  greenMax?: number;
+  yellowMax?: number;
 }
 
 export default function MiniSparkline({
@@ -78,11 +80,55 @@ export default function MiniSparkline({
   gradientId = 'sparkFill',
   height = 80,
   showAxes = true,
+  greenMax,
+  yellowMax,
 }: Props) {
   const totalHeight = showAxes ? height + 44 : height + 24;
   const margin = showAxes
     ? { top: 24, right: 8, bottom: 30, left: 8 }
     : { top: 24, right: 8, bottom: 4, left: 8 };
+
+  const getPointColor = (value: number) => {
+    if (greenMax == null || yellowMax == null) return color;
+    if (value <= greenMax) return '#22c55e';
+    if (value <= yellowMax) return '#eab308';
+    return '#ef4444';
+  };
+
+  // Build a horizontal linearGradient so each segment between points gets colored
+  const strokeGradientId = `${gradientId}-stroke`;
+  const segmentStops =
+    data.length > 1 && greenMax != null
+      ? data.map((pt, i) => {
+          const offset = `${(i / (data.length - 1)) * 100}%`;
+          return (
+            <stop key={i} offset={offset} stopColor={getPointColor(pt.value)} />
+          );
+        })
+      : null;
+
+  const renderDot = (props: {
+    cx?: number;
+    cy?: number;
+    payload?: SparkPoint;
+  }) => {
+    const { cx, cy, payload } = props;
+    if (cx == null || cy == null || !payload) return <></>;
+    const dotColor = getPointColor(payload.value);
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={3}
+        fill={dotColor}
+        stroke="#fff"
+        strokeWidth={1}
+      />
+    );
+  };
+
+  const strokeColor = segmentStops ? `url(#${strokeGradientId})` : color;
+
   return (
     <div style={{ overflow: 'visible', position: 'relative' }}>
       <ResponsiveContainer width="100%" height={totalHeight}>
@@ -96,6 +142,11 @@ export default function MiniSparkline({
               <stop offset="0%" stopColor={color} stopOpacity={0.3} />
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
+            {segmentStops && (
+              <linearGradient id={strokeGradientId} x1="0" y1="0" x2="1" y2="0">
+                {segmentStops}
+              </linearGradient>
+            )}
           </defs>
           {showAxes && (
             <XAxis
@@ -117,10 +168,10 @@ export default function MiniSparkline({
           <Area
             type="monotone"
             dataKey="value"
-            stroke={color}
+            stroke={strokeColor}
             strokeWidth={2}
             fill={`url(#${gradientId})`}
-            dot={false}
+            dot={greenMax != null ? renderDot : false}
             activeDot={<SparkActiveDot color={color} />}
             style={{ outline: 'none' }}
           />

@@ -36,8 +36,33 @@ export default function PortStatusCard({ data }: Props) {
             color="#f59e0b"
             gradientId="statusFill"
             height={64}
+            greenMax={data.greenMax}
+            yellowMax={data.yellowMax}
           />
         </div>
+      </div>
+      <div className="flex gap-3 mt-2">
+        <span className="flex items-center gap-1 text-xs text-gray-600">
+          <span
+            className="w-2.5 h-2.5 rounded-full inline-block"
+            style={{ backgroundColor: '#22c55e' }}
+          />
+          Low: &lt;{data.greenMax}
+        </span>
+        <span className="flex items-center gap-1 text-xs text-gray-600">
+          <span
+            className="w-2.5 h-2.5 rounded-full inline-block"
+            style={{ backgroundColor: '#eab308' }}
+          />
+          Medium: {data.greenMax}-{data.yellowMax}
+        </span>
+        <span className="flex items-center gap-1 text-xs text-gray-600">
+          <span
+            className="w-2.5 h-2.5 rounded-full inline-block"
+            style={{ backgroundColor: '#ef4444' }}
+          />
+          High: &gt;{data.yellowMax}
+        </span>
       </div>
     </div>
   );

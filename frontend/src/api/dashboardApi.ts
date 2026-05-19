@@ -32,13 +32,6 @@ export async function fetchDashboardTiles(
     .get('/dashboard/kri-cards', { params })
     .then((r) => r.data as KriCardDto[]);
 
-  dashboardTiles.kriCards.map((c) => {
-    c.formula = '';
-    c.thresholds = [];
-
-    return c;
-  });
-
   return dashboardTiles;
 }
 

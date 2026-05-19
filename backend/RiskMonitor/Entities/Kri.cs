@@ -27,6 +27,14 @@ public class Kri
 
     public ICollection<KriReading> Readings { get; set; } = new List<KriReading>();
 
+    // ── Risk thresholds — define green/yellow/red bands ───────────────────────
+    // Convention: GreenMax < YellowMax; anything above YellowMax is RED
+    [Column(TypeName = "REAL")]
+    public double GreenMax { get; set; }
+
+    [Column(TypeName = "REAL")]
+    public double YellowMax { get; set; }
+
     // ── Seed / mock config (remove when real data sources are connected) ───────
     [Column(TypeName = "REAL")]
     public double MockBaseline { get; set; }

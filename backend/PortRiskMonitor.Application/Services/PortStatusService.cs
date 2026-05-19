@@ -49,6 +49,8 @@ public class PortStatusService : KriService, IPortStatusService
 
         var disruptionIndex = await GetLatestScore() ?? 0.0;
 
+        var kri = await _portStatusRepo.GetKri();
+
         var rawScores = await GetScores(fromDateTime, toDateTime).ToListAsync();
 
         var sparkline = rawScores
@@ -61,7 +63,9 @@ public class PortStatusService : KriService, IPortStatusService
         return new PortStatusDto
         {
             DisruptionIndex = disruptionIndex,
-            RiskLevel = "Moderate",
+            RiskLevel = disruptionIndex <= kri.GreenMax ? "Low" : disruptionIndex <= kri.YellowMax ? "Moderate" : "High",
+            GreenMax = kri.GreenMax,
+            YellowMax = kri.YellowMax,
             Sparkline = sparkline,
         };
     }

@@ -140,6 +140,9 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                         .HasMaxLength(1024)
                         .HasColumnType("TEXT");
 
+                    b.Property<double>("GreenMax")
+                        .HasColumnType("REAL");
+
                     b.Property<double>("MockBaseline")
                         .HasColumnType("REAL");
 
@@ -172,6 +175,9 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");
+
+                    b.Property<double>("YellowMax")
+                        .HasColumnType("REAL");
 
                     b.HasKey("Id");
 

@@ -25,6 +25,8 @@ export interface SparkPoint {
 export interface PortStatusDto {
   disruptionIndex: number;
   riskLevel: string;
+  greenMax: number;
+  yellowMax: number;
   sparkline: SparkPoint[];
 }
 
@@ -48,6 +50,9 @@ export interface KriCardDto {
   value: string;
   formula: string;
   thresholds: ThresholdDto[];
+  severity: 'Low' | 'Medium' | 'High';
+  greenMax: number;
+  yellowMax: number;
   sparkline: SparkPoint[];
 }
 

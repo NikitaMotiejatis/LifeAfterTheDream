@@ -11,9 +11,9 @@ import { BarChart as BarChartIcon } from 'lucide-react';
 import type { TrendPointDto, TimeFrame } from '../../types/Dashboard';
 import TimeFrameFilter from '../dashboard/TimeFrameFilter';
 
-function getBarFill(value: number) {
-  if (value <= 33) return '#22c55e';
-  if (value <= 66) return '#eab308';
+function getBarFill(value: number, greenMax: number, yellowMax: number) {
+  if (value <= greenMax) return '#22c55e';
+  if (value <= yellowMax) return '#eab308';
   return '#ef4444';
 }
 
@@ -23,9 +23,19 @@ interface BarShapeProps {
   width?: number;
   height?: number;
   payload?: TrendPointDto;
+  greenMax: number;
+  yellowMax: number;
 }
 
-function TrendBarShape({ x, y, width, height, payload }: BarShapeProps) {
+function TrendBarShape({
+  x,
+  y,
+  width,
+  height,
+  payload,
+  greenMax,
+  yellowMax,
+}: BarShapeProps) {
   if (x == null || y == null || width == null || height == null || !payload)
     return null;
   const r = 3;
@@ -37,7 +47,7 @@ function TrendBarShape({ x, y, width, height, payload }: BarShapeProps) {
       height={height}
       rx={r}
       ry={r}
-      fill={getBarFill(payload.value)}
+      fill={getBarFill(payload.value, greenMax, yellowMax)}
     />
   );
 }
@@ -55,12 +65,16 @@ interface Props {
   data: TrendPointDto[];
   trendTimeFrame: TimeFrame;
   onTrendTimeFrameChange: (tf: TimeFrame) => void;
+  greenMax: number;
+  yellowMax: number;
 }
 
 export default function DisruptionTrendChart({
   data,
   trendTimeFrame,
   onTrendTimeFrameChange,
+  greenMax,
+  yellowMax,
 }: Props) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -107,21 +121,24 @@ export default function DisruptionTrendChart({
             wrapperStyle={{ zIndex: 10 }}
             formatter={(value: number) => [value.toFixed(1), 'Average PDI']}
           />
-          <Bar dataKey="value" shape={<TrendBarShape />} />
+          <Bar
+            dataKey="value"
+            shape={<TrendBarShape greenMax={greenMax} yellowMax={yellowMax} />}
+          />
         </BarChart>
       </ResponsiveContainer>
       <div className="flex gap-4 mt-2 text-xs text-gray-500">
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-          Low (0-33)
+          Low (0-{greenMax})
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-          Moderate (34-66)
+          Moderate ({greenMax}-{yellowMax})
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-          High (67-100)
+          High ({yellowMax}-100)
         </span>
       </div>
     </div>

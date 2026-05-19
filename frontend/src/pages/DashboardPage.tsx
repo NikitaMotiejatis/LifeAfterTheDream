@@ -60,6 +60,8 @@ export default function DashboardPage() {
         data={trendData}
         trendTimeFrame={trendTimeFrame}
         onTrendTimeFrameChange={setTrendTimeFrame}
+        greenMax={tileData?.portStatus.greenMax ?? 30}
+        yellowMax={tileData?.portStatus.yellowMax ?? 60}
       />
 
       {/* Port Map */}
