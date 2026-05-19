@@ -34,29 +34,33 @@ export function useSettings() {
     load();
   }, [load]);
 
-  const save = async () => {
+  const save = async (): Promise<boolean> => {
     setIsSaving(true);
     setError(null);
     try {
       const data = await saveFormulaSettings(settings);
       setSaved(data);
       setSettings(data);
+      return true;
     } catch {
       setError('Failed to save settings.');
+      return false;
     } finally {
       setIsSaving(false);
     }
   };
 
-  const reset = async () => {
+  const reset = async (): Promise<boolean> => {
     setIsSaving(true);
     setError(null);
     try {
       const data = await resetFormulaSettings();
       setSettings(data);
       setSaved(data);
+      return true;
     } catch {
       setError('Failed to reset settings.');
+      return false;
     } finally {
       setIsSaving(false);
     }

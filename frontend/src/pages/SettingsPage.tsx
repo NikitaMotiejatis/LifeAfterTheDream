@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useSettings } from '../hooks/useSettings';
+import { useToast } from '../contexts/ToastContext';
 import Spinner from '../components/common/Spinner';
 import ErrorCard from '../components/common/ErrorCard';
 import SettingsHeader from '../components/settings/SettingsHeader';
@@ -90,6 +91,7 @@ export default function SettingsPage() {
     save,
     reset,
   } = useSettings();
+  const { showToast } = useToast();
 
   const { errors, hasErrors } = useMemo(
     () => validateSettings(settings),
@@ -98,6 +100,16 @@ export default function SettingsPage() {
 
   if (isLoading) return <Spinner />;
   if (error) return <ErrorCard message={error} />;
+
+  const handleSave = async () => {
+    const ok = await save();
+    if (ok) showToast('Settings saved successfully');
+  };
+
+  const handleReset = async () => {
+    const ok = await reset();
+    if (ok) showToast('Settings reset to defaults', 'info');
+  };
 
   const patch = <K extends keyof FormulaSettings>(
     section: K,
@@ -115,8 +127,8 @@ export default function SettingsPage() {
       <SettingsHeader
         isDirty={isDirty}
         isSaving={isSaving}
-        onSave={save}
-        onReset={reset}
+        onSave={handleSave}
+        onReset={handleReset}
         hasErrors={hasErrors}
       />
 
