@@ -2,6 +2,7 @@ using System.Data;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Application.DTOs;
+using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
 using RiskMonitor.DTOs;
 using RiskMonitor.Extensions;
@@ -35,7 +36,7 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
             .GetAllIndicators()
             .Where(kri => kri.Slug == slug)
             .FirstOrDefaultAsync()
-            ?? throw new Exception("Not found");
+            ?? throw new NotFoundException("Risk indicator not found");
 
         var readings = await _riskMonitorRepo
             .GetKriReadings(slug)
@@ -122,35 +123,39 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
         var parseFormat = "yyyy-MM-ddTHH:mm";
         var provider = CultureInfo.InvariantCulture;
 
-        var displayFormat = preset switch
-        {
-            "6h" or "12h" or "24h" => "HH:mm",
-            "year" => "MM/yy",
-            _ => "dd/MM",
-        };
+        DateTime fromDateTime = DateTime.MinValue;
+        DateTime toDateTime = DateTime.MaxValue;
 
-        var fromDateTime = preset switch
+        if (from is not null && to is not null)
         {
-            "6h" => now.AddHours(-6),
-            "12h" => now.AddHours(-12),
-            "24h" => now.AddHours(-24),
-            "48h" => now.AddHours(-48),
-            "72h" => now.AddHours(-72),
-            "week" => now.AddDays(-7),
-            "month" => now.AddMonths(-1),
-            "year" => now.AddYears(-1),
-            _ => now.AddHours(-24),
-        };
-        var toDateTime = now;
-
-        try
-        {
-            fromDateTime = DateTime.ParseExact(from ?? "", parseFormat, provider);
-            toDateTime = DateTime.ParseExact(to ?? "", parseFormat, provider);
-        }
+            try
+            {
+                fromDateTime = DateTime.ParseExact(from ?? "", parseFormat, provider);
+                toDateTime = DateTime.ParseExact(to ?? "", parseFormat, provider);
+            }
 #pragma warning disable CS0168
-        catch (Exception e) { }
+            catch (Exception e)
+            {
 #pragma warning restore CS0168
+                throw new BadInputException("Invalid data filter 'from' and/or 'to' date");
+            }
+        }
+        else
+        {
+            fromDateTime = preset switch
+            {
+                "6h" => now.AddHours(-6),
+                "12h" => now.AddHours(-12),
+                "24h" => now.AddHours(-24),
+                "48h" => now.AddHours(-48),
+                "72h" => now.AddHours(-72),
+                "week" => now.AddDays(-7),
+                "month" => now.AddMonths(-1),
+                "year" => now.AddYears(-1),
+                _ => throw new BadInputException("Invalid data filter 'preset'"),
+            };
+            toDateTime = now;
+        }
 
         var totalInterval = toDateTime - fromDateTime;
         var (bucketCount, interval) = totalInterval.Ticks switch

@@ -1,6 +1,7 @@
 using System.Globalization;
 
 using PortRiskMonitor.Application.DTOs;
+using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.PortStatus;
 using RiskMonitor.DTOs;
@@ -68,7 +69,7 @@ public class PortStatusService : KriService, IPortStatusService
             BucketType.Day => "dd/MM",
             BucketType.Month => "MM/yyyy",
             BucketType.Year => "yyyy",
-            _ => throw new Exception("Invalid time interval length"),
+            _ => throw new InternalErrorException("Invalid time interval length"),
         };
 
         var scores = await _kriRepo
@@ -94,35 +95,39 @@ public class PortStatusService : KriService, IPortStatusService
         var parseFormat = "yyyy-MM-ddTHH:mm";
         var provider = CultureInfo.InvariantCulture;
 
-        var displayFormat = preset switch
-        {
-            "6h" or "12h" or "24h" => "HH:mm",
-            "year" => "MM/yy",
-            _ => "dd/MM",
-        };
+        DateTime fromDateTime = DateTime.MinValue;
+        DateTime toDateTime = DateTime.MaxValue;
 
-        var fromDateTime = preset switch
+        if (from is not null && to is not null)
         {
-            "6h" => now.AddHours(-6),
-            "12h" => now.AddHours(-12),
-            "24h" => now.AddHours(-24),
-            "48h" => now.AddHours(-48),
-            "72h" => now.AddHours(-72),
-            "week" => now.AddDays(-7),
-            "month" => now.AddMonths(-1),
-            "year" => now.AddYears(-1),
-            _ => now.AddHours(-24),
-        };
-        var toDateTime = now;
-
-        try
-        {
-            fromDateTime = DateTime.ParseExact(from ?? "", parseFormat, provider);
-            toDateTime = DateTime.ParseExact(to ?? "", parseFormat, provider);
-        }
+            try
+            {
+                fromDateTime = DateTime.ParseExact(from ?? "", parseFormat, provider);
+                toDateTime = DateTime.ParseExact(to ?? "", parseFormat, provider);
+            }
 #pragma warning disable CS0168
-        catch (Exception e) { }
+            catch (Exception e)
+            {
 #pragma warning restore CS0168
+                throw new BadInputException("Invalid data filter 'from' and/or 'to' date");
+            }
+        }
+        else
+        {
+            fromDateTime = preset switch
+            {
+                "6h" => now.AddHours(-6),
+                "12h" => now.AddHours(-12),
+                "24h" => now.AddHours(-24),
+                "48h" => now.AddHours(-48),
+                "72h" => now.AddHours(-72),
+                "week" => now.AddDays(-7),
+                "month" => now.AddMonths(-1),
+                "year" => now.AddYears(-1),
+                _ => throw new BadInputException("Invalid data filter 'preset'"),
+            };
+            toDateTime = now;
+        }
 
         var totalInterval = toDateTime - fromDateTime;
         var (bucketCount, interval) = totalInterval.Ticks switch
@@ -148,7 +153,7 @@ public class PortStatusService : KriService, IPortStatusService
             "90d" => (90, BucketType.Day),
             "6m" => (6, BucketType.Month),
             "1y" => (12, BucketType.Month),
-            _ => throw new Exception("Bad input"),
+            _ => throw new BadInputException("Invalid trend timeframe"),
         };
 
         var from = interval switch
@@ -157,7 +162,7 @@ public class PortStatusService : KriService, IPortStatusService
             BucketType.Day => (new DateTime(now.Year, now.Month, now.Day)).AddDays(1 - bucketCount),
             BucketType.Month => (new DateTime(now.Year, now.Month, 1)).AddMonths(1 - bucketCount),
             BucketType.Year => (new DateTime(now.Year, 1, 1)).AddYears(1 - bucketCount),
-            _ => throw new Exception("Invalid time interval length"),
+            _ => throw new InternalErrorException("Invalid time interval length"),
         };
 
         return (from, bucketCount, interval);

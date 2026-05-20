@@ -10,7 +10,7 @@ import {
 import type { SparkPoint } from '../../types/Dashboard';
 import { downsample } from '../../utils/downsample';
 
-const MAX_SPARK_POINTS = 20;
+const MAX_SPARK_POINTS = 50;
 
 function SparkActiveDot({
   cx,
