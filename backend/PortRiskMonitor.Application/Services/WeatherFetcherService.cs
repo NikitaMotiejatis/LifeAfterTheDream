@@ -10,13 +10,6 @@ namespace PortRiskMonitor.Application.Services;
 
 public class WeatherFetcherService : BackgroundService
 {
-    private const string KlaipedaPortUrl = "https://portofklaipeda.lt/wp-json/api/meteo_data?method=";
-    private const string PortWindUrl = KlaipedaPortUrl + "wind_speed";
-    private const string PortTempUrl = KlaipedaPortUrl + "air_temparature";
-    private const string PortPressureUrl = KlaipedaPortUrl + "air_presure";
-    private const string HydroUrl = "https://api.meteo.lt/v1/hydro-stations/klaipedos-juru-uosto-vms/observations/measured/latest";
-    private const string ConditionUrl = "https://api.meteo.lt/v1/stations/klaipedos-ams/observations/latest";
-
     private readonly HttpClient _httpClient;
     private readonly IWeatherSnapshotCache _cache;
     private readonly ILogger<WeatherFetcherService> _logger;
@@ -72,71 +65,185 @@ public class WeatherFetcherService : BackgroundService
 
     private async Task<WeatherSnapshot> FetchData()
     {
-        var (windTask, tempTask, pressureTask, hydroTask, conditionTask) = (
-            _httpClient.GetStringAsync(PortWindUrl),
-            _httpClient.GetStringAsync(PortTempUrl),
-            _httpClient.GetStringAsync(PortPressureUrl),
-            _httpClient.GetStringAsync(HydroUrl),
-            _httpClient.GetStringAsync(ConditionUrl)
-        );
+        var weatherResponse = JsonSerializer.Deserialize<WeatherResponse>(await _httpClient.GetStringAsync(weatherUrl), JsonOptions)
+            ?? throw new InternalErrorException("Failed to fetch weather info");
 
-        await Task.WhenAll(windTask, tempTask, pressureTask, hydroTask, conditionTask);
-        // 1. Wind — Port of Klaipėda API
-        //    Response is an array of [timestamp, value] tuples (both strings).
-        //    Index 0 = timestamp, index 1 = wind speed in m/s.
-        var portReadings = JsonSerializer.Deserialize<string[][]>(windTask.Result, JsonOptions);
-        var latestPort = portReadings?.LastOrDefault() ?? throw new InternalErrorException("Port API returned no wind readings");
-        var WindSpeedKnt = double.Parse(latestPort[1], System.Globalization.CultureInfo.InvariantCulture);
+        var marineResponse = JsonSerializer.Deserialize<MarineResponse>(await _httpClient.GetStringAsync(marineUrl), JsonOptions)
+            ?? throw new InternalErrorException("Failed to fetch marine weather info");
 
-        // 2. Temperature - Port of Klaipėda API
-        //    Similar format to wind speed; index 1 = air temperature in °C.
-        var tempReadings = JsonSerializer.Deserialize<string[][]>(tempTask.Result, JsonOptions);
-        var temperature = tempReadings?.LastOrDefault() ?? throw new InternalErrorException("Port API returned no temperature readings");
-        var temperatureC = double.Parse(temperature[1], System.Globalization.CultureInfo.InvariantCulture);
-
-        // 3. Pressure - Port of Klaipėda API
-        //    Similar format; index 1 = air pressure in hPa.
-        var pressureReadings = JsonSerializer.Deserialize<string[][]>(pressureTask.Result, JsonOptions);
-        var pressure = pressureReadings?.LastOrDefault() ?? throw new InternalErrorException("Port API returned no pressure readings");
-        var pressureHpa = double.Parse(pressure[1], System.Globalization.CultureInfo.InvariantCulture);
-
-        // 4. Water level — meteo.lt hydro station
-        var hydroResponse = JsonSerializer.Deserialize<MeteoLtHydroResponse>(hydroTask.Result, JsonOptions);
-        var latestHydro = hydroResponse?.Observations?.LastOrDefault() ?? throw new InternalErrorException("Hydro API returned no observations");
-
-        // 5. Conditions — meteo.lt AMS station
-        var conditionResponse = JsonSerializer.Deserialize<MeteoLtStationResponse>(conditionTask.Result, JsonOptions);
-        var latestCondition = conditionResponse?.Observations?.LastOrDefault() ?? throw new InternalErrorException("AMS API returned no observations");
-
-        return new WeatherSnapshot(
-            WindSpeedKnt,
-            latestHydro.WaterLevelCm,
-            temperatureC,
-            latestCondition.RelativeHumidity,
-            latestCondition.ConditionCode,
-            DateTime.UtcNow
-        );
+        return new WeatherSnapshot
+        {
+            WindSpeedKts = weatherResponse.Current.WindSpeed10m,
+            WaveHeightM = marineResponse.Current.WaveHeight,
+            TemperatureC = weatherResponse.Current.Temperature2m,
+            HumidityPercent = weatherResponse.Current.RelativeHumidity2m,
+            Description = GetWeatherDiscription(weatherResponse.Current.WeatherCode),
+            RecordedAt = weatherResponse.Current.Time,
+        };
     }
 
-    // meteo.lt hydro station
-    private record MeteoLtHydroResponse(
-        [property: JsonPropertyName("observations")] List<HydroObservation>? Observations
-    );
+    private static string GetWeatherDiscription(short wmoCode) => wmoCode switch
+    {
+        00 => "Clear sky",
+        01 => "Mainly clear",
+        02 => "Partly cloudy",
+        03 => "Overcast",
+        45 => "Fog",
+        48 => "Depositing rime fog",
+        51 => "Light drizzle",
+        53 => "Moderate drizzle",
+        55 => "Dense drizzle",
+        56 => "Light freezing drizzle",
+        57 => "Dense freezing drizzle",
+        61 => "Slight rain",
+        63 => "Moderate rain",
+        65 => "Heavy rain",
+        66 => "Light freezing rain",
+        67 => "Heavy freezing rain",
+        71 => "Slight snow fall",
+        73 => "Moderate snow fall",
+        75 => "Heavy snow fall",
+        77 => "Snow grains",
+        80 => "Slight rain showers",
+        81 => "Moderate rain showers",
+        82 => "Violent rain showers",
+        85 => "Slight snow showers",
+        86 => "Heavy snow showers",
+        95 => "Thunderstorm: Slight or moderate",
+        96 => "Thunderstorm with slight hail",
+        99 => "Thunderstorm with heavy hail",
+        _ => "",
+    };
 
-    private record HydroObservation(
-        [property: JsonPropertyName("observationTimeUtc")] string ObservationTimeUtc,
-        [property: JsonPropertyName("waterLevel")] double WaterLevelCm
-    );
+    private static readonly string portLatitude = "55.717330464";
+    private static readonly string portLongitude = "21.10749957";
 
-    // meteo.lt AMS station
-    private record MeteoLtStationResponse(
-        [property: JsonPropertyName("observations")] List<StationObservation>? Observations
-    );
+    private static readonly string weatherUrl = $"https://api.open-meteo.com/v1/forecast?latitude={portLatitude}&longitude={portLongitude}&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m&wind_speed_unit=kn";
+    private static readonly string marineUrl = $"https://marine-api.open-meteo.com/v1/marine?latitude={portLatitude}&longitude={portLongitude}&current=wave_height&wind_speed_unit=ms";
 
-    private record StationObservation(
-        [property: JsonPropertyName("airTemperature")] double AirTemperature,
-        [property: JsonPropertyName("relativeHumidity")] double RelativeHumidity,
-        [property: JsonPropertyName("observationTimeUtc")] string ObservationTimeUtc,
-        [property: JsonPropertyName("conditionCode")] string ConditionCode
-    );
+    private record MarineResponse
+    {
+        [JsonPropertyName("latitude")]
+        public required double Latitude { get; init; }
+
+        [JsonPropertyName("longitude")]
+        public required double Longitude { get; init; }
+
+        [JsonPropertyName("generationtime_ms")]
+        public required double GenerationtimeMs { get; init; }
+
+        [JsonPropertyName("utc_offset_seconds")]
+        public required long UtcOffsetSeconds { get; init; }
+
+        [JsonPropertyName("timezone")]
+        public required string Timezone { get; init; }
+
+        [JsonPropertyName("timezone_abbreviation")]
+        public required string TimezoneAbbreviation { get; init; }
+
+        [JsonPropertyName("elevation")]
+        public required double Elevation { get; init; }
+
+        [JsonPropertyName("current_units")]
+        public required Units CurrentUnits { get; init; }
+
+        [JsonPropertyName("current")]
+        public required Measurements Current { get; init; }
+
+        public record Units
+        {
+            [JsonPropertyName("time")]
+            public required string Time { get; init; }
+
+            [JsonPropertyName("interval")]
+            public required string Interval { get; init; }
+
+            [JsonPropertyName("wave_height")]
+            public required string WaveHeight { get; init; }
+        };
+
+        public record Measurements
+        {
+            [JsonPropertyName("time")]
+            public required DateTime Time { get; init; }
+
+            [JsonPropertyName("interval")]
+            public required long Interval { get; init; }
+
+            [JsonPropertyName("wave_height")]
+            public required double WaveHeight { get; init; }
+        };
+    };
+
+    private record WeatherResponse
+    {
+        [JsonPropertyName("latitude")]
+        public required double Latitude { get; init; }
+
+        [JsonPropertyName("longitude")]
+        public required double Longitude { get; init; }
+
+        [JsonPropertyName("generationtime_ms")]
+        public required double GenerationtimeMs { get; init; }
+
+        [JsonPropertyName("utc_offset_seconds")]
+        public required long UtcOffsetSeconds { get; init; }
+
+        [JsonPropertyName("timezone")]
+        public required string Timezone { get; init; }
+
+        [JsonPropertyName("timezone_abbreviation")]
+        public required string TimezoneAbbreviation { get; init; }
+
+        [JsonPropertyName("elevation")]
+        public required double Elevation { get; init; }
+
+        [JsonPropertyName("current_units")]
+        public required Units CurrentUnits { get; init; }
+
+        [JsonPropertyName("current")]
+        public required Measurements Current { get; init; }
+
+        public record Units
+        {
+            [JsonPropertyName("time")]
+            public required string Time { get; init; }
+
+            [JsonPropertyName("interval")]
+            public required string Interval { get; init; }
+
+            [JsonPropertyName("temperature_2m")]
+            public required string Temperature2m { get; init; }
+
+            [JsonPropertyName("weather_code")]
+            public required string WeatherCode { get; init; }
+
+            [JsonPropertyName("wind_speed_10m")]
+            public required string WindSpeed10m { get; init; }
+
+            [JsonPropertyName("relative_humidity_2m")]
+            public required string RelativeHumidity2m { get; init; }
+        };
+
+        public record Measurements
+        {
+            [JsonPropertyName("time")]
+            public required DateTime Time { get; init; }
+
+            [JsonPropertyName("interval")]
+            public required long Interval { get; init; }
+
+            [JsonPropertyName("temperature_2m")]
+            public required double Temperature2m { get; init; }
+
+            [JsonPropertyName("weather_code")]
+            public required short WeatherCode { get; init; }
+
+            [JsonPropertyName("wind_speed_10m")]
+            public required double WindSpeed10m { get; init; }
+
+            [JsonPropertyName("relative_humidity_2m")]
+            public required short RelativeHumidity2m { get; init; }
+        };
+    };
 }

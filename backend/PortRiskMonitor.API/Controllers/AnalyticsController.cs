@@ -9,14 +9,10 @@ namespace PortRiskMonitor.API.Controllers;
 public class AnalyticsController : ControllerBase
 {
     private readonly IPortRiskMonitorService _portRiskMonitorService;
-    private readonly IWeatherFetcherService _weatherFetcer;
 
-    public AnalyticsController(
-        IPortRiskMonitorService portRiskMonitorService,
-        IWeatherFetcherService weatherFetcer)
+    public AnalyticsController(IPortRiskMonitorService portRiskMonitorService)
     {
         _portRiskMonitorService = portRiskMonitorService;
-        _weatherFetcer = weatherFetcer;
     }
 
     [HttpGet("{slug}")]
