@@ -33,22 +33,28 @@ public class WeatherConditionService : KriService, IWeatherConditionService
     public const float YellowMax = 66f;
 
     private readonly IWeatherConditionRepo _weatherConditionRepo;
+    private readonly IWeatherSnapshotCache _weatherSnapshotCache;
     private readonly ILogger<WeatherConditionService> _logger;
 
     public WeatherConditionService(
         IWeatherConditionRepo weatherConditionRepo,
+        IWeatherSnapshotCache weatherSnapshotCache,
         ILogger<WeatherConditionService> logger)
         : base(weatherConditionRepo)
     {
         _weatherConditionRepo = weatherConditionRepo;
+        _weatherSnapshotCache = weatherSnapshotCache;
         _logger = logger;
     }
 
+    public WeatherSnapshot GetWeather()
+        => _weatherSnapshotCache.GetLatest();
+
     private static double CalculateScore(WeatherSnapshot s)
     {
-        var windScore = Math.Min(s.WindSpeedKnt / MaxWindKnt * 100f, 100f);
-        var waterLevelScore = Math.Min(Math.Abs(s.WaterLevelCm - WaterLevelBaseline) / MaxWaterDeviation * 100f, 100f);
-        var conditionScore = MapConditionToScore(s.ConditionCode);
+        var windScore = Math.Min(s.WindSpeedKts / MaxWindKnt * 100f, 100f);
+        var waterLevelScore = Math.Min(Math.Abs(s.WaveHeightM - WaterLevelBaseline) / MaxWaterDeviation * 100f, 100f);
+        var conditionScore = MapConditionToScore(s.Description);
 
         return windScore * 0.5 + waterLevelScore * 0.3 + conditionScore * 0.2;
     }

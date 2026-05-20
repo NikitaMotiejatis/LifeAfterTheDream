@@ -10,17 +10,17 @@ public class DashboardController : ControllerBase
 {
     private readonly IPortRiskMonitorService _portRiskMonitorService;
     private readonly IPortStatusService _portStatusService;
-    private readonly IWeatherFetcherService _weatherFetcer;
+    private readonly IWeatherConditionService _weatherConditionService;
 
     public DashboardController(
             IPortRiskMonitorService portRiskMonitorService,
             IPortStatusService portStatusService,
-            IWeatherFetcherService weatherFetcer)
+            IWeatherConditionService weatherFetcer)
 
     {
         _portRiskMonitorService = portRiskMonitorService;
         _portStatusService = portStatusService;
-        _weatherFetcer = weatherFetcer;
+        _weatherConditionService = weatherFetcer;
     }
 
     [HttpGet("port-status")]
@@ -36,18 +36,8 @@ public class DashboardController : ControllerBase
     [HttpGet("weather")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetWeather()
-    {
-        var weatherSnapshot = await _weatherFetcer.GetLatestWeatherSnapshot();
-        return Ok(new
-        {
-            windSpeedKts = weatherSnapshot.WindSpeedKnt,
-            waveHeightM = 0.01 * weatherSnapshot.WaterLevelCm,
-            temperatureC = weatherSnapshot.TemperatureC,
-            humidityPercent = weatherSnapshot.HumidityPercent,
-            description = weatherSnapshot.ConditionCode,
-        });
-    }
+    public IActionResult GetWeather()
+        => Ok(_weatherConditionService.GetWeather());
 
     [HttpGet("kri-cards")]
     [ProducesResponseType(StatusCodes.Status200OK)]

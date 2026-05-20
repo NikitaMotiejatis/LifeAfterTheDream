@@ -11,20 +11,17 @@ public class IndicatorsController : ControllerBase
     private readonly IBerthOccupancyService _berth;
     private readonly IVesselDelayRateService _vessels;
     private readonly IWeatherConditionService _weather;
-    private readonly IWeatherFetcherService _weatherFetcher;
     private readonly ICustomsDwellTimeService _customs;
 
     public IndicatorsController(
         IBerthOccupancyService berth,
         IVesselDelayRateService vessels,
         IWeatherConditionService weather,
-        IWeatherFetcherService weatherFetcher,
         ICustomsDwellTimeService customs)
     {
         _berth = berth;
         _vessels = vessels;
         _weather = weather;
-        _weatherFetcher = weatherFetcher;
         _customs = customs;
     }
 
@@ -63,20 +60,8 @@ public class IndicatorsController : ControllerBase
     // GET /api/indicators/weather
     [HttpGet("weather")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetWeather()
-    {
-        var score = await _weather.GetLatestScore();
-
-        return Ok(new
-        {
-            score,
-            windSpeedKnt = _weatherFetcher.GetWindSpeedKnt(),
-            waterLevelCm = _weatherFetcher.GetWaterLevelCm(),
-            temperatureC = _weatherFetcher.GetTemperatureC(),
-            humidityPercent = _weatherFetcher.GetHumidityPercent(),
-            conditionCode = _weatherFetcher.GetConditionCode()
-        });
-    }
+    public IActionResult GetWeather()
+        => Ok(_weather.GetWeather());
 
     // GET /api/indicators/customs
     [HttpGet("customs")]

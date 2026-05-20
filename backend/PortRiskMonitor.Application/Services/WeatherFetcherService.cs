@@ -1,12 +1,14 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
 
 namespace PortRiskMonitor.Application.Services;
 
-public class WeatherFetcherService : IWeatherFetcherService
+public class WeatherFetcherService : BackgroundService
 {
     private const string KlaipedaPortUrl = "https://portofklaipeda.lt/wp-json/api/meteo_data?method=";
     private const string PortWindUrl = KlaipedaPortUrl + "wind_speed";
@@ -16,10 +18,9 @@ public class WeatherFetcherService : IWeatherFetcherService
     private const string ConditionUrl = "https://api.meteo.lt/v1/stations/klaipedos-ams/observations/latest";
 
     private readonly HttpClient _httpClient;
-
-    private WeatherSnapshot? _cachedSnapshot;
-    private TimeSpan _cacheRefreshInterval = TimeSpan.FromMinutes(5);
-    private readonly SemaphoreSlim _cacheLock = new(1, 1);
+    private readonly IWeatherSnapshotCache _cache;
+    private readonly ILogger<WeatherFetcherService> _logger;
+    private readonly TimeSpan _period = TimeSpan.FromMinutes(5);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -28,34 +29,48 @@ public class WeatherFetcherService : IWeatherFetcherService
         RespectRequiredConstructorParameters = true,
     };
 
-    public WeatherFetcherService(HttpClient httpClient)
+    public WeatherFetcherService(
+        HttpClient httpClient,
+        IWeatherSnapshotCache cache,
+        ILogger<WeatherFetcherService> logger)
     {
         _httpClient = httpClient;
+        _cache = cache;
+        _logger = logger;
     }
 
-
-    public async Task<WeatherSnapshot> GetLatestWeatherSnapshot()
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (_cachedSnapshot is not null && DateTime.UtcNow - _cachedSnapshot.RecordedAt < _cacheRefreshInterval)
-            return _cachedSnapshot;
+        _logger.LogInformation("Port Status Background Worker starting.");
 
-        await _cacheLock.WaitAsync();
+        using PeriodicTimer timer = new PeriodicTimer(_period);
+
+        await FetchAndStoreStatusAsync();
+
+        while (await timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested)
+        {
+            await FetchAndStoreStatusAsync();
+        }
+    }
+
+    private async Task FetchAndStoreStatusAsync()
+    {
         try
         {
-            if (_cachedSnapshot is not null && DateTime.UtcNow - _cachedSnapshot.RecordedAt < _cacheRefreshInterval)
-                return _cachedSnapshot;
+            _logger.LogInformation("Fetching fresh port status from external API...");
 
-            var newSnapshot = await FetchSnapshotAsync();
-            _cachedSnapshot = newSnapshot ?? throw new InternalErrorException("Failed to fetch weather condition.");
-            return _cachedSnapshot;
+            var newSnapshot = await FetchData();
+            _cache.UpdateSnapshot(newSnapshot);
+
+            _logger.LogInformation("Snapshot successfully updated in memory.");
         }
-        finally
+        catch (Exception ex)
         {
-            _cacheLock.Release();
+            _logger.LogError(ex, "Failed to fetch port status from external API.");
         }
     }
 
-    private async Task<WeatherSnapshot> FetchSnapshotAsync()
+    private async Task<WeatherSnapshot> FetchData()
     {
         var (windTask, tempTask, pressureTask, hydroTask, conditionTask) = (
             _httpClient.GetStringAsync(PortWindUrl),
@@ -102,7 +117,6 @@ public class WeatherFetcherService : IWeatherFetcherService
             DateTime.UtcNow
         );
     }
-
 
     // meteo.lt hydro station
     private record MeteoLtHydroResponse(

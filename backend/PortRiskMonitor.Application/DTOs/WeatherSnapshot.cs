@@ -1,10 +1,10 @@
 namespace PortRiskMonitor.Application.DTOs;
 
 public record WeatherSnapshot(
-    double WindSpeedKnt,
-    double WaterLevelCm,
+    double WindSpeedKts,
+    double WaveHeightM,
     double TemperatureC,
     double HumidityPercent,
-    string ConditionCode,
+    string Description,
     DateTime RecordedAt
 );
