@@ -9,6 +9,27 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { fetchMockAnalyticsDataWithRange } from '../mocks/analytics';
 import type { DateTimeRange, TrendDataPoint } from '../types/AnalyticsIndex';
 
+function computeMetricYDomain(
+  data: TrendDataPoint[],
+  greenThreshold: number,
+  yellowThreshold: number,
+  fallbackMax = 20,
+): [number, number] {
+  const values = data
+    .flatMap((d) => [d.historical, d.forecast])
+    .filter((v): v is number => v !== null);
+
+  if (values.length === 0) return [0, fallbackMax];
+
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+
+  const min = Math.floor(Math.min(dataMin, greenThreshold) * 0.9);
+  const max = Math.ceil(Math.max(dataMax, yellowThreshold) * 1.1);
+
+  return [Math.max(0, min), max];
+}
+
 export default function AnalyticsPage() {
   const { data, isLoading, isError, refetch } = useAnalytics();
 
@@ -41,7 +62,6 @@ export default function AnalyticsPage() {
 
         const newData = await fetchMockAnalyticsDataWithRange(range);
 
-        // Match specific incoming response arrays to their requested cards
         let targetData: TrendDataPoint[] = [];
         if (metricId === 'berth-occupancy') targetData = newData.berthOccupancy;
         if (metricId === 'vessel-delay-rate')
@@ -84,6 +104,7 @@ export default function AnalyticsPage() {
       yAxisLabel: 'Occupancy (%)',
       greenThreshold: 50,
       yellowThreshold: 75,
+      yAxisDomain: [0, 100] as [number, number],
     },
     {
       id: 'vessel-delay-rate',
@@ -94,6 +115,7 @@ export default function AnalyticsPage() {
       yAxisLabel: 'Delay Rate (%)',
       greenThreshold: 10,
       yellowThreshold: 25,
+      yAxisDomain: [0, 100] as [number, number],
     },
     {
       id: 'customs-dwell-time',
@@ -104,6 +126,12 @@ export default function AnalyticsPage() {
       yAxisLabel: 'Dwell Time (hours)',
       greenThreshold: 5,
       yellowThreshold: 12,
+      yAxisDomain: computeMetricYDomain(
+        cardsData['customs-dwell-time'] || [],
+        5,
+        12,
+        20,
+      ),
     },
     {
       id: 'weather-risk',
@@ -114,6 +142,7 @@ export default function AnalyticsPage() {
       yAxisLabel: 'Risk Score',
       greenThreshold: 30,
       yellowThreshold: 70,
+      yAxisDomain: [0, 100] as [number, number],
     },
     {
       id: 'port-disruption',
@@ -124,6 +153,7 @@ export default function AnalyticsPage() {
       yAxisLabel: 'Disruption Index (%)',
       greenThreshold: 30,
       yellowThreshold: 60,
+      yAxisDomain: [0, 100] as [number, number],
     },
   ];
 
@@ -143,6 +173,7 @@ export default function AnalyticsPage() {
             yAxisLabel={metric.yAxisLabel}
             greenThreshold={metric.greenThreshold}
             yellowThreshold={metric.yellowThreshold}
+            yAxisDomain={metric.yAxisDomain}
             onFilterApply={(range) => handleFilterApply(metric.id, range)}
             isLoading={loadingCardIds[metric.id] || false}
           />

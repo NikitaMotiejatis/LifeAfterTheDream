@@ -12,6 +12,7 @@ interface AnalyticsCardProps {
   yAxisLabel: string;
   greenThreshold: number;
   yellowThreshold: number;
+  yAxisDomain: [number, number];
   onFilterApply?: (range: DateTimeRange) => void;
   isLoading?: boolean;
 }
@@ -31,6 +32,7 @@ export default function AnalyticsCard({
   yAxisLabel,
   greenThreshold,
   yellowThreshold,
+  yAxisDomain,
   onFilterApply,
   isLoading = false,
 }: AnalyticsCardProps) {
@@ -90,9 +92,9 @@ export default function AnalyticsCard({
   const unit = getUnit();
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="relative bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-        {/*Title and Description */}
+        {/* Title and Description */}
         <div className="flex items-start gap-2 min-w-0 max-w-md">
           <Icon className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
           <div className="min-w-0">
@@ -101,8 +103,8 @@ export default function AnalyticsCard({
           </div>
         </div>
 
-        {/*Date/Time Range Filter Toolset */}
-        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 shrink-0 self-start lg:self-auto">
+        {/* Date/Time Range Filter Toolset */}
+        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 shrink-0 self-start lg:self-auto z-20">
           <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
             {/* From segment */}
             <div className="flex items-center gap-1.5">
@@ -199,6 +201,12 @@ export default function AnalyticsCard({
         </div>
       </div>
 
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/40 backdrop-blur-[0.5px] flex items-center justify-center z-10 rounded-xl">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        </div>
+      )}
+
       {/* Main Chart Space */}
       <TrendChart
         title=""
@@ -206,6 +214,7 @@ export default function AnalyticsCard({
         yAxisLabel={yAxisLabel}
         greenThreshold={greenThreshold}
         yellowThreshold={yellowThreshold}
+        yAxisDomain={yAxisDomain}
       />
 
       {/* Footnote Threshold Legends */}

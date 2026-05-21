@@ -18,33 +18,7 @@ interface TrendChartProps {
   yAxisLabel: string;
   greenThreshold: number;
   yellowThreshold: number;
-}
-
-function computeYDomain(
-  data: TrendDataPoint[],
-  greenThreshold: number,
-  yellowThreshold: number,
-  yAxisLabel: string,
-): [number, number] {
-  if (
-    yAxisLabel.toLowerCase().includes('hours') ||
-    yAxisLabel.toLowerCase().includes('dwell')
-  ) {
-    const values = data
-      .flatMap((d) => [d.historical, d.forecast])
-      .filter((v): v is number => v !== null);
-
-    if (values.length === 0) return [0, 20];
-
-    const dataMin = Math.min(...values);
-    const dataMax = Math.max(...values);
-    const min = Math.floor(Math.min(dataMin, greenThreshold) * 0.9);
-    const max = Math.ceil(Math.max(dataMax, yellowThreshold) * 1.1);
-
-    return [Math.max(0, min), max];
-  }
-
-  return [0, 100];
+  yAxisDomain: [number, number]; // Bounds
 }
 
 export default function TrendChart({
@@ -53,15 +27,9 @@ export default function TrendChart({
   yAxisLabel,
   greenThreshold,
   yellowThreshold,
+  yAxisDomain,
 }: TrendChartProps) {
-  const yAxisDomain = computeYDomain(
-    data,
-    greenThreshold,
-    yellowThreshold,
-    yAxisLabel,
-  );
   const [yMin, yMax] = yAxisDomain;
-
   const hasForecast = data.some((d) => d.forecast !== null);
 
   const formatXAxisTick = (tickItem: string) => {
@@ -69,7 +37,6 @@ export default function TrendChart({
       return tickItem;
     }
 
-    // Split the generator's format: "2026-02-06, 04:00" -> ["2026-02-06", "04:00"]
     const [datePart, timePart] = tickItem.split(', ');
 
     const currentIndex = data.findIndex((d) => d.label === tickItem);
@@ -87,7 +54,6 @@ export default function TrendChart({
           .trim()
       : datePart;
 
-    // If one more year appears
     const uniqueYears = new Set(
       data
         .map((d) => {
@@ -113,18 +79,12 @@ export default function TrendChart({
 
     const shouldShowYear =
       isMultiYearDataset && (currentIndex === 0 || yearChanged);
+
     const displayDate = shouldShowYear ? datePart : dateWithoutYear;
-    if (currentIndex === 0) {
+    if (currentIndex === 0 || yearChanged || currentIndex === firstMatchIndex) {
       return `${displayDate} - ${timePart}`;
     }
 
-    if (yearChanged) {
-      return `${displayDate} - ${timePart}`;
-    }
-
-    if (currentIndex === firstMatchIndex) {
-      return `${displayDate} - ${timePart}`;
-    }
     return timePart;
   };
 
@@ -156,7 +116,6 @@ export default function TrendChart({
             fillOpacity={0.1}
           />
 
-          {/* Low-opacity gray grid behind every uniform point */}
           <CartesianGrid
             strokeDasharray="0"
             stroke="#f3f4f6"
