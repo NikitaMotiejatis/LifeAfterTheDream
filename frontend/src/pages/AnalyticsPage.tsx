@@ -1,16 +1,72 @@
-import { useAnalytics } from '../hooks/useAnalytics';
-import Spinner from '../components/common/Spinner';
-import ErrorCard from '../components/common/ErrorCard';
+import { AlertTriangle, Anchor, Clock, Cloud, TrendingUp } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import AnalyticsCard from '../components/analytics/AnalyticsCard';
 import AnalyticsHeader from '../components/analytics/AnalyticsHeader';
 import ForecastSummaryCard from '../components/analytics/ForecastSummaryCard';
-import { Anchor, AlertTriangle, Clock, Cloud, TrendingUp } from 'lucide-react';
+import ErrorCard from '../components/common/ErrorCard';
+import Spinner from '../components/common/Spinner';
+import { useAnalytics } from '../hooks/useAnalytics';
+import { fetchMockAnalyticsDataWithRange } from '../mocks/analytics';
+import type { DateTimeRange, TrendDataPoint } from '../types/AnalyticsIndex';
 
 export default function AnalyticsPage() {
   const { data, isLoading, isError, refetch } = useAnalytics();
 
+  const [cardsData, setCardsData] = useState<Record<string, TrendDataPoint[]>>(
+    {},
+  );
+  const [loadingCardIds, setLoadingCardIds] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  useEffect(() => {
+    if (data) {
+      setCardsData({
+        'berth-occupancy': data.berthOccupancy,
+        'vessel-delay-rate': data.vesselDelayRate,
+        'customs-dwell-time': data.customsDwellTime,
+        'weather-risk': data.weatherRisk,
+        'port-disruption': data.disruptionIndex,
+      });
+    }
+  }, [data]);
+
+  const handleFilterApply = useCallback(
+    async (metricId: string, range: DateTimeRange) => {
+      setLoadingCardIds((prev) => ({ ...prev, [metricId]: true }));
+      try {
+        console.log(
+          `Filtering ${metricId} from ${range.fromDate}T${range.fromTime} to ${range.toDate}T${range.toTime}`,
+        );
+
+        const newData = await fetchMockAnalyticsDataWithRange(range);
+
+        // Match specific incoming response arrays to their requested cards
+        let targetData: TrendDataPoint[] = [];
+        if (metricId === 'berth-occupancy') targetData = newData.berthOccupancy;
+        if (metricId === 'vessel-delay-rate')
+          targetData = newData.vesselDelayRate;
+        if (metricId === 'customs-dwell-time')
+          targetData = newData.customsDwellTime;
+        if (metricId === 'weather-risk') targetData = newData.weatherRisk;
+        if (metricId === 'port-disruption')
+          targetData = newData.disruptionIndex;
+
+        setCardsData((prev) => ({
+          ...prev,
+          [metricId]: targetData,
+        }));
+      } catch (error) {
+        console.error('Filter failed:', error);
+      } finally {
+        setLoadingCardIds((prev) => ({ ...prev, [metricId]: false }));
+      }
+    },
+    [],
+  );
+
   if (isLoading) return <Spinner />;
-  if (isError || !data)
+  if (isError || Object.keys(cardsData).length === 0)
     return (
       <ErrorCard
         message="Failed to load analytics data."
@@ -20,46 +76,51 @@ export default function AnalyticsPage() {
 
   const trendMetrics = [
     {
+      id: 'berth-occupancy',
       icon: Anchor,
       title: 'Berth Occupancy',
       description: 'Port capacity utilization trend',
-      data: data.berthOccupancy,
+      data: cardsData['berth-occupancy'] || [],
       yAxisLabel: 'Occupancy (%)',
       greenThreshold: 50,
       yellowThreshold: 75,
     },
     {
+      id: 'vessel-delay-rate',
       icon: AlertTriangle,
       title: 'Vessel Delay Rate',
       description: 'Percentage of delayed arrivals',
-      data: data.vesselDelayRate,
+      data: cardsData['vessel-delay-rate'] || [],
       yAxisLabel: 'Delay Rate (%)',
       greenThreshold: 10,
       yellowThreshold: 25,
     },
     {
+      id: 'customs-dwell-time',
       icon: Clock,
       title: 'Customs Dwell Time',
       description: 'Average container clearance time',
-      data: data.customsDwellTime,
+      data: cardsData['customs-dwell-time'] || [],
       yAxisLabel: 'Dwell Time (hours)',
       greenThreshold: 5,
       yellowThreshold: 12,
     },
     {
+      id: 'weather-risk',
       icon: Cloud,
       title: 'Weather Risk Score',
       description: 'Environmental risk assessment',
-      data: data.weatherRisk,
-      yAxisLabel: 'Risk Score (0-100)',
+      data: cardsData['weather-risk'] || [],
+      yAxisLabel: 'Risk Score',
       greenThreshold: 30,
       yellowThreshold: 70,
     },
     {
+      id: 'port-disruption',
       icon: TrendingUp,
       title: 'Port Disruption Index',
       description: 'Overall operational disruption level',
-      data: data.disruptionIndex,
+      data: cardsData['port-disruption'] || [],
       yAxisLabel: 'Disruption Index (%)',
       greenThreshold: 30,
       yellowThreshold: 60,
@@ -68,14 +129,13 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with title and risk legend */}
       <AnalyticsHeader />
 
-      {/* Trends*/}
+      {/* Trends Grid */}
       <div className="grid grid-cols-1 gap-6">
-        {trendMetrics.map((metric, idx) => (
+        {trendMetrics.map((metric) => (
           <AnalyticsCard
-            key={idx}
+            key={metric.id}
             icon={metric.icon}
             title={metric.title}
             description={metric.description}
@@ -83,12 +143,15 @@ export default function AnalyticsPage() {
             yAxisLabel={metric.yAxisLabel}
             greenThreshold={metric.greenThreshold}
             yellowThreshold={metric.yellowThreshold}
+            onFilterApply={(range) => handleFilterApply(metric.id, range)}
+            isLoading={loadingCardIds[metric.id] || false}
           />
         ))}
       </div>
 
-      {/* Forecast Summary Card */}
-      <ForecastSummaryCard data={data.forecastSummary} />
+      {data?.forecastSummary && (
+        <ForecastSummaryCard data={data.forecastSummary} />
+      )}
     </div>
   );
 }

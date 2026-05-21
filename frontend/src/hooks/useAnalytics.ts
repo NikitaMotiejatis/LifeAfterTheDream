@@ -1,43 +1,44 @@
-import { useQuery } from '@tanstack/react-query';
+import { useCallback, useEffect, useState } from 'react';
 import { fetchMockAnalyticsData } from '../mocks/analytics';
+import type { AnalyticsData, DateTimeRange } from '../types/AnalyticsIndex';
 
-export interface ForecastItem {
-  title: string;
-  status: 'Low Risk' | 'Medium Risk' | 'High Risk' | 'Improving' | 'Stable' | 'Worsening';
-  description: string;
-  statusColor: 'green' | 'yellow' | 'red' | 'blue';
-}
+export type {
+  AnalyticsData,
+  ForecastItem,
+  TrendDataPoint,
+} from '../types/AnalyticsIndex';
 
-export interface AnalyticsData {
-  berthOccupancy: any[];
-  vesselDelayRate: any[];
-  customsDwellTime: any[];
-  weatherRisk: any[];
-  disruptionIndex: any[];
-  forecastSummary: ForecastItem[];
-}
+export function useAnalytics(initialRange?: DateTimeRange) {
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [activeRange, setActiveRange] = useState<DateTimeRange | undefined>(
+    initialRange,
+  );
 
+  const fetchData = useCallback(async (range?: DateTimeRange) => {
+    setIsLoading(true);
+    setIsError(false);
+    try {
+      const result = await fetchMockAnalyticsData();
+      setData(result);
+      if (range) setActiveRange(range);
+    } catch (error) {
+      setIsError(true);
+      console.error('Failed to fetch analytics:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-const USE_MOCK_DATA = true;
+  const refetch = useCallback(
+    (range?: DateTimeRange) => fetchData(range || activeRange),
+    [fetchData, activeRange],
+  );
 
+  useEffect(() => {
+    fetchData(activeRange);
+  }, []);
 
-const fetchRealAnalyticsData = async (): Promise<AnalyticsData> => {
-  // TODO: Replace with actual API call
-  throw new Error('Real API not implemented yet');
-};
-
-const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
-  if (USE_MOCK_DATA) {
-    return fetchMockAnalyticsData();
-  }
-  return fetchRealAnalyticsData();
-};
-
-export function useAnalytics() {
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['analytics'],
-    queryFn: fetchAnalyticsData,
-  });
-
-  return { data, isLoading, isError, refetch };
+  return { data, isLoading, isError, refetch, activeRange };
 }
