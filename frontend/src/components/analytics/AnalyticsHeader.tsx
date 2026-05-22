@@ -7,7 +7,9 @@ export default function AnalyticsHeader() {
         <div className="p-2 bg-blue-50 rounded-xl">
           <TrendingUp className="w-6 h-6 text-blue-600" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">Analytics & Forecasts</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Analytics & Forecasts
+        </h1>
       </div>
       <p className="text-gray-500 mt-1 ml-11">
         Real-time port risk monitoring — 24h history + 12h forecast

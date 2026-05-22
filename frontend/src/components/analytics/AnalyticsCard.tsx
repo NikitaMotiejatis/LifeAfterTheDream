@@ -3,47 +3,103 @@ import type { ComponentType } from 'react';
 import { useState } from 'react';
 import type { DateTimeRange, TrendDataPoint } from '../../types/AnalyticsIndex';
 import TrendChart from '../charts/TrendChart';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import axiosInstance from '../../api/axiosInstance';
+import { downsample } from '../../utils/downsample';
+import Spinner from '../common/Spinner';
+import ErrorCard from '../common/ErrorCard';
 
 interface AnalyticsCardProps {
+  id: string;
   icon: ComponentType<{ className?: string }>;
-  title: string;
   description: string;
-  data: TrendDataPoint[];
   yAxisLabel: string;
-  greenThreshold: number;
-  yellowThreshold: number;
-  yAxisDomain: [number, number];
   onFilterApply?: (range: DateTimeRange) => void;
-  isLoading?: boolean;
 }
 
-const todayStr = () => new Date().toISOString().split('T')[0];
-const tomorrowStr = () => {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split('T')[0];
+interface AnalyticsDto {
+  title: string;
+  greenMax: number;
+  yellowMax: number;
+  sparkline: {
+    label: string;
+    value: number;
+  }[];
+}
+
+const nowDate = () => new Date().toISOString().split('T')[0];
+const nowTime = () => new Date().toISOString().split('T')[1].slice(0, 5);
+const dayAgoDate = () => {
+  return new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 };
 
+async function fetchAnalytics(
+  id: string,
+  initialRange: DateTimeRange,
+): Promise<AnalyticsDto> {
+  const params = {
+    from: `${initialRange.fromDate}T${initialRange.fromTime}`,
+    to: `${initialRange.toDate}T${initialRange.toTime}`,
+  };
+
+  const response = await axiosInstance
+    .get(`/analytics/${id}`, { params })
+    .then((r) => r.data as AnalyticsDto);
+
+  response.sparkline = downsample(response.sparkline, 50);
+
+  return response;
+}
+
 export default function AnalyticsCard({
+  id,
   icon: Icon,
-  title,
   description,
-  data,
   yAxisLabel,
-  greenThreshold,
-  yellowThreshold,
-  yAxisDomain,
   onFilterApply,
-  isLoading = false,
 }: AnalyticsCardProps) {
-  const [fromDate, setFromDate] = useState(todayStr());
-  const [fromTime, setFromTime] = useState('00:00');
-  const [toDate, setToDate] = useState(tomorrowStr());
-  const [toTime, setToTime] = useState('23:59');
+  const [fromDate, setFromDate] = useState(dayAgoDate());
+  const [fromTime, setFromTime] = useState(nowTime());
+  const [toDate, setToDate] = useState(nowDate());
+  const [toTime, setToTime] = useState(nowTime());
   const [timeErrors, setTimeErrors] = useState<{
     from?: boolean;
     to?: boolean;
   }>({});
+
+  console.log(nowTime());
+  console.log(new Date().toISOString());
+  console.log(new Date().toUTCString());
+
+  const analytics = useQuery({
+    queryKey: ['dashboard-tiles', { fromDate, fromTime, toDate, toTime }],
+    queryFn: () => fetchAnalytics(id, { fromDate, fromTime, toDate, toTime }),
+    refetchInterval: 30_000,
+    staleTime: 10_000,
+    placeholderData: keepPreviousData,
+  });
+
+  if (analytics.isLoading) {
+    return <Spinner />;
+  }
+  if (analytics.isError) {
+    return (
+      <ErrorCard
+        message="Failed to load analytics data."
+        onRetry={() => analytics.refetch()}
+      />
+    );
+  }
+
+  const title = analytics.data.title;
+  const greenThreshold = analytics.data.greenMax;
+  const yellowThreshold = analytics.data.yellowMax;
+
+  const yAxisDomain = computeMetricYDomain(
+    analytics.data.sparkline,
+    greenThreshold,
+    yellowThreshold,
+  );
 
   const validateTime = (value: string): boolean =>
     /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
@@ -81,7 +137,7 @@ export default function AnalyticsCard({
   };
 
   const hasFilter = fromDate && toDate && !timeErrors.from && !timeErrors.to;
-  const filterDisabled = !hasFilter || isLoading;
+  const filterDisabled = !hasFilter || analytics.isLoading;
 
   const getUnit = () => {
     if (yAxisLabel.includes('%')) return '%';
@@ -189,7 +245,7 @@ export default function AnalyticsCard({
               }`}
             >
               <Filter className="w-3.5 h-3.5" />
-              <span>{isLoading ? '...' : 'Filter'}</span>
+              <span>{analytics.isLoading ? '...' : 'Filter'}</span>
             </button>
           </div>
 
@@ -201,7 +257,7 @@ export default function AnalyticsCard({
         </div>
       </div>
 
-      {isLoading && (
+      {analytics.isLoading && (
         <div className="absolute inset-0 bg-white/40 backdrop-blur-[0.5px] flex items-center justify-center z-10 rounded-xl">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
         </div>
@@ -210,7 +266,9 @@ export default function AnalyticsCard({
       {/* Main Chart Space */}
       <TrendChart
         title=""
-        data={data}
+        data={analytics.data.sparkline.map(
+          (s) => ({ label: s.label, historical: s.value }) as TrendDataPoint,
+        )}
         yAxisLabel={yAxisLabel}
         greenThreshold={greenThreshold}
         yellowThreshold={yellowThreshold}
@@ -246,4 +304,25 @@ export default function AnalyticsCard({
       </div>
     </div>
   );
+}
+
+function computeMetricYDomain(
+  data: { label: string; value: number }[],
+  greenThreshold: number,
+  yellowThreshold: number,
+  fallbackMax = 20,
+): [number, number] {
+  const values = data
+    .map((d) => d.value)
+    .filter((v): v is number => v !== null);
+
+  if (values.length === 0) return [0, fallbackMax];
+
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+
+  const min = Math.floor(Math.min(dataMin, greenThreshold) * 0.9);
+  const max = Math.ceil(Math.max(dataMax, yellowThreshold) * 1.1);
+
+  return [Math.max(0, min), max];
 }

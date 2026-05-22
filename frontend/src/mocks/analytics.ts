@@ -1,4 +1,5 @@
 import type {
+  AnalyticsData,
   DateTimeRange,
   ForecastItem,
   TrendDataPoint,
@@ -171,7 +172,7 @@ export const mockForecastSummary: ForecastItem[] = [
   },
 ];
 
-export const fetchMockAnalyticsData = async () => {
+export const fetchMockAnalyticsData = async (): Promise<AnalyticsData> => {
   await new Promise((resolve) => setTimeout(resolve, 500));
   const trendDataMap: Record<string, TrendDataPoint[]> = {};
   analyticsMetrics.forEach((metric) => {

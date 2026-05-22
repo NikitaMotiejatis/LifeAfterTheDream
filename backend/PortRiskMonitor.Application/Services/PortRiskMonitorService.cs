@@ -20,6 +20,46 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
         _portRiskMonitorRepo = portRiskMonitorRepo;
     }
 
+    public async Task<AnalyticsDto> GetAnalytics(string slug, string? from, string? to)
+    {
+        var (fromDateTime, toDateTime, bucketCount, interval) = ParseFilterInput("", from, to);
+        var outputDateTimeFormat = (toDateTime - fromDateTime).Ticks switch
+        {
+            > 10 * 365 * TimeSpan.TicksPerDay => "yyyy",
+            > 5 * 30 * TimeSpan.TicksPerDay => "MM/yyyy",
+            > 3 * TimeSpan.TicksPerDay => "dd/MM",
+            _ => "HH:mm",
+        };
+
+        var kri = await _riskMonitorRepo
+            .GetAllIndicators()
+            .Where(kri => kri.Slug == slug)
+            .FirstOrDefaultAsync()
+            ?? throw new Exception("Not found");
+
+        var readings = await _riskMonitorRepo
+            .GetKriReadings(slug)
+            .Select(r => new ScoreInfo
+            {
+                Timestamp = r.Timestamp,
+                Value = r.Value,
+            })
+            .BucketScores(fromDateTime, bucketCount, interval);
+
+        return new AnalyticsDto(
+            Title: kri.Name,
+            GreenMax: kri.GreenMax,
+            YellowMax: kri.YellowMax,
+            Sparkline: readings
+                .Select(b => new DataPoint
+                {
+                    Label = b.Timestamp.ToLocalTime().ToString(outputDateTimeFormat),
+                    Value = b.Value,
+                })
+                .ToArray()
+        );
+    }
+
     public async Task<IEnumerable<KriCardDto>> GetKriCards(string preset, string? from, string? to)
     {
         var (fromDateTime, toDateTime, bucketCount, interval) = ParseFilterInput(preset, from, to);

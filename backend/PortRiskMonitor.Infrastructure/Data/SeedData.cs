@@ -17,10 +17,10 @@ public static class SeedData
 {
     // Slugs used by GET /api/history/{slug}
     public const string PortStatusSlug = "port-status";
-    public const string BerthSlug = "berth";
-    public const string VesselDelaySlug = "vessel-delays";
-    public const string WeatherSlug = "weather";
-    public const string CustomsSlug = "customs";
+    public const string BerthSlug = "berth-occupancy";
+    public const string VesselDelaySlug = "vessel-delay-rate";
+    public const string WeatherSlug = "weather-risk";
+    public const string CustomsSlug = "customs-dwell-time";
 
     public static async Task SeedAsync(AppDbContext db)
     {

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using PortRiskMonitor.Application.Interfaces;
-using RiskMonitor.Repositories;
 
 namespace PortRiskMonitor.API.Controllers;
 
