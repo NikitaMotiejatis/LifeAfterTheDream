@@ -12,7 +12,7 @@ using RiskMonitor.Repositories;
 
 namespace PortRiskMonitor.Infrastructure.Repositories;
 
-public class KriRepository : IKriRepository
+public class KriRepository : IKriRepository, IKriAdminRepository
 {
     private readonly AppDbContext _db;
 

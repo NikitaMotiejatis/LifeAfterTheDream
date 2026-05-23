@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 
-type ToastType = 'success' | 'error' | 'info';
+type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface Toast {
   id: number;
@@ -117,6 +117,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             />
           </svg>
         );
+      case 'warning':
+        return (
+          <svg
+            className="w-5 h-5 text-amber-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+            />
+          </svg>
+        );
     }
   };
 
@@ -128,6 +144,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         return 'border-red-500/30';
       case 'info':
         return 'border-blue-500/30';
+      case 'warning':
+        return 'border-amber-500/30';
     }
   };
 

@@ -28,6 +28,12 @@ public interface IAlertRepository
     // Creates a new alert record when a KRI crosses a threshold
     Task<Alert> CreateAsync(Alert alert);
 
+    // Marks an alert as resolved (used when a KRI returns to green)
+    Task ResolveAsync(Guid alertId);
+
+    // Returns ALL active alerts for a KRI (regardless of level)
+    Task<IEnumerable<Alert>> GetActiveAlertsForKriAsync(Guid kriId);
+
     // Returns alerts for a specific KRI, ordered by TriggeredAt descending
     Task<IEnumerable<Alert>> GetAlertsForKriAsync(Guid kriId, int take = 10);
 }
@@ -91,6 +97,14 @@ public class AlertRepository : IAlertRepository
             alert.ResolvedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }
+    }
+
+    public async Task<IEnumerable<Alert>> GetActiveAlertsForKriAsync(Guid kriId)
+    {
+        return await _context.Alerts
+            .Where(a => a.KriId == kriId && a.ResolvedAt == null)
+            .AsNoTracking()
+            .ToListAsync();
     }
 
     public async Task<IEnumerable<Alert>> GetAlertsForKriAsync(Guid kriId, int take = 10)

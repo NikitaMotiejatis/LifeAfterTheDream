@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { FormulaSettings } from '../types/FormulaSettings';
 import {
   getFormulaSettings,
@@ -13,6 +14,7 @@ export function useSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const isDirty = JSON.stringify(settings) !== JSON.stringify(saved);
 
@@ -41,9 +43,13 @@ export function useSettings() {
       const data = await saveFormulaSettings(settings);
       setSaved(data);
       setSettings(data);
+      queryClient.invalidateQueries({ queryKey: ['dashboard-tiles'] });
       return true;
-    } catch {
-      setError('Failed to save settings.');
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Failed to save settings.';
+      setError(message);
       return false;
     } finally {
       setIsSaving(false);
@@ -57,6 +63,7 @@ export function useSettings() {
       const data = await resetFormulaSettings();
       setSettings(data);
       setSaved(data);
+      queryClient.invalidateQueries({ queryKey: ['dashboard-tiles'] });
       return true;
     } catch {
       setError('Failed to reset settings.');
