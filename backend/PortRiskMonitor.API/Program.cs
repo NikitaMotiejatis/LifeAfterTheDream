@@ -92,7 +92,7 @@ try
     builder.Services.AddScoped<ICustomsDwellTimeRepo, CustomsDwellTimeRepo>();
     builder.Services.AddScoped<IWeatherConditionRepo, WeatherConditionRepo>();
 
-    builder.Services.AddSingleton<IWeatherFetcherService, WeatherFetcherService>();
+    builder.Services.AddSingleton<IWeatherSnapshotCache, WeatherSnapshotCache>();
 
     // Application Services (Business Logic Layer)
     builder.Services.AddScoped<IPortRiskMonitorService, PortRiskMonitorService>();
@@ -102,8 +102,11 @@ try
     builder.Services.AddScoped<IBerthOccupancyService, BerthOccupancyService>();
     builder.Services.AddScoped<IVesselDelayRateService, VesselDelayRateService>();
     builder.Services.AddScoped<ICustomsDwellTimeService, CustomsDwellTimeService>();
-    builder.Services.AddHttpClient<WeatherConditionService>();
     builder.Services.AddScoped<IWeatherConditionService, WeatherConditionService>();
+
+    builder.Services.AddHttpClient<WeatherFetcherService>();
+    builder.Services.AddHostedService<WeatherFetcherService>();
+
 
     // TODO
     // NFR: Extensibility — Strategy Pattern for risk score calculation
