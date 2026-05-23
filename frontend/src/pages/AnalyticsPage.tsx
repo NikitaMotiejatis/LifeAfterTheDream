@@ -67,30 +67,40 @@ export default function AnalyticsPage() {
       icon: Anchor,
       description: 'Port capacity utilization trend',
       yAxisLabel: 'Occupancy (%)',
+      ymin: 0,
+      ymax: 100,
     },
     {
       id: 'vessel-delay-rate',
       icon: AlertTriangle,
       description: 'Percentage of delayed arrivals',
       yAxisLabel: 'Delay Rate (%)',
+      ymin: 0,
+      ymax: 100,
     },
     {
       id: 'customs-dwell-time',
       icon: Clock,
       description: 'Average container clearance time',
       yAxisLabel: 'Dwell Time (hours)',
+      ymin: 0,
+      ymax: null,
     },
     {
       id: 'weather-risk',
       icon: Cloud,
       description: 'Environmental risk assessment',
       yAxisLabel: 'Risk Score',
+      ymin: 0,
+      ymax: 100,
     },
     {
       id: 'port-status',
       icon: TrendingUp,
       description: 'Overall operational disruption level',
       yAxisLabel: 'Disruption Index (%)',
+      ymin: 0,
+      ymax: 100,
     },
   ];
 
@@ -107,6 +117,8 @@ export default function AnalyticsPage() {
             icon={metric.icon}
             description={metric.description}
             yAxisLabel={metric.yAxisLabel}
+            ymin={metric.ymin}
+            ymax={metric.ymax}
             onFilterApply={(range) => handleFilterApply(metric.id, range)}
           />
         ))}

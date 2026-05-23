@@ -14,6 +14,8 @@ interface AnalyticsCardProps {
   icon: ComponentType<{ className?: string }>;
   description: string;
   yAxisLabel: string;
+  ymin?: number;
+  ymax?: number;
   onFilterApply?: (range: DateTimeRange) => void;
 }
 
@@ -57,6 +59,8 @@ export default function AnalyticsCard({
   description,
   yAxisLabel,
   onFilterApply,
+  ymin,
+  ymax,
 }: AnalyticsCardProps) {
   const [fromDate, setFromDate] = useState(dayAgoDate());
   const [fromTime, setFromTime] = useState(nowTime());
@@ -70,9 +74,10 @@ export default function AnalyticsCard({
   console.log(nowTime());
   console.log(new Date().toISOString());
   console.log(new Date().toUTCString());
+  console.log(id);
 
   const analytics = useQuery({
-    queryKey: ['dashboard-tiles', { fromDate, fromTime, toDate, toTime }],
+    queryKey: [id + '-analytics', { fromDate, fromTime, toDate, toTime }],
     queryFn: () => fetchAnalytics(id, { fromDate, fromTime, toDate, toTime }),
     refetchInterval: 30_000,
     staleTime: 10_000,
@@ -96,9 +101,8 @@ export default function AnalyticsCard({
   const yellowThreshold = analytics.data.yellowMax;
 
   const yAxisDomain = computeMetricYDomain(
-    analytics.data.sparkline,
-    greenThreshold,
-    yellowThreshold,
+    analytics.data.sparkline.map((s) => s.value),
+    [ymin, ymax],
   );
 
   const validateTime = (value: string): boolean =>
@@ -307,22 +311,13 @@ export default function AnalyticsCard({
 }
 
 function computeMetricYDomain(
-  data: { label: string; value: number }[],
-  greenThreshold: number,
-  yellowThreshold: number,
-  fallbackMax = 20,
+  data: number[],
+  yDomain: [number?, number?],
 ): [number, number] {
-  const values = data
-    .map((d) => d.value)
-    .filter((v): v is number => v !== null);
+  const [ymin, ymax] = yDomain;
 
-  if (values.length === 0) return [0, fallbackMax];
-
-  const dataMin = Math.min(...values);
-  const dataMax = Math.max(...values);
-
-  const min = Math.floor(Math.min(dataMin, greenThreshold) * 0.9);
-  const max = Math.ceil(Math.max(dataMax, yellowThreshold) * 1.1);
-
-  return [Math.max(0, min), max];
+  return [
+    ymin ?? Math.floor(0.9 * Math.min(...data)),
+    ymax ?? Math.ceil(1.1 * Math.max(...data)),
+  ];
 }

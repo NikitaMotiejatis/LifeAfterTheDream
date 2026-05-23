@@ -1,5 +1,3 @@
-using System.Globalization;
-
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
@@ -20,33 +18,30 @@ public class PortStatusService : KriService, IPortStatusService
         _portStatusRepo = portStatusRepo;
     }
 
-    public async Task<PortStatusDto> GetPortStatus(string preset, string? from, string? to)
+    public async Task<PortStatusDto> GetPortStatus(string preset, string? fromStr, string? toStr)
     {
-        var (fromDateTime, toDateTime, bucketCount, interval) = ParseFilterInput(preset, from, to);
-        var outputDateTimeFormat = (toDateTime - fromDateTime).Ticks switch
-        {
-            > 10 * 365 * TimeSpan.TicksPerDay => "yyyy",
-            > 5 * 30 * TimeSpan.TicksPerDay => "MM/yyyy",
-            > 3 * TimeSpan.TicksPerDay => "dd/MM",
-            _ => "HH:mm",
-        };
+        var (from, to) = ParseFilterInput(preset, fromStr, toStr);
+
+        const long numberOfBuckets = 20;
+        var bucketLength = (to - from) / numberOfBuckets;
 
         var disruptionIndex = await GetLatestScore() ?? 0.0;
         var kri = await _portStatusRepo.GetKri();
 
         var scores = await _kriRepo
             .GetAllReadings()
+            .Where(r => from <= r.Timestamp && r.Timestamp <= to)
             .Select(r => new ScoreInfo
             {
                 Timestamp = r.Timestamp,
                 Value = r.Value,
             })
-            .BucketScores(fromDateTime, bucketCount, interval);
+            .DownsampleM4Async(from, 4 * bucketLength);
 
         var sparkline = scores
             .Select(s => new PortStatusDto.SparkPoint
             {
-                Label = s.Timestamp.ToLocalTime().ToString(outputDateTimeFormat),
+                Label = s.Timestamp.ToLocalTime().ToString(),
                 Value = s.Value,
             }).ToList();
 
@@ -79,7 +74,7 @@ public class PortStatusService : KriService, IPortStatusService
                 Timestamp = r.Timestamp,
                 Value = r.Value,
             })
-            .BucketScores(from, bucketCount, interval);
+            .DownsampleAverageAsync(from, bucketCount, interval);
 
         return scores
             .Select(bucket => new DataPoint
@@ -89,56 +84,36 @@ public class PortStatusService : KriService, IPortStatusService
             });
     }
 
-    private (DateTime from, DateTime to, int bucketCount, BucketType interval) ParseFilterInput(string preset, string? from, string? to)
+    private (DateTime from, DateTime to) ParseFilterInput(string preset, string? fromStr, string? toStr)
     {
-        var now = DateTime.UtcNow;
-        var parseFormat = "yyyy-MM-ddTHH:mm";
-        var provider = CultureInfo.InvariantCulture;
+        var from = DateTime.MinValue;
+        var to = DateTime.UtcNow;
 
-        DateTime fromDateTime = DateTime.MinValue;
-        DateTime toDateTime = DateTime.MaxValue;
+        if (preset == "custom")
+        {
+            if (fromStr is not null && !DateTime.TryParse(fromStr, out from))
+                throw new BadInputException("Failed to parse 'from' filter option");
 
-        if (from is not null && to is not null)
-        {
-            try
-            {
-                fromDateTime = DateTime.ParseExact(from ?? "", parseFormat, provider);
-                toDateTime = DateTime.ParseExact(to ?? "", parseFormat, provider);
-            }
-#pragma warning disable CS0168
-            catch (Exception e)
-            {
-#pragma warning restore CS0168
-                throw new BadInputException("Invalid data filter 'from' and/or 'to' date");
-            }
-        }
-        else
-        {
-            fromDateTime = preset switch
-            {
-                "6h" => now.AddHours(-6),
-                "12h" => now.AddHours(-12),
-                "24h" => now.AddHours(-24),
-                "48h" => now.AddHours(-48),
-                "72h" => now.AddHours(-72),
-                "week" => now.AddDays(-7),
-                "month" => now.AddMonths(-1),
-                "year" => now.AddYears(-1),
-                _ => throw new BadInputException("Invalid data filter 'preset'"),
-            };
-            toDateTime = now;
+            if (toStr is not null && !DateTime.TryParse(toStr, out to))
+                throw new BadInputException("Failed to parse 'to' filter option");
+
+            return (from, to);
         }
 
-        var totalInterval = toDateTime - fromDateTime;
-        var (bucketCount, interval) = totalInterval.Ticks switch
+        from = preset switch
         {
-            > 30 * 365 * TimeSpan.TicksPerDay => (totalInterval.Ticks / (365 * TimeSpan.TicksPerDay), BucketType.Year),
-            > 365 * TimeSpan.TicksPerDay => (totalInterval.Ticks / (30 * TimeSpan.TicksPerDay), BucketType.Month),
-            > 21 * TimeSpan.TicksPerDay => (totalInterval.Ticks / TimeSpan.TicksPerDay, BucketType.Day),
-            _ => (totalInterval.Ticks / TimeSpan.TicksPerHour, BucketType.Hour),
+            "6h" => to.AddHours(-6),
+            "12h" => to.AddHours(-12),
+            "24h" => to.AddHours(-24),
+            "48h" => to.AddHours(-48),
+            "72h" => to.AddHours(-72),
+            "week" => to.AddDays(-7),
+            "month" => to.AddMonths(-1),
+            "year" => to.AddYears(-1),
+            _ => throw new BadInputException("Invalid data filter 'preset'"),
         };
 
-        return (fromDateTime, toDateTime, (int)Math.Min(bucketCount, (long)Int32.MaxValue), interval);
+        return (from, to);
     }
 
     private (DateTime from, int bucketCount, BucketType interval) ParseFilterInput(string trendTimeFrame)
