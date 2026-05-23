@@ -50,7 +50,7 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
             Sparkline: readings
                 .Select(b => new DataPoint
                 {
-                    Label = b.Timestamp.ToLocalTime().ToString(),
+                    Label = b.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
                     Value = b.Value,
                 })
                 .ToArray()
@@ -61,7 +61,7 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
     {
         var (from, to) = ParseFilterInput(preset, fromStr, toStr);
 
-        const long numberOfBuckets = 20;
+        const long numberOfBuckets = 30;
         var bucketLength = (to - from) / numberOfBuckets;
 
         var krisWithReadings = await _riskMonitorRepo
@@ -84,7 +84,6 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
                         Timestamp = r.Timestamp,
                         Value = r.Value,
                     })
-                    .AsQueryable()
                     .DownsampleM4Enumerable(from, 4 * bucketLength)
                     .ToArray(),
             })
@@ -103,7 +102,7 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
                 Sparkline: kri.Scores
                     .Select(r => new DataPoint
                     {
-                        Label = r.Timestamp.ToLocalTime().ToString(),
+                        Label = r.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
                         Value = r.Value,
                     })
                     .ToArray()
@@ -123,7 +122,7 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
             if (toStr is not null && !DateTime.TryParse(toStr, out to))
                 throw new BadInputException("Failed to parse 'to' filter option");
 
-            return (from, to);
+            return (from.ToUniversalTime(), to);
         }
 
         from = preset switch

@@ -10,9 +10,6 @@ import {
 import { BarChart as BarChartIcon } from 'lucide-react';
 import type { TrendPointDto, TimeFrame } from '../../types/Dashboard';
 import TimeFrameFilter from '../dashboard/TimeFrameFilter';
-import { downsample } from '../../utils/downsample';
-
-const MAX_TREND_BARS = 30;
 
 function getBarFill(value: number, greenMax: number, yellowMax: number) {
   if (value <= greenMax) return '#22c55e';
@@ -79,7 +76,11 @@ export default function DisruptionTrendChart({
   greenMax,
   yellowMax,
 }: Props) {
-  const chartData = downsample(data, MAX_TREND_BARS);
+  const chartData = data.map((s) => ({
+    label: Date.parse(s.label),
+    value: s.value,
+  }));
+
   // Show at most 12 labels on X-axis
   const maxLabels = 12;
   const xAxisInterval = Math.max(
@@ -88,10 +89,22 @@ export default function DisruptionTrendChart({
   );
 
   // Shorten long labels by dropping year/extra parts
-  const tickFormatter = (label: string) => {
-    if (!label) return '';
-    const parts = label.split(' ');
-    return parts.length > 2 ? parts.slice(0, 2).join(' ') : label;
+  const tickFormatter = (tickItem: string) => {
+    if (!tickItem) return '';
+
+    try {
+      const date = new Date(tickItem);
+
+      const year = String(date.getFullYear()).padStart(4, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+
+      return `${year}/${month}/${day} ${hours}:${minutes}`;
+    } catch (e) {
+      return tickItem;
+    }
   };
 
   return (
@@ -133,7 +146,14 @@ export default function DisruptionTrendChart({
           <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
           <Tooltip
             wrapperStyle={{ zIndex: 10 }}
-            formatter={(value) => [Number(value).toFixed(1), 'Average PDI']}
+            labelFormatter={(label: number) => {
+              if (!label) return '';
+              return new Date(label).toLocaleString(undefined, {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              });
+            }}
+            formatter={(value: number) => [value.toFixed(1), 'Average PDI']}
           />
           <Bar
             dataKey="value"

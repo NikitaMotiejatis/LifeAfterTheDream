@@ -17,6 +17,32 @@ export default function DashboardPage() {
   const [dateRange, setDateRange] = useState<DateRange>(defaultRange);
   const [trendTimeFrame, setTrendTimeFrame] = useState<TimeFrame>('24h');
 
+  const getDomain = (dr: DateRange): [number, number] => {
+    const now = Date.now();
+    const hour = 60 * 60 * 1000;
+    const day = 24 * hour;
+    switch (dr.preset) {
+      case '6h':
+        return [now - 6 * hour, now];
+      case '12h':
+        return [now - 12 * hour, now];
+      case '24h':
+        return [now - 24 * hour, now];
+      case '48h':
+        return [now - 48 * hour, now];
+      case '72h':
+        return [now - 72 * hour, now];
+      case 'week':
+        return [now - 7 * day, now];
+      case 'month':
+        return [now - 30 * day, now];
+      case 'year':
+        return [now - 365 * day, now];
+      case 'custom':
+        return [Date.parse(dr.from), Date.parse(dr.to)];
+    }
+  };
+
   const { tiles, trend, isLoading, isError, refetch } = useDashboard(
     dateRange,
     trendTimeFrame,
@@ -48,12 +74,19 @@ export default function DashboardPage() {
 
       {/* Overall Status + Weather */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {tileData && <PortStatusCard data={tileData.portStatus} />}
+        {tileData && (
+          <PortStatusCard
+            data={tileData.portStatus}
+            domain={getDomain(dateRange)}
+          />
+        )}
         {tileData && <WeatherCard data={tileData.weather} />}
       </div>
 
       {/* KRI Cards */}
-      {tileData && <KriCardsGrid data={tileData.kriCards} />}
+      {tileData && (
+        <KriCardsGrid data={tileData.kriCards} domain={getDomain(dateRange)} />
+      )}
 
       {/* Disruption Trend (has its own time-frame toggle) */}
       <DisruptionTrendChart

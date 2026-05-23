@@ -15,8 +15,8 @@ export async function fetchDashboardTiles(
 ): Promise<DashboardData> {
   const params = {
     preset: dateRange.preset,
-    from: dateRange.from,
-    to: dateRange.to,
+    from: dateRange.from ? new Date(dateRange.from).toISOString() : null,
+    to: dateRange.to ? new Date(dateRange.to).toISOString() : null,
   };
 
   const dashboardTiles = getMockTiles(dateRange);

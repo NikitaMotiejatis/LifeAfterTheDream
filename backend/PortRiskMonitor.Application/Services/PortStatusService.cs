@@ -22,7 +22,7 @@ public class PortStatusService : KriService, IPortStatusService
     {
         var (from, to) = ParseFilterInput(preset, fromStr, toStr);
 
-        const long numberOfBuckets = 20;
+        const long numberOfBuckets = 30;
         var bucketLength = (to - from) / numberOfBuckets;
 
         var disruptionIndex = await GetLatestScore() ?? 0.0;
@@ -38,12 +38,6 @@ public class PortStatusService : KriService, IPortStatusService
             })
             .DownsampleM4Async(from, 4 * bucketLength);
 
-        var sparkline = scores
-            .Select(s => new PortStatusDto.SparkPoint
-            {
-                Label = s.Timestamp.ToLocalTime().ToString(),
-                Value = s.Value,
-            }).ToList();
 
         return new PortStatusDto
         {
@@ -51,7 +45,13 @@ public class PortStatusService : KriService, IPortStatusService
             RiskLevel = disruptionIndex <= kri.GreenMax ? "Low" : disruptionIndex <= kri.YellowMax ? "Moderate" : "High",
             GreenMax = kri.GreenMax,
             YellowMax = kri.YellowMax,
-            Sparkline = sparkline,
+            Sparkline = scores
+                .Select(s => new PortStatusDto.SparkPoint
+                {
+                    Label = s.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    Value = s.Value,
+                })
+                .ToArray(),
         };
     }
 
@@ -79,7 +79,7 @@ public class PortStatusService : KriService, IPortStatusService
         return scores
             .Select(bucket => new DataPoint
             {
-                Label = bucket.Timestamp.ToLocalTime().ToString(outputDateTimeFormat),
+                Label = bucket.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
                 Value = bucket.Value,
             });
     }
@@ -97,7 +97,7 @@ public class PortStatusService : KriService, IPortStatusService
             if (toStr is not null && !DateTime.TryParse(toStr, out to))
                 throw new BadInputException("Failed to parse 'to' filter option");
 
-            return (from, to);
+            return (from.ToUniversalTime(), to);
         }
 
         from = preset switch
