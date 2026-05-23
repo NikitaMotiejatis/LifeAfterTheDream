@@ -7,5 +7,5 @@ namespace RiskMonitor.Services;
 
 public interface IRiskMonitorService
 {
-    IQueryable<KriWithReadings> GetKrisWithReadings(DateTime? from, DateTime? to, Expression<Func<Kri, bool>> includeKri);
+    IQueryable<KriWithReadings> GetKrisWithFilteredReadings(DateTime? from, DateTime? to, Expression<Func<Kri, bool>> includeKri);
 }

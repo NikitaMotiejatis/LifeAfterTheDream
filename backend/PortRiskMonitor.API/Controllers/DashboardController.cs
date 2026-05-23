@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using PortRiskMonitor.Application.Interfaces;
-using RiskMonitor.Repositories;
 
 namespace PortRiskMonitor.API.Controllers;
 
@@ -26,11 +25,17 @@ public class DashboardController : ControllerBase
 
     [HttpGet("port-status")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetPortStatus([FromQuery] string preset, [FromQuery] string? from, [FromQuery] string? to)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetPortStatus(
+            [FromQuery] string preset,
+            [FromQuery] string? from,
+            [FromQuery] string? to)
         => Ok(await _portStatusService.GetPortStatus(preset, from, to));
 
     [HttpGet("weather")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetWeather()
     {
         var weatherSnapshot = await _weatherFetcer.GetLatestWeatherSnapshot();
@@ -46,11 +51,18 @@ public class DashboardController : ControllerBase
 
     [HttpGet("kri-cards")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetKriCards([FromQuery] string preset, [FromQuery] string? from, [FromQuery] string? to)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetKriCards(
+            [FromQuery] string preset,
+            [FromQuery] string? from,
+            [FromQuery] string? to)
         => Ok((await _portRiskMonitorService.GetKriCards(preset, from, to)).ToArray());
 
     [HttpGet("trend")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTrend([FromQuery] string trendTimeFrame)
         => Ok((await _portStatusService.GetTrend(trendTimeFrame)).ToArray());
 

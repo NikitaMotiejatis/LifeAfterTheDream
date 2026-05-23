@@ -14,6 +14,7 @@
 
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using PortRiskMonitor.API.Exceptions;
 using PortRiskMonitor.API.Filters;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Application.Services;
@@ -147,6 +148,9 @@ try
         });
     });
 
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddProblemDetails();
+
     // ── Controllers + Action Filters ─────────────────────────────────────────
     // NFR: Interceptors — BusinessLogicAuditFilter registered globally
     // Logs every controller action: class, method, user, timestamp, duration
@@ -203,6 +207,8 @@ try
             options.RoutePrefix = string.Empty;
         });
     }
+
+    app.UseExceptionHandler(_ => { });
 
     app.UseSerilogRequestLogging(); // logs every HTTP request with timing
 

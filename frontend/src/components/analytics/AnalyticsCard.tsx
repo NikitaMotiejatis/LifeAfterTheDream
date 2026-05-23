@@ -1,87 +1,106 @@
-import { Filter } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useState } from 'react';
-import type { DateTimeRange, TrendDataPoint } from '../../types/AnalyticsIndex';
 import TrendChart from '../charts/TrendChart';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import axiosInstance from '../../api/axiosInstance';
+import Spinner from '../common/Spinner';
+import ErrorCard from '../common/ErrorCard';
 
 interface AnalyticsCardProps {
+  id: string;
   icon: ComponentType<{ className?: string }>;
-  title: string;
   description: string;
-  data: TrendDataPoint[];
   yAxisLabel: string;
-  greenThreshold: number;
-  yellowThreshold: number;
-  yAxisDomain: [number, number];
-  onFilterApply?: (range: DateTimeRange) => void;
-  isLoading?: boolean;
+  ymin?: number;
+  ymax?: number;
 }
 
-const todayStr = () => new Date().toISOString().split('T')[0];
-const tomorrowStr = () => {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split('T')[0];
-};
+interface AnalyticsDto {
+  title: string;
+  greenMax: number;
+  yellowMax: number;
+  sparkline: {
+    label: string;
+    value: number;
+  }[];
+}
+
+async function fetchAnalytics(
+  id: string,
+  fromDateTime: string,
+  toDateTime: string,
+): Promise<AnalyticsDto> {
+  const params = {
+    from: new Date(fromDateTime).toISOString(),
+    to: new Date(toDateTime).toISOString(),
+  };
+
+  const response = await axiosInstance
+    .get(`/analytics/${id}`, { params })
+    .then((r) => r.data as AnalyticsDto);
+
+  return response;
+}
 
 export default function AnalyticsCard({
+  id,
   icon: Icon,
-  title,
   description,
-  data,
   yAxisLabel,
-  greenThreshold,
-  yellowThreshold,
-  yAxisDomain,
-  onFilterApply,
-  isLoading = false,
+  ymin,
+  ymax,
 }: AnalyticsCardProps) {
-  const [fromDate, setFromDate] = useState(todayStr());
-  const [fromTime, setFromTime] = useState('00:00');
-  const [toDate, setToDate] = useState(tomorrowStr());
-  const [toTime, setToTime] = useState('23:59');
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  const formatToDateTimeLocal = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const [fromDateTime, setFromDateTime] = useState(
+    formatToDateTimeLocal(oneDayAgo),
+  );
+  const [toDateTime, setToDateTime] = useState(formatToDateTimeLocal(now));
+
   const [timeErrors, setTimeErrors] = useState<{
     from?: boolean;
     to?: boolean;
   }>({});
 
-  const validateTime = (value: string): boolean =>
-    /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+  const analytics = useQuery({
+    queryKey: [id + '-analytics', { fromDateTime, toDateTime }],
+    queryFn: () => fetchAnalytics(id, fromDateTime, toDateTime),
+    refetchInterval: 30_000,
+    staleTime: 10_000,
+    placeholderData: keepPreviousData,
+  });
 
-  const handleFromTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFromTime(value);
-    setTimeErrors((prev) => ({
-      ...prev,
-      from: value.length > 0 && !validateTime(value),
-    }));
-  };
+  if (analytics.isLoading) {
+    return <Spinner />;
+  }
+  if (analytics.isError) {
+    return (
+      <ErrorCard
+        message="Failed to load analytics data."
+        onRetry={() => analytics.refetch()}
+      />
+    );
+  }
 
-  const handleToTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setToTime(value);
-    setTimeErrors((prev) => ({
-      ...prev,
-      to: value.length > 0 && !validateTime(value),
-    }));
-  };
+  const title = analytics.data.title;
+  const greenThreshold = analytics.data.greenMax;
+  const yellowThreshold = analytics.data.yellowMax;
 
-  const handleFilterApply = () => {
-    const fromTimeValid = validateTime(fromTime);
-    const toTimeValid = validateTime(toTime);
-    setTimeErrors({ from: !fromTimeValid, to: !toTimeValid });
-    if (!fromDate || !toDate || !fromTimeValid || !toTimeValid) return;
-    const fromDateTime = new Date(`${fromDate}T${fromTime}`);
-    const toDateTime = new Date(`${toDate}T${toTime}`);
-    if (fromDateTime > toDateTime) {
-      console.warn('From date/time must be before To date/time');
-      return;
-    }
-    onFilterApply?.({ fromDate, fromTime, toDate, toTime });
-  };
-
-  const hasFilter = fromDate && toDate && !timeErrors.from && !timeErrors.to;
-  const filterDisabled = !hasFilter || isLoading;
+  const yAxisDomain = computeMetricYDomain(
+    analytics.data.sparkline.map((s) => s.value),
+    [ymin, ymax],
+  );
 
   const getUnit = () => {
     if (yAxisLabel.includes('%')) return '%';
@@ -111,30 +130,21 @@ export default function AnalyticsCard({
               <label className="text-xs font-medium text-gray-600 whitespace-nowrap">
                 From:
               </label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="border border-gray-300 rounded-md px-2 py-1 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                aria-label="From date"
-              />
               <div className="relative">
                 <input
-                  type="text"
-                  value={fromTime}
-                  onChange={handleFromTimeChange}
-                  placeholder="HH:mm"
-                  pattern="[0-2][0-9]:[0-5][0-9]"
-                  className={`border rounded-md px-2 py-1 w-16 text-sm bg-white text-center focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                    timeErrors.from
+                  type="datetime-local"
+                  value={fromDateTime}
+                  onChange={(e) => setFromDateTime(e.target.value)}
+                  className={`border rounded-md px-2 py-1 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                    timeErrors.to
                       ? 'border-red-500 bg-red-50'
                       : 'border-gray-300'
                   }`}
-                  aria-label="From time (24h format)"
+                  aria-label="To date and time"
                 />
-                {timeErrors.from && (
+                {timeErrors.to && (
                   <p className="absolute -bottom-4 left-0 text-[10px] text-red-600 whitespace-nowrap">
-                    Invalid
+                    Invalid date or time
                   </p>
                 )}
               </div>
@@ -149,59 +159,34 @@ export default function AnalyticsCard({
               <label className="text-xs font-medium text-gray-600 whitespace-nowrap">
                 To:
               </label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="border border-gray-300 rounded-md px-2 py-1 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                aria-label="To date"
-              />
               <div className="relative">
                 <input
-                  type="text"
-                  value={toTime}
-                  onChange={handleToTimeChange}
-                  placeholder="HH:mm"
-                  pattern="[0-2][0-9]:[0-5][0-9]"
-                  className={`border rounded-md px-2 py-1 w-16 text-sm bg-white text-center focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                  type="datetime-local"
+                  value={toDateTime}
+                  onChange={(e) => setToDateTime(e.target.value)}
+                  className={`border rounded-md px-2 py-1 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 ${
                     timeErrors.to
                       ? 'border-red-500 bg-red-50'
                       : 'border-gray-300'
                   }`}
-                  aria-label="To time (24h format)"
+                  aria-label="To date and time"
                 />
                 {timeErrors.to && (
                   <p className="absolute -bottom-4 left-0 text-[10px] text-red-600 whitespace-nowrap">
-                    Invalid
+                    Invalid date or time
                   </p>
                 )}
               </div>
             </div>
-
-            {/* Filter Action Button */}
-            <button
-              onClick={handleFilterApply}
-              disabled={filterDisabled}
-              className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm font-medium transition-colors h-[30px] ${
-                filterDisabled
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
-              }`}
-            >
-              <Filter className="w-3.5 h-3.5" />
-              <span>{isLoading ? '...' : 'Filter'}</span>
-            </button>
           </div>
 
-          {(!fromDate || !toDate) && (
-            <p className="mt-1 text-[11px] text-gray-500">
-              Select values to apply filter
-            </p>
-          )}
+          <p className="mt-1 text-[11px] text-gray-500">
+            Select values to apply filter
+          </p>
         </div>
       </div>
 
-      {isLoading && (
+      {analytics.isLoading && (
         <div className="absolute inset-0 bg-white/40 backdrop-blur-[0.5px] flex items-center justify-center z-10 rounded-xl">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
         </div>
@@ -210,10 +195,14 @@ export default function AnalyticsCard({
       {/* Main Chart Space */}
       <TrendChart
         title=""
-        data={data}
+        data={analytics.data.sparkline.map((s) => ({
+          label: Date.parse(s.label),
+          historical: s.value,
+        }))}
         yAxisLabel={yAxisLabel}
         greenThreshold={greenThreshold}
         yellowThreshold={yellowThreshold}
+        xAxisDomain={[Date.parse(fromDateTime), Date.parse(toDateTime)]}
         yAxisDomain={yAxisDomain}
       />
 
@@ -246,4 +235,16 @@ export default function AnalyticsCard({
       </div>
     </div>
   );
+}
+
+function computeMetricYDomain(
+  data: number[],
+  yDomain: [number?, number?],
+): [number, number] {
+  const [ymin, ymax] = yDomain;
+
+  return [
+    ymin ?? Math.floor(0.9 * Math.min(...data)),
+    ymax ?? Math.ceil(1.1 * Math.max(...data)),
+  ];
 }

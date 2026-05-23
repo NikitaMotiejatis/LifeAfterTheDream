@@ -4,9 +4,10 @@ import type { PortStatusDto } from '../../types/Dashboard';
 
 interface Props {
   data: PortStatusDto;
+  domain: [number, number];
 }
 
-export default function PortStatusCard({ data }: Props) {
+export default function PortStatusCard({ data, domain }: Props) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center gap-2 mb-1">
@@ -33,6 +34,7 @@ export default function PortStatusCard({ data }: Props) {
         <div className="w-72">
           <MiniSparkline
             data={data.sparkline}
+            domain={domain}
             color="#f59e0b"
             gradientId="statusFill"
             height={90}

@@ -8,9 +8,6 @@ import {
 } from 'recharts';
 
 import type { SparkPoint } from '../../types/Dashboard';
-import { downsample } from '../../utils/downsample';
-
-const MAX_SPARK_POINTS = 20;
 
 function SparkActiveDot({
   cx,
@@ -72,6 +69,7 @@ function SparkActiveDot({
 
 interface Props {
   data: SparkPoint[];
+  domain: [number, number];
   color?: string;
   gradientId?: string;
   height?: number;
@@ -82,6 +80,7 @@ interface Props {
 
 export default function MiniSparkline({
   data,
+  domain,
   color = '#eab308',
   gradientId = 'sparkFill',
   height = 80,
@@ -89,28 +88,15 @@ export default function MiniSparkline({
   greenMax,
   yellowMax,
 }: Props) {
-  const downsampled = downsample(data, MAX_SPARK_POINTS);
-  // Add unique index so Recharts doesn't confuse duplicate labels (e.g. same "dd/MM")
-  const chartData = downsampled.map((pt, i) => ({ ...pt, _idx: i }));
+  const chartData = data.map((p) => ({
+    label: Date.parse(p.label),
+    value: p.value,
+  }));
 
   const totalHeight = showAxes ? height + 34 : height + 24;
   const margin = showAxes
     ? { top: 24, right: 8, bottom: 20, left: 8 }
     : { top: 24, right: 8, bottom: 4, left: 8 };
-
-  // Show all labels when data is small; skip labels only when many points
-  const maxLabels = 7;
-  const xAxisInterval =
-    chartData.length <= maxLabels
-      ? 0
-      : Math.ceil(chartData.length / maxLabels) - 1;
-
-  // Shorten labels: keep only the first part (time or short date)
-  const tickFormatter = (label: string) => {
-    if (!label) return '';
-    const parts = label.split(' ');
-    return parts.length > 2 ? parts.slice(0, 2).join(' ') : label;
-  };
 
   const getPointColor = (value: number) => {
     if (greenMax == null || yellowMax == null) return color;
@@ -172,23 +158,32 @@ export default function MiniSparkline({
               </linearGradient>
             )}
           </defs>
+
           {showAxes && (
             <XAxis
-              dataKey="_idx"
               type="number"
-              domain={[0, chartData.length - 1]}
+              dataKey="label"
+              domain={domain}
               tick={{ fontSize: 8, fill: '#6b7280' }}
               axisLine={false}
               tickLine={false}
-              ticks={chartData
-                .filter(
-                  (_, i) =>
-                    xAxisInterval === 0 || i % (xAxisInterval + 1) === 0,
-                )
-                .map((pt) => pt._idx)}
-              tickFormatter={(idx: number) => {
-                const label = chartData[idx]?.label ?? '';
-                return tickFormatter(label);
+              angle={-45}
+              textAnchor="end"
+              tickFormatter={(label: string) => {
+                if (!label) return '';
+
+                const interval = domain[1] - domain[0];
+                const day = 24 * 60 * 60 * 1000;
+                const month = 30 * day;
+                return new Date(label).toLocaleString(undefined, {
+                  year: interval >= 3 * month ? 'numeric' : undefined,
+                  month: interval > 3 * day ? '2-digit' : undefined,
+                  day:
+                    3 * day < interval && interval < 3 * month
+                      ? '2-digit'
+                      : undefined,
+                  timeStyle: interval <= 3 * day ? 'short' : undefined,
+                });
               }}
             />
           )}

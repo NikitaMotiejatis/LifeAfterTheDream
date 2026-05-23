@@ -10,14 +10,17 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { TrendDataPoint } from '../../types/AnalyticsIndex';
 
 interface TrendChartProps {
   title: string;
-  data: TrendDataPoint[];
+  data: {
+    label: number; // UNIX time
+    historical: number;
+  }[];
   yAxisLabel: string;
   greenThreshold: number;
   yellowThreshold: number;
+  xAxisDomain: [number, number]; // Bounds
   yAxisDomain: [number, number]; // Bounds
 }
 
@@ -27,65 +30,28 @@ export default function TrendChart({
   yAxisLabel,
   greenThreshold,
   yellowThreshold,
+  xAxisDomain,
   yAxisDomain,
 }: TrendChartProps) {
   const [yMin, yMax] = yAxisDomain;
-  const hasForecast = data.some((d) => d.forecast !== null);
+  const hasForecast = false; //data.some((d) => d.forecast !== null);
 
   const formatXAxisTick = (tickItem: string) => {
-    if (!tickItem.includes(',')) {
+    if (!tickItem) return '';
+
+    try {
+      const date = new Date(tickItem);
+
+      const year = String(date.getFullYear()).padStart(4, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+
+      return `${year}/${month}/${day} ${hours}:${minutes}`;
+    } catch (e) {
       return tickItem;
     }
-
-    const [datePart, timePart] = tickItem.split(', ');
-
-    const currentIndex = data.findIndex((d) => d.label === tickItem);
-    const firstMatchIndex = data.findIndex((d) => d.label.startsWith(datePart));
-
-    // Extracts the year number (e.g. "2026")
-    const yearMatch = datePart.match(/\b\d{4}\b/);
-    const currentYear = yearMatch ? yearMatch[0] : '';
-
-    // Removes the year AND strip out any leading hyphens
-    const dateWithoutYear = currentYear
-      ? datePart
-          .replace(currentYear, '')
-          .replace(/^[-\s/.,m\.]+/, '')
-          .trim()
-      : datePart;
-
-    const uniqueYears = new Set(
-      data
-        .map((d) => {
-          if (!d.label.includes(',')) return null;
-          const match = d.label.split(', ')[0].match(/\b\d{4}\b/);
-          return match ? match[0] : null;
-        })
-        .filter(Boolean),
-    );
-    const isMultiYearDataset = uniqueYears.size > 1;
-
-    let yearChanged = false;
-    if (currentIndex > 0 && currentYear) {
-      const prevTickItem = data[currentIndex - 1].label;
-      if (prevTickItem.includes(',')) {
-        const prevYearMatch = prevTickItem.split(', ')[0].match(/\b\d{4}\b/);
-        const prevYear = prevYearMatch ? prevYearMatch[0] : '';
-        if (currentYear !== prevYear) {
-          yearChanged = true;
-        }
-      }
-    }
-
-    const shouldShowYear =
-      isMultiYearDataset && (currentIndex === 0 || yearChanged);
-
-    const displayDate = shouldShowYear ? datePart : dateWithoutYear;
-    if (currentIndex === 0 || yearChanged || currentIndex === firstMatchIndex) {
-      return `${displayDate} - ${timePart}`;
-    }
-
-    return timePart;
   };
 
   return (
@@ -124,7 +90,9 @@ export default function TrendChart({
           />
 
           <XAxis
+            type="number"
             dataKey="label"
+            domain={xAxisDomain}
             tickFormatter={formatXAxisTick}
             tick={{ fontSize: 10 }}
             angle={-45}
@@ -145,7 +113,15 @@ export default function TrendChart({
             tickCount={6}
             axisLine={true}
           />
-          <Tooltip />
+          <Tooltip
+            labelFormatter={(label: string) => {
+              if (!label) return '';
+              return new Date(label).toLocaleString(undefined, {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              });
+            }}
+          />
           <Legend />
 
           {/* Historical line (blue) */}

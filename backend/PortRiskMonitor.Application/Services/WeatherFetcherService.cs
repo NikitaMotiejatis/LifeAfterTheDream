@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using PortRiskMonitor.Application.DTOs;
+using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
 
 namespace PortRiskMonitor.Application.Services;
@@ -45,7 +46,7 @@ public class WeatherFetcherService : IWeatherFetcherService
                 return _cachedSnapshot;
 
             var newSnapshot = await FetchSnapshotAsync();
-            _cachedSnapshot = newSnapshot ?? throw new Exception("Failed to fetch weather condition.");
+            _cachedSnapshot = newSnapshot ?? throw new InternalErrorException("Failed to fetch weather condition.");
             return _cachedSnapshot;
         }
         finally
@@ -69,28 +70,28 @@ public class WeatherFetcherService : IWeatherFetcherService
         //    Response is an array of [timestamp, value] tuples (both strings).
         //    Index 0 = timestamp, index 1 = wind speed in m/s.
         var portReadings = JsonSerializer.Deserialize<string[][]>(windTask.Result, JsonOptions);
-        var latestPort = portReadings?.LastOrDefault() ?? throw new InvalidOperationException("Port API returned no wind readings");
+        var latestPort = portReadings?.LastOrDefault() ?? throw new InternalErrorException("Port API returned no wind readings");
         var WindSpeedKnt = double.Parse(latestPort[1], System.Globalization.CultureInfo.InvariantCulture);
 
         // 2. Temperature - Port of Klaipėda API
         //    Similar format to wind speed; index 1 = air temperature in °C.
         var tempReadings = JsonSerializer.Deserialize<string[][]>(tempTask.Result, JsonOptions);
-        var temperature = tempReadings?.LastOrDefault() ?? throw new InvalidOperationException("Port API returned no temperature readings");
+        var temperature = tempReadings?.LastOrDefault() ?? throw new InternalErrorException("Port API returned no temperature readings");
         var temperatureC = double.Parse(temperature[1], System.Globalization.CultureInfo.InvariantCulture);
 
         // 3. Pressure - Port of Klaipėda API
         //    Similar format; index 1 = air pressure in hPa.
         var pressureReadings = JsonSerializer.Deserialize<string[][]>(pressureTask.Result, JsonOptions);
-        var pressure = pressureReadings?.LastOrDefault() ?? throw new InvalidOperationException("Port API returned no pressure readings");
+        var pressure = pressureReadings?.LastOrDefault() ?? throw new InternalErrorException("Port API returned no pressure readings");
         var pressureHpa = double.Parse(pressure[1], System.Globalization.CultureInfo.InvariantCulture);
 
         // 4. Water level — meteo.lt hydro station
         var hydroResponse = JsonSerializer.Deserialize<MeteoLtHydroResponse>(hydroTask.Result, JsonOptions);
-        var latestHydro = hydroResponse?.Observations?.LastOrDefault() ?? throw new InvalidOperationException("Hydro API returned no observations");
+        var latestHydro = hydroResponse?.Observations?.LastOrDefault() ?? throw new InternalErrorException("Hydro API returned no observations");
 
         // 5. Conditions — meteo.lt AMS station
         var conditionResponse = JsonSerializer.Deserialize<MeteoLtStationResponse>(conditionTask.Result, JsonOptions);
-        var latestCondition = conditionResponse?.Observations?.LastOrDefault() ?? throw new InvalidOperationException("AMS API returned no observations");
+        var latestCondition = conditionResponse?.Observations?.LastOrDefault() ?? throw new InternalErrorException("AMS API returned no observations");
 
         return new WeatherSnapshot(
             WindSpeedKnt,

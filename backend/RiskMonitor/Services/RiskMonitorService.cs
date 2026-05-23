@@ -15,17 +15,17 @@ public abstract class RiskMonitorService : IRiskMonitorService
         _riskMonitorRepo = riskMonitorRepo;
     }
 
-    public IQueryable<KriWithReadings> GetKrisWithReadings(DateTime? from, DateTime? to, Expression<Func<Kri, bool>> includeKri)
-        => _riskMonitorRepo
+    public IQueryable<KriWithReadings> GetKrisWithFilteredReadings(DateTime? from, DateTime? to, Expression<Func<Kri, bool>> includeKri)
+    {
+        (from, to) = (from ?? DateTime.MinValue, to ?? DateTime.MaxValue);
+
+        return _riskMonitorRepo
             .GetAllIndicators()
             .Where(includeKri)
             .Select(kri => new KriWithReadings
             {
                 Kri = kri,
-                Readings = kri.Readings
-                    .Where(r =>
-                        (from ?? DateTime.MinValue) <= r.Timestamp
-                        && r.Timestamp <= (to ?? DateTime.MaxValue)
-                    ),
+                Readings = kri.Readings.Where(r => from <= r.Timestamp && r.Timestamp <= to),
             });
+    }
 }

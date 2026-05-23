@@ -3,6 +3,7 @@ import type { KriCardDto } from '../../types/Dashboard';
 
 interface Props {
   data: KriCardDto[];
+  domain: [number, number];
 }
 
 const severityStyles = {
@@ -26,7 +27,7 @@ const severityStyles = {
   },
 };
 
-export default function KriCardsGrid({ data }: Props) {
+export default function KriCardsGrid({ data, domain }: Props) {
   return (
     <div>
       <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -49,6 +50,7 @@ export default function KriCardsGrid({ data }: Props) {
               </p>
               <MiniSparkline
                 data={kri.sparkline}
+                domain={domain}
                 color={style.chart}
                 gradientId={`spark-${kri.id}`}
                 greenMax={kri.greenMax}

@@ -23,4 +23,8 @@ public class PortRiskMonitorRepo : IRiskMonitorRepository
 
     public IQueryable<Alert> GetAllAlerts()
         => _db.Alerts;
+
+    public IQueryable<KriReading> GetKriReadings(string slug)
+        => _db.KriReadings
+            .Where(r => r.Kri.Slug == slug);
 }

@@ -1,9 +1,9 @@
-using System.Globalization;
-using Microsoft.EntityFrameworkCore;
-
 using PortRiskMonitor.Application.DTOs;
+using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.PortStatus;
+using RiskMonitor.DTOs;
+using RiskMonitor.Extensions;
 using RiskMonitor.Services;
 
 namespace PortRiskMonitor.Application.Services;
@@ -18,54 +18,26 @@ public class PortStatusService : KriService, IPortStatusService
         _portStatusRepo = portStatusRepo;
     }
 
-    public async Task<PortStatusDto> GetPortStatus(string preset, string? from, string? to)
+    public async Task<PortStatusDto> GetPortStatus(string preset, string? fromStr, string? toStr)
     {
-        var now = DateTime.UtcNow;
-        var parseFormat = "yyyy-MM-ddTHH:mm";
-        var provider = CultureInfo.InvariantCulture;
+        var (from, to) = ParseFilterInput(preset, fromStr, toStr);
 
-        var displayFormat = preset switch
-        {
-            "6h" or "12h" or "24h" => "HH:mm",
-            "year" => "MM/yy",
-            _ => "dd/MM",
-        };
-
-        var fromDateTime = preset switch
-        {
-            "6h" => now.AddHours(-6),
-            "12h" => now.AddHours(-12),
-            "24h" => now.AddHours(-24),
-            "48h" => now.AddHours(-48),
-            "72h" => now.AddHours(-72),
-            "week" => now.AddDays(-7),
-            "month" => now.AddMonths(-1),
-            "year" => now.AddYears(-1),
-            _ => now.AddHours(-24),
-        };
-        var toDateTime = now;
-
-        try
-        {
-            fromDateTime = DateTime.ParseExact(from ?? "", parseFormat, provider);
-            toDateTime = DateTime.ParseExact(to ?? "", parseFormat, provider);
-        }
-#pragma warning disable CS0168
-        catch (Exception e) { }
-#pragma warning restore CS0168
+        const long numberOfBuckets = 30;
+        var bucketLength = (to - from) / numberOfBuckets;
 
         var disruptionIndex = await GetLatestScore() ?? 0.0;
-
         var kri = await _portStatusRepo.GetKri();
 
-        var rawScores = await GetScores(fromDateTime, toDateTime).ToListAsync();
-
-        var sparkline = rawScores
-            .Select(s => new PortStatusDto.SparkPoint
+        var scores = await _kriRepo
+            .GetAllReadings()
+            .Where(r => from <= r.Timestamp && r.Timestamp <= to)
+            .Select(r => new ScoreInfo
             {
-                Label = s.Timestamp.ToLocalTime().ToString(displayFormat, provider),
-                Value = s.Value,
-            }).ToList();
+                Timestamp = r.Timestamp,
+                Value = r.Value,
+            })
+            .DownsampleM4Async(from, 4 * bucketLength);
+
 
         return new PortStatusDto
         {
@@ -73,87 +45,102 @@ public class PortStatusService : KriService, IPortStatusService
             RiskLevel = disruptionIndex <= kri.GreenMax ? "Low" : disruptionIndex <= kri.YellowMax ? "Moderate" : "High",
             GreenMax = kri.GreenMax,
             YellowMax = kri.YellowMax,
-            Sparkline = sparkline,
+            Sparkline = scores
+                .Select(s => new PortStatusDto.SparkPoint
+                {
+                    Label = s.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    Value = s.Value,
+                })
+                .ToArray(),
         };
     }
 
     public async Task<IEnumerable<DataPoint>> GetTrend(string trendTimeFrame)
     {
-        var now = DateTime.UtcNow;
-
-        var bucketCount = trendTimeFrame switch
+        var (from, bucketCount, interval) = ParseFilterInput(trendTimeFrame);
+        var outputDateTimeFormat = interval switch
         {
-            "7d" => 7,
-            "30d" => 30,
-            "90d" => 90,
-            "6m" => 6,
-            "1y" => 12,
-            "24h" or _ => 24,
+            BucketType.Hour => "HH:mm",
+            BucketType.Day => "dd/MM",
+            BucketType.Month => "MM/yyyy",
+            BucketType.Year => "yyyy",
+            _ => throw new InternalErrorException("Invalid time interval length"),
         };
 
-        var from = trendTimeFrame switch
-        {
-            "7d" or "30d" or "90d"
-                => new DateTime(now.Year, now.Month, now.Day, 0, 0, 0)
-                    .AddDays(1 - bucketCount),
-
-            "6m" or "1y"
-                => new DateTime(now.Year, now.Month, 1, 0, 0, 0)
-                    .AddMonths(1 - bucketCount),
-
-            "24h" or _
-                => new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0)
-                    .AddHours(1 - bucketCount),
-        };
-
-        var baseQuery = _kriRepo
+        var scores = await _kriRepo
             .GetAllReadings()
-            .Where(r => from <= r.Timestamp)
-            .Select(r => new { Timestamp = r.Timestamp, Value = r.Value });
-
-        var scores = trendTimeFrame switch
-        {
-            "7d" or "30d" or "90d" => await baseQuery
-                    .GroupBy(r => new { Year = r.Timestamp.Year, Month = r.Timestamp.Month, Day = r.Timestamp.Day })
-                    .ToDictionaryAsync(
-                        g => new DateTime(g.Key.Year, g.Key.Month, g.Key.Day),
-                        g => g.Average(r => r.Value)
-                    ),
-
-            "6m" or "1y" => await baseQuery
-                    .GroupBy(r => new { Year = r.Timestamp.Year, Month = r.Timestamp.Month })
-                    .ToDictionaryAsync(
-                        g => new DateTime(g.Key.Year, g.Key.Month, 1),
-                        g => g.Average(r => r.Value)
-                    ),
-
-            "24h" or _ => await baseQuery
-                .GroupBy(r => new { Year = r.Timestamp.Year, Month = r.Timestamp.Month, Day = r.Timestamp.Day, Hour = r.Timestamp.Hour })
-                .ToDictionaryAsync(
-                    g => new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, 0, 0),
-                    g => g.Average(r => r.Value)
-                ),
-        };
-
-        Func<DateTime, string> dateToStr = trendTimeFrame switch
-        {
-            "7d" or "30d" or "90d" => (dt) => dt.ToLocalTime().ToString("dd/MM"),
-            "6m" or "1y" => (dt) => dt.ToLocalTime().ToString("MM/yy"),
-            "24h" or _ => (dt) => dt.ToLocalTime().ToString("HH:mm"),
-        };
-
-        var buckets = trendTimeFrame switch
-        {
-            "7d" or "30d" or "90d" => Enumerable.Range(0, bucketCount).Select(b => from.AddDays(b)),
-            "6m" or "1y" => Enumerable.Range(0, bucketCount).Select(b => from.AddMonths(b)),
-            "24h" or _ => Enumerable.Range(0, bucketCount).Select(b => from.AddHours(b)),
-        };
-
-        return buckets
-            .Select(b => new DataPoint
+            .Select(r => new ScoreInfo
             {
-                Label = dateToStr(b),
-                Value = scores.GetValueOrDefault(b, 0.0),
+                Timestamp = r.Timestamp,
+                Value = r.Value,
+            })
+            .DownsampleAverageAsync(from, bucketCount, interval);
+
+        return scores
+            .Select(bucket => new DataPoint
+            {
+                Label = bucket.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                Value = bucket.Value,
             });
     }
+
+    private (DateTime from, DateTime to) ParseFilterInput(string preset, string? fromStr, string? toStr)
+    {
+        var from = DateTime.MinValue;
+        var to = DateTime.UtcNow;
+
+        if (preset == "custom")
+        {
+            if (fromStr is not null && !DateTime.TryParse(fromStr, out from))
+                throw new BadInputException("Failed to parse 'from' filter option");
+
+            if (toStr is not null && !DateTime.TryParse(toStr, out to))
+                throw new BadInputException("Failed to parse 'to' filter option");
+
+            return (from.ToUniversalTime(), to);
+        }
+
+        from = preset switch
+        {
+            "6h" => to.AddHours(-6),
+            "12h" => to.AddHours(-12),
+            "24h" => to.AddHours(-24),
+            "48h" => to.AddHours(-48),
+            "72h" => to.AddHours(-72),
+            "week" => to.AddDays(-7),
+            "month" => to.AddMonths(-1),
+            "year" => to.AddYears(-1),
+            _ => throw new BadInputException("Invalid data filter 'preset'"),
+        };
+
+        return (from, to);
+    }
+
+    private (DateTime from, int bucketCount, BucketType interval) ParseFilterInput(string trendTimeFrame)
+    {
+        var now = DateTime.UtcNow;
+
+        var (bucketCount, interval) = trendTimeFrame switch
+        {
+            "24h" => (24, BucketType.Hour),
+            "7d" => (7, BucketType.Day),
+            "30d" => (30, BucketType.Day),
+            "90d" => (90, BucketType.Day),
+            "6m" => (6, BucketType.Month),
+            "1y" => (12, BucketType.Month),
+            _ => throw new BadInputException("Invalid trend timeframe"),
+        };
+
+        var from = interval switch
+        {
+            BucketType.Hour => (new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0)).AddHours(1 - bucketCount),
+            BucketType.Day => (new DateTime(now.Year, now.Month, now.Day)).AddDays(1 - bucketCount),
+            BucketType.Month => (new DateTime(now.Year, now.Month, 1)).AddMonths(1 - bucketCount),
+            BucketType.Year => (new DateTime(now.Year, 1, 1)).AddYears(1 - bucketCount),
+            _ => throw new InternalErrorException("Invalid time interval length"),
+        };
+
+        return (from, bucketCount, interval);
+    }
+
 }
