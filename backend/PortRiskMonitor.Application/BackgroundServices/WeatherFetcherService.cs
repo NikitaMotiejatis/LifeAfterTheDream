@@ -6,7 +6,7 @@ using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
 
-namespace PortRiskMonitor.Application.Services;
+namespace PortRiskMonitor.Application.BackgroundServices;
 
 public class WeatherFetcherService : BackgroundService
 {

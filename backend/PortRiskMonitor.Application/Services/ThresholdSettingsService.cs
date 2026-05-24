@@ -1,0 +1,73 @@
+using PortRiskMonitor.Application.DTOs;
+using PortRiskMonitor.Application.Interfaces;
+using RiskMonitor.Repositories;
+using PortRiskMonitor.Application.Exceptions;
+using Microsoft.EntityFrameworkCore;
+
+namespace PortRiskMonitor.Application.Services;
+
+public class ThresholdSettingsService : IThresholdSettingsService
+{
+    private readonly IRiskMonitorRepository _kriRepo;
+
+    // Seed defaults — kept in sync with SeedData.cs. Used by ResetAsync.
+    private static readonly Dictionary<string, ThresholdPairDto> SeedDefaults = new()
+    {
+        ["port-status"]        = new(30, 60),
+        ["berth-occupancy"]    = new(70, 90),
+        ["vessel-delay-rate"]  = new(10, 25),
+        ["weather-risk"]       = new(20, 40),
+        ["customs-dwell-time"] = new(24, 72),
+    };
+
+    public ThresholdSettingsService(IRiskMonitorRepository kriRepo)
+    {
+        _kriRepo = kriRepo;
+    }
+
+    public async Task<ThresholdSettingsDto> GetAllAsync()
+    {
+        var kris = await _kriRepo
+            .GetAllIndicators()
+            .ToListAsync();
+        var result = new ThresholdSettingsDto();
+        foreach (var kri in kris)
+        {
+            result[kri.Slug] = new ThresholdPairDto(kri.GreenMax, kri.YellowMax);
+        }
+        return result;
+    }
+
+    public async Task<ThresholdSettingsDto> UpdateAsync(ThresholdSettingsDto settings)
+    {
+        foreach (var (slug, pair) in settings)
+        {
+            ValidatePair(slug, pair);
+
+            var kri = await _kriRepo.GetBySlugAsync(slug)
+                ?? throw new BadInputException($"Unknown metric slug: {slug}");
+
+            // GetBySlugAsync returns AsNoTracking — re-attach for update.
+            kri.GreenMax = pair.Green;
+            kri.YellowMax = pair.Yellow;
+            await _kriRepo.UpdateAsync(kri);
+        }
+        return await GetAllAsync();
+    }
+
+    public async Task<ThresholdSettingsDto> ResetAsync()
+    {
+        var defaults = new ThresholdSettingsDto(SeedDefaults);
+        return await UpdateAsync(defaults);
+    }
+
+    private static void ValidatePair(string slug, ThresholdPairDto pair)
+    {
+        if (double.IsNaN(pair.Green) || double.IsNaN(pair.Yellow))
+            throw new BadInputException($"{slug}: thresholds must be numeric.");
+        if (pair.Green < 0 || pair.Yellow < 0)
+            throw new BadInputException($"{slug}: thresholds must be non-negative.");
+        if (pair.Green >= pair.Yellow)
+            throw new BadInputException($"{slug}: green ({pair.Green}) must be less than yellow ({pair.Yellow}).");
+    }
+}

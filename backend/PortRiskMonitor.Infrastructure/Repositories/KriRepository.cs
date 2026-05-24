@@ -67,22 +67,6 @@ public class KriRepository : IKriRepository
         await _db.SaveChangesAsync();
     }
 
-    // ── Readings ───────────────────────────────────────────────────────────────
-
-    public async Task<IEnumerable<KriReading>> GetLatestReadingsAsync()
-    {
-        var latestTimestamps = _db.KriReadings
-            .GroupBy(r => r.KriId)
-            .Select(g => new { KriId = g.Key, Timestamp = g.Max(r => r.Timestamp) });
-
-        return await _db.KriReadings
-            .Include(r => r.Kri)
-            .Where(r => latestTimestamps
-                .Any(l => l.KriId == r.KriId && l.Timestamp == r.Timestamp))
-            .AsNoTracking()
-            .ToListAsync();
-    }
-
     public async Task<IEnumerable<KriReading>> GetReadingsAsync(
         Guid kriId, DateTime from, DateTime to, int take = 1000)
         => await _db.KriReadings

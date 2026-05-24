@@ -260,6 +260,8 @@ export function getMockTiles(dateRange: DateRange): DashboardData {
       disruptionIndex: di,
       riskLevel:
         di > 40 ? 'Moderate Risk' : di > 25 ? 'Low Risk' : 'Minimal Risk',
+      greenMax: 30,
+      yellowMax: 60,
       sparkline: makeSparkline(sp.portStatus, dateRange),
     },
     weather: {
@@ -280,6 +282,9 @@ export function getMockTiles(dateRange: DateRange): DashboardData {
           { label: '70-90%', color: '#eab308', severity: 'Medium' },
           { label: '>90%', color: '#ef4444', severity: 'High' },
         ],
+        severity: 'Low',
+        greenMax: 70,
+        yellowMax: 90,
         sparkline: makeSparkline(sp.berthOccupancy, dateRange),
       },
       {
@@ -292,6 +297,9 @@ export function getMockTiles(dateRange: DateRange): DashboardData {
           { label: '10-25%', color: '#eab308', severity: 'Medium' },
           { label: '>25%', color: '#ef4444', severity: 'High' },
         ],
+        severity: 'Low',
+        greenMax: 10,
+        yellowMax: 25,
         sparkline: makeSparkline(sp.vesselDelay, dateRange),
       },
       {
@@ -304,6 +312,9 @@ export function getMockTiles(dateRange: DateRange): DashboardData {
           { label: '24-72h', color: '#eab308', severity: 'Medium' },
           { label: '>72h', color: '#ef4444', severity: 'High' },
         ],
+        severity: 'Low',
+        greenMax: 24,
+        yellowMax: 72,
         sparkline: makeSparkline(sp.customsDwell, dateRange),
       },
       {
@@ -316,6 +327,9 @@ export function getMockTiles(dateRange: DateRange): DashboardData {
           { label: '20-40', color: '#eab308', severity: 'Medium' },
           { label: '>40', color: '#ef4444', severity: 'High' },
         ],
+        severity: 'Low',
+        greenMax: 20,
+        yellowMax: 40,
         sparkline: makeSparkline(sp.weatherRisk, dateRange),
       },
     ],

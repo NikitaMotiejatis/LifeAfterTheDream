@@ -12,21 +12,26 @@
 //   3. Swap Serilog sinks to a log aggregator (e.g. Seq, Datadog)
 // ============================================================
 
+using Amazon.SimpleNotificationService;
 using FluentValidation;
-using Microsoft.EntityFrameworkCore;
-using PortRiskMonitor.API.Exceptions;
 using PortRiskMonitor.API.Filters;
+using PortRiskMonitor.API.Exceptions;
+using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Application.Services;
+using PortRiskMonitor.Application.BackgroundServices;
+using PortRiskMonitor.Infrastructure.Alerts;
 using PortRiskMonitor.Infrastructure.BerthOccupancy;
 using PortRiskMonitor.Infrastructure.CustomsDwellTime;
 using PortRiskMonitor.Infrastructure.Data;
+using PortRiskMonitor.Infrastructure.Notifications;
 using PortRiskMonitor.Infrastructure.PortStatus;
 using PortRiskMonitor.Infrastructure.Repositories;
 using PortRiskMonitor.Infrastructure.RiskMonitor;
 using PortRiskMonitor.Infrastructure.VesselDelayRate;
 using PortRiskMonitor.Infrastructure.WeatherCondition;
 using RiskMonitor.Repositories;
+using RiskMonitor.Services;
 using Serilog;
 
 // ── Storage note ─────────────────────────────────────────────────────────────
@@ -84,6 +89,7 @@ try
 
     // Repositories (Data Access Layer)
     builder.Services.AddScoped<IKriRepository, KriRepository>(); // IKriRepository = RiskMonitor.Repositories.IKriRepository
+    builder.Services.AddScoped<IAlertRepository, AlertRepository>();
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
     builder.Services.AddScoped<IRiskMonitorRepository, PortRiskMonitorRepo>();
     builder.Services.AddScoped<IPortStatusRepo, PortStatusRepo>();
@@ -96,6 +102,34 @@ try
 
     // Application Services (Business Logic Layer)
     builder.Services.AddScoped<IPortRiskMonitorService, PortRiskMonitorService>();
+    builder.Services.AddScoped<IThresholdSettingsService, ThresholdSettingsService>();
+    builder.Services.AddScoped<IAlertingService, AlertingService>();
+
+    // ── Alerting / SMS ──────────────────────────────────────────────────────────
+    // Recipient phone list + on/off switch live in appsettings under "Alerts:Sms".
+    // When Enabled=true, an AWS SNS client is registered and SMS is sent on RED
+    // alerts; otherwise NullAlertNotifier just logs.
+    builder.Services.Configure<SmsAlertOptions>(
+        builder.Configuration.GetSection(SmsAlertOptions.SectionName));
+
+    var smsOptions = builder.Configuration.GetSection(SmsAlertOptions.SectionName).Get<SmsAlertOptions>()
+        ?? new SmsAlertOptions();
+    if (smsOptions.Enabled)
+    {
+        builder.Services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
+            new AmazonSimpleNotificationServiceClient(
+                Amazon.RegionEndpoint.GetBySystemName(smsOptions.AwsRegion)));
+        builder.Services.AddScoped<IAlertNotifier, AwsSnsAlertNotifier>();
+        Log.Information("SMS alerts ENABLED via AWS SNS (region: {Region}, recipients: {Count})",
+            smsOptions.AwsRegion, smsOptions.RecipientPhoneNumbers.Count);
+    }
+    else
+    {
+        builder.Services.AddScoped<IAlertNotifier, NullAlertNotifier>();
+        Log.Information("SMS alerts DISABLED — using NullAlertNotifier (log-only)");
+    }
+
+    builder.Services.AddHostedService<AlertEvaluationBackgroundService>();
 
     // Indicator Services
     builder.Services.AddScoped<IPortStatusService, PortStatusService>();

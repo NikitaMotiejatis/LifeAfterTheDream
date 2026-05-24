@@ -30,7 +30,7 @@ export default function AnalyticsPage() {
       description: 'Average container clearance time',
       yAxisLabel: 'Dwell Time (hours)',
       ymin: 0,
-      ymax: null,
+      ymax: undefined,
     },
     {
       id: 'weather-risk',

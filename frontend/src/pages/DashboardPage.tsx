@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDashboard } from '../hooks/useDashboard';
 import Spinner from '../components/common/Spinner';
 import ErrorCard from '../components/common/ErrorCard';
@@ -9,6 +9,8 @@ import VesselScheduleTable from '../components/dashboard/VesselScheduleTable';
 import PortMapCard from '../components/dashboard/PortMapCard';
 import DisruptionTrendChart from '../components/charts/DisruptionTrendChart';
 import DashboardDateFilter from '../components/dashboard/DashboardDateFilter';
+import { useToast } from '../contexts/ToastContext';
+import { evaluateToasts } from '../utils/thresholdToasts';
 import type { DateRange, TimeFrame } from '../types/Dashboard';
 
 const defaultRange: DateRange = { preset: '24h', from: null, to: null };
@@ -47,6 +49,15 @@ export default function DashboardPage() {
     dateRange,
     trendTimeFrame,
   );
+
+  const { showToast } = useToast();
+  const toastedKeysRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (tiles.data?.kriCards) {
+      evaluateToasts(tiles.data.kriCards, toastedKeysRef.current, showToast);
+    }
+  }, [tiles.data, showToast]);
 
   if (isLoading) return <Spinner />;
   if (isError)
