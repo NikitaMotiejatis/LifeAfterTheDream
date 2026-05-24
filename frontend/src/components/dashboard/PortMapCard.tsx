@@ -1,5 +1,6 @@
 import { Ship, MapPin } from 'lucide-react';
 import EmptyState from '../common/EmptyState';
+import ShipMap from '../map/ShipMap';
 import type { ActiveVesselDto } from '../../types/Dashboard';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -23,13 +24,9 @@ export default function PortMapCard({ vessels }: Props) {
       </div>
       <p className="text-xs text-gray-500 mb-4">55.7033° N, 21.1291° E</p>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <div className="lg:col-span-3 bg-blue-50 border-2 border-dashed border-blue-200 rounded-lg flex items-center justify-center h-64">
-          <div className="text-center text-blue-400">
-            <MapPin className="w-10 h-10 mx-auto mb-2" />
-            <p className="font-medium">Interactive map placeholder</p>
-            <p className="text-xs">Klaipėda Port area</p>
-          </div>
-        </div>
+        <div className="lg:col-span-3 h-64 rounded-lg overflow-hidden">
+  			<ShipMap />
+		</div>
         <div>
           <h3 className="text-sm font-semibold text-gray-900 mb-3">
             Active Vessels
