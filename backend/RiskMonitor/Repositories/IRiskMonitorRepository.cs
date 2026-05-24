@@ -1,5 +1,5 @@
-using RiskMonitor.Entities;
 using Microsoft.EntityFrameworkCore;
+using RiskMonitor.Entities;
 
 namespace RiskMonitor.Repositories;
 

@@ -1,21 +1,29 @@
+using Microsoft.EntityFrameworkCore;
+
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Infrastructure.PortStatus;
 using RiskMonitor.DTOs;
 using RiskMonitor.Extensions;
-using RiskMonitor.Services;
+using RiskMonitor.Repositories;
 
 namespace PortRiskMonitor.Application.Services;
 
-public class PortStatusService : KriService, IPortStatusService
+public class DashboardService : IDasboardService
 {
-    private IPortStatusRepo _portStatusRepo;
+    private readonly IRiskMonitorRepository _riskMonitorRepo;
+    private readonly IPortStatusRepo _portStatusRepo;
+    private readonly IWeatherSnapshotCache _weatherCache;
 
-    public PortStatusService(IPortStatusRepo portStatusRepo)
-        : base(portStatusRepo)
+    public DashboardService(
+            IRiskMonitorRepository riskMonitorRepo,
+            IPortStatusRepo portStatusRepo,
+            IWeatherSnapshotCache weatherCache)
     {
+        _riskMonitorRepo = riskMonitorRepo;
         _portStatusRepo = portStatusRepo;
+        _weatherCache = weatherCache;
     }
 
     public async Task<PortStatusDto> GetPortStatus(string preset, string? fromStr, string? toStr)
@@ -25,12 +33,8 @@ public class PortStatusService : KriService, IPortStatusService
         const long numberOfBuckets = 30;
         var bucketLength = (to - from) / numberOfBuckets;
 
-        var disruptionIndex = await GetLatestScore() ?? 0.0;
-        var kri = await _portStatusRepo.GetKri();
-
-        var scores = await _kriRepo
-            .GetAllReadings()
-            .Where(r => from <= r.Timestamp && r.Timestamp <= to)
+        var scores = await _portStatusRepo
+            .GetReadings(from, to)
             .Select(r => new ScoreInfo
             {
                 Timestamp = r.Timestamp,
@@ -38,10 +42,12 @@ public class PortStatusService : KriService, IPortStatusService
             })
             .DownsampleM4Async(from, 4 * bucketLength);
 
+        var disruptionIndex = (await _portStatusRepo.GetLatestReading())?.Value;
+        var kri = await _portStatusRepo.GetKri();
 
         return new PortStatusDto
         {
-            DisruptionIndex = disruptionIndex,
+            DisruptionIndex = disruptionIndex ?? 0.0,
             RiskLevel = disruptionIndex <= kri.GreenMax ? "Low" : disruptionIndex <= kri.YellowMax ? "Moderate" : "High",
             GreenMax = kri.GreenMax,
             YellowMax = kri.YellowMax,
@@ -55,19 +61,66 @@ public class PortStatusService : KriService, IPortStatusService
         };
     }
 
+    public Task<WeatherSnapshot> GetWeather()
+        => Task.FromResult(_weatherCache.GetLatest());
+
+    public async Task<IEnumerable<KriCardDto>> GetKriCards(string preset, string? fromStr, string? toStr)
+    {
+        var (from, to) = ParseFilterInput(preset, fromStr, toStr);
+
+        const long numberOfBuckets = 30;
+        var bucketLength = (to - from) / numberOfBuckets;
+
+        var krisWithReadings = await _riskMonitorRepo
+            .GetAllIndicators()
+            .Where(kri => kri.Slug != "port-status")
+            .Select(kri => new
+            {
+                Slug = kri.Slug,
+                Name = kri.Name,
+                Unit = kri.Unit,
+                GreenMax = kri.GreenMax,
+                YellowMax = kri.YellowMax,
+                LatestReading = kri.Readings
+                    .OrderByDescending(r => r.Timestamp)
+                    .FirstOrDefault(),
+                Scores = kri.Readings
+                    .Where(r => from <= r.Timestamp && r.Timestamp <= to)
+                    .Select(r => new ScoreInfo
+                    {
+                        Timestamp = r.Timestamp,
+                        Value = r.Value,
+                    })
+                    .DownsampleM4Enumerable(from, 4 * bucketLength)
+                    .ToArray(),
+            })
+            .ToArrayAsync();
+
+        return krisWithReadings
+            .Select(kri => new KriCardDto(
+                Id: kri.Slug,
+                Title: kri.Name,
+                Value: (string.Format("{0:0.0}", kri.LatestReading?.Value) + kri.Unit) ?? "Not Available",
+                Formula: "",
+                Thresholds: BuildThresholds(kri.GreenMax, kri.YellowMax, kri.Unit),
+                Severity: GetSeverity(kri.LatestReading?.Value, kri.GreenMax, kri.YellowMax),
+                GreenMax: kri.GreenMax,
+                YellowMax: kri.YellowMax,
+                Sparkline: kri.Scores
+                    .Select(r => new DataPoint
+                    {
+                        Label = r.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        Value = r.Value,
+                    })
+                    .ToArray()
+            ));
+    }
+
     public async Task<IEnumerable<DataPoint>> GetTrend(string trendTimeFrame)
     {
         var (from, bucketCount, interval) = ParseFilterInput(trendTimeFrame);
-        var outputDateTimeFormat = interval switch
-        {
-            BucketType.Hour => "HH:mm",
-            BucketType.Day => "dd/MM",
-            BucketType.Month => "MM/yyyy",
-            BucketType.Year => "yyyy",
-            _ => throw new InternalErrorException("Invalid time interval length"),
-        };
 
-        var scores = await _kriRepo
+        var scores = await _portStatusRepo
             .GetAllReadings()
             .Select(r => new ScoreInfo
             {
@@ -84,7 +137,7 @@ public class PortStatusService : KriService, IPortStatusService
             });
     }
 
-    private (DateTime from, DateTime to) ParseFilterInput(string preset, string? fromStr, string? toStr)
+    private static (DateTime from, DateTime to) ParseFilterInput(string preset, string? fromStr, string? toStr)
     {
         var from = DateTime.MinValue;
         var to = DateTime.UtcNow;
@@ -116,7 +169,7 @@ public class PortStatusService : KriService, IPortStatusService
         return (from, to);
     }
 
-    private (DateTime from, int bucketCount, BucketType interval) ParseFilterInput(string trendTimeFrame)
+    private static (DateTime from, int bucketCount, BucketType interval) ParseFilterInput(string trendTimeFrame)
     {
         var now = DateTime.UtcNow;
 
@@ -143,4 +196,22 @@ public class PortStatusService : KriService, IPortStatusService
         return (from, bucketCount, interval);
     }
 
+    private static ThresholdDto[] BuildThresholds(double greenMax, double yellowMax, string unit)
+    {
+        var u = unit.Trim();
+        return new[]
+        {
+            new ThresholdDto($"<{greenMax}{u}", "#22c55e", "Low"),
+            new ThresholdDto($"{greenMax}-{yellowMax}{u}", "#eab308", "Medium"),
+            new ThresholdDto($">{yellowMax}{u}", "#ef4444", "High"),
+        };
+    }
+
+    private static string GetSeverity(double? value, double greenMax, double yellowMax)
+    {
+        if (!value.HasValue) return "Low";
+        if (value.Value <= greenMax) return "Low";
+        if (value.Value <= yellowMax) return "Medium";
+        return "High";
+    }
 }

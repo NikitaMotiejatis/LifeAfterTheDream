@@ -25,8 +25,8 @@ export default function PortMapCard({ vessels }: Props) {
       <p className="text-xs text-gray-500 mb-4">55.7033° N, 21.1291° E</p>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-3 h-64 rounded-lg overflow-hidden">
-  			<ShipMap />
-		</div>
+          <ShipMap />
+        </div>
         <div>
           <h3 className="text-sm font-semibold text-gray-900 mb-3">
             Active Vessels

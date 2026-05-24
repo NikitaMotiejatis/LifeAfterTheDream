@@ -1,7 +1,7 @@
-using PortRiskMonitor.Application.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PortRiskMonitor.Application.Interfaces;
 
 namespace PortRiskMonitor.Application.BackgroundServices;
 

@@ -14,12 +14,12 @@
 
 using Amazon.SimpleNotificationService;
 using FluentValidation;
-using PortRiskMonitor.API.Filters;
-using PortRiskMonitor.API.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using PortRiskMonitor.API.Exceptions;
+using PortRiskMonitor.API.Filters;
+using PortRiskMonitor.Application.BackgroundServices;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Application.Services;
-using PortRiskMonitor.Application.BackgroundServices;
 using PortRiskMonitor.Infrastructure.Alerts;
 using PortRiskMonitor.Infrastructure.BerthOccupancy;
 using PortRiskMonitor.Infrastructure.CustomsDwellTime;
@@ -101,6 +101,7 @@ try
     builder.Services.AddSingleton<IWeatherSnapshotCache, WeatherSnapshotCache>();
 
     // Application Services (Business Logic Layer)
+    builder.Services.AddScoped<IDasboardService, DashboardService>();
     builder.Services.AddScoped<IPortRiskMonitorService, PortRiskMonitorService>();
     builder.Services.AddScoped<IThresholdSettingsService, ThresholdSettingsService>();
     builder.Services.AddScoped<IAlertingService, AlertingService>();
