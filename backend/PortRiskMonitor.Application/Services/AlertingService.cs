@@ -1,6 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PortRiskMonitor.Application.Interfaces;
-using PortRiskMonitor.Infrastructure.Repositories;
+using PortRiskMonitor.Infrastructure.Alerts;
 using RiskMonitor.Entities;
 using RiskMonitor.Repositories;
 using RiskMonitor.Services;
@@ -9,18 +10,18 @@ namespace PortRiskMonitor.Application.Services;
 
 public class AlertingService : IAlertingService
 {
-    private readonly IKriAdminRepository _kriRepo;
+    private readonly IRiskMonitorRepository _riskRepo;
     private readonly IAlertRepository _alertRepo;
     private readonly IAlertNotifier _notifier;
     private readonly ILogger<AlertingService> _logger;
 
     public AlertingService(
-        IKriAdminRepository kriRepo,
+        IRiskMonitorRepository  riskRepo,
         IAlertRepository alertRepo,
         IAlertNotifier notifier,
         ILogger<AlertingService> logger)
     {
-        _kriRepo = kriRepo;
+        _riskRepo = riskRepo;
         _alertRepo = alertRepo;
         _notifier = notifier;
         _logger = logger;
@@ -28,7 +29,7 @@ public class AlertingService : IAlertingService
 
     public async Task EvaluateAllLatestAsync(CancellationToken cancellationToken = default)
     {
-        var latestReadings = await _kriRepo.GetLatestReadingsAsync();
+        var latestReadings = await _riskRepo.GetLatestReadings().ToListAsync();
 
         foreach (var reading in latestReadings)
         {
@@ -43,7 +44,7 @@ public class AlertingService : IAlertingService
         if (kri is null) return;
 
         var level = Classify(reading.Value, kri.GreenMax, kri.YellowMax);
-        var activeAlerts = (await _alertRepo.GetActiveAlertsForKriAsync(kri.Id)).ToList();
+        var activeAlerts = await _alertRepo.GetActiveAlertsForKri(kri.Id).ToListAsync();
 
         if (level == "Green")
         {

@@ -1,6 +1,9 @@
 using PortRiskMonitor.Application.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
-namespace PortRiskMonitor.API.BackgroundServices;
+namespace PortRiskMonitor.Application.BackgroundServices;
 
 public class AlertEvaluationBackgroundService : BackgroundService
 {

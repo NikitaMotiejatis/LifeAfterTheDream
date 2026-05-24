@@ -23,14 +23,3 @@ public interface IKriRepository
             .OrderBy(r => r.Timestamp);
     }
 }
-
-// Cross-Kri administration: read the catalog, mutate thresholds, fetch latest
-// readings across all metrics. Implemented by the central KriRepository only —
-// per-indicator repos (BerthOccupancyRepo, etc.) don't need this surface.
-public interface IKriAdminRepository
-{
-    Task<IEnumerable<Kri>> GetAllAsync();
-    Task<Kri?> GetBySlugAsync(string slug);
-    Task<Kri> UpdateAsync(Kri kri);
-    Task<IEnumerable<KriReading>> GetLatestReadingsAsync();
-}

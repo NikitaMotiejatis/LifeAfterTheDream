@@ -1,12 +1,14 @@
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Interfaces;
 using RiskMonitor.Repositories;
+using PortRiskMonitor.Application.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace PortRiskMonitor.Application.Services;
 
 public class ThresholdSettingsService : IThresholdSettingsService
 {
-    private readonly IKriAdminRepository _kriRepo;
+    private readonly IRiskMonitorRepository _kriRepo;
 
     // Seed defaults — kept in sync with SeedData.cs. Used by ResetAsync.
     private static readonly Dictionary<string, ThresholdPairDto> SeedDefaults = new()
@@ -18,14 +20,16 @@ public class ThresholdSettingsService : IThresholdSettingsService
         ["customs-dwell-time"] = new(24, 72),
     };
 
-    public ThresholdSettingsService(IKriAdminRepository kriRepo)
+    public ThresholdSettingsService(IRiskMonitorRepository kriRepo)
     {
         _kriRepo = kriRepo;
     }
 
     public async Task<ThresholdSettingsDto> GetAllAsync()
     {
-        var kris = await _kriRepo.GetAllAsync();
+        var kris = await _kriRepo
+            .GetAllIndicators()
+            .ToListAsync();
         var result = new ThresholdSettingsDto();
         foreach (var kri in kris)
         {
@@ -41,7 +45,7 @@ public class ThresholdSettingsService : IThresholdSettingsService
             ValidatePair(slug, pair);
 
             var kri = await _kriRepo.GetBySlugAsync(slug)
-                ?? throw new InvalidOperationException($"Unknown metric slug: {slug}");
+                ?? throw new BadInputException($"Unknown metric slug: {slug}");
 
             // GetBySlugAsync returns AsNoTracking — re-attach for update.
             kri.GreenMax = pair.Green;
@@ -60,10 +64,10 @@ public class ThresholdSettingsService : IThresholdSettingsService
     private static void ValidatePair(string slug, ThresholdPairDto pair)
     {
         if (double.IsNaN(pair.Green) || double.IsNaN(pair.Yellow))
-            throw new ArgumentException($"{slug}: thresholds must be numeric.");
+            throw new BadInputException($"{slug}: thresholds must be numeric.");
         if (pair.Green < 0 || pair.Yellow < 0)
-            throw new ArgumentException($"{slug}: thresholds must be non-negative.");
+            throw new BadInputException($"{slug}: thresholds must be non-negative.");
         if (pair.Green >= pair.Yellow)
-            throw new ArgumentException($"{slug}: green ({pair.Green}) must be less than yellow ({pair.Yellow}).");
+            throw new BadInputException($"{slug}: green ({pair.Green}) must be less than yellow ({pair.Yellow}).");
     }
 }

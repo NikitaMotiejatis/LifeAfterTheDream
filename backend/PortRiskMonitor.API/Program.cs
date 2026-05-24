@@ -14,12 +14,13 @@
 
 using Amazon.SimpleNotificationService;
 using FluentValidation;
-using Microsoft.EntityFrameworkCore;
-using PortRiskMonitor.API.BackgroundServices;
-using PortRiskMonitor.API.Exceptions;
 using PortRiskMonitor.API.Filters;
+using PortRiskMonitor.API.Exceptions;
+using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Application.Services;
+using PortRiskMonitor.Application.BackgroundServices;
+using PortRiskMonitor.Infrastructure.Alerts;
 using PortRiskMonitor.Infrastructure.BerthOccupancy;
 using PortRiskMonitor.Infrastructure.CustomsDwellTime;
 using PortRiskMonitor.Infrastructure.Data;
@@ -88,7 +89,6 @@ try
 
     // Repositories (Data Access Layer)
     builder.Services.AddScoped<IKriRepository, KriRepository>(); // IKriRepository = RiskMonitor.Repositories.IKriRepository
-    builder.Services.AddScoped<IKriAdminRepository, KriRepository>();
     builder.Services.AddScoped<IAlertRepository, AlertRepository>();
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
     builder.Services.AddScoped<IRiskMonitorRepository, PortRiskMonitorRepo>();

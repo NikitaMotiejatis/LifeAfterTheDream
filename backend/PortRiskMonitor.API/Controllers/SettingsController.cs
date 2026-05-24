@@ -5,7 +5,7 @@ using PortRiskMonitor.Application.Interfaces;
 namespace PortRiskMonitor.API.Controllers;
 
 [ApiController]
-[Route("api/settings")]
+[Route("api/[controller]")]
 [Produces("application/json")]
 public class SettingsController : ControllerBase
 {
@@ -25,20 +25,7 @@ public class SettingsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateThresholds([FromBody] ThresholdSettingsDto settings)
-    {
-        try
-        {
-            return Ok(await _service.UpdateAsync(settings));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
+        => Ok(await _service.UpdateAsync(settings));
 
     [HttpPost("thresholds/reset")]
     [ProducesResponseType(StatusCodes.Status200OK)]

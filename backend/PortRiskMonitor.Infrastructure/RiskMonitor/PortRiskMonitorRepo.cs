@@ -23,8 +23,11 @@ public class PortRiskMonitorRepo : IRiskMonitorRepository
 
     public IQueryable<Alert> GetAllAlerts()
         => _db.Alerts;
-
-    public IQueryable<KriReading> GetKriReadings(string slug)
-        => _db.KriReadings
-            .Where(r => r.Kri.Slug == slug);
+        
+    public async Task<Kri> UpdateAsync(Kri kri)
+    {
+        _db.Kris.Update(kri);
+        await _db.SaveChangesAsync();
+        return kri;
+    }
 }
