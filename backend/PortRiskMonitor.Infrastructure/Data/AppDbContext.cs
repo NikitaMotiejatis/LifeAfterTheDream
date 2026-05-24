@@ -32,10 +32,10 @@ public class AppDbContext : DbContext
             entity.ToTable("Kris");
             entity.HasKey(e => e.Id);
 
-            entity.Property(e => e.RowVersion)
+            entity.Property<uint>("xmin")
+                .HasColumnName("xmin")
                 .IsRowVersion()
-                .IsConcurrencyToken()
-                .HasDefaultValueSql("randomblob(8)");
+                .IsConcurrencyToken();
 
             entity.HasIndex(e => e.Name)
                 .IsUnique()

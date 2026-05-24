@@ -23,6 +23,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 namespace PortRiskMonitor.Infrastructure.Data;
 
@@ -30,12 +31,10 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
     {
-        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql("Host=localhost;Port=5432;Database=portrisks;Username=portuser;Password=portpass")
+            .Options;
 
-        // Hardcoded SQLite path for design-time only (migrations, scaffolding).
-        // This does NOT affect the runtime connection string in appsettings.json.
-        optionsBuilder.UseSqlite("Data Source=port_risk_monitor_designtime.db");
-
-        return new AppDbContext(optionsBuilder.Options);
+        return new AppDbContext(options);
     }
 }

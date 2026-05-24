@@ -52,9 +52,8 @@ public class KriDefinition
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-
-    [Timestamp]
-    public byte[] RowVersion { get; set; } = null!;
+    // ── Concurrency token for optimistic concurrency control ──-──────────────
+    public uint xmin { get; set; }
 
     // ── Navigation properties (EF Core relationships) ─────────────────────────
     public ICollection<KriReading> Readings { get; set; } = new List<KriReading>();

@@ -28,6 +28,7 @@ using PortRiskMonitor.Infrastructure.VesselDelayRate;
 using PortRiskMonitor.Infrastructure.WeatherCondition;
 using RiskMonitor.Repositories;
 using Serilog;
+using Npgsql.EntityFrameworkCore.PostgreSQL; // For UseNpgsql extension method
 
 // ── Storage note ─────────────────────────────────────────────────────────────
 // Historical data is stored in the same SQLite DB using EF Core (KriDefinitions
@@ -65,23 +66,15 @@ try
     });
 
     // ── Database — Data Access Layer ─────────────────────────────────────────
-    // NFR: Data Access — EF Core ORM, transactions scoped to single HTTP request
-    // SQLite is used for PoC (zero config). Swap to SQL Server for production.
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
         ?? "Data Source=port_risk_monitor.db";
 
     builder.Services.AddDbContext<AppDbContext>(options =>
     {
-        options.UseSqlite(connectionString);
-        // TODO: Enable sensitive data logging only in Development
-        // options.EnableSensitiveDataLogging(builder.Environment.IsDevelopment());
+        options.UseNpgsql(connectionString);
     });
 
     // ── Dependency Injection — Business Logic Layer ───────────────────────────
-    // NFR: Memory Management — all services registered as Scoped (per-request lifetime)
-    // NEVER use AddSingleton for stateful services — would cause cross-request data leakage
-    // NEVER use AddSingleton for DbContext — EF Core is not thread-safe across requests
-
     // Repositories (Data Access Layer)
     builder.Services.AddScoped<IKriRepository, KriRepository>(); // IKriRepository = RiskMonitor.Repositories.IKriRepository
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
