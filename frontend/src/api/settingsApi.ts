@@ -23,10 +23,10 @@ export const DEFAULT_SETTINGS: FormulaSettings = {
 // disruptionIndex.{berth,delay,customs,weather}Weight) stay in localStorage.
 
 const UI_TO_SLUG = {
-  berthOccupancy: 'berth',
-  vesselDelayRate: 'vessel-delays',
-  customsDwellTime: 'customs',
-  weatherRisk: 'weather',
+  berthOccupancy: 'berth-occupancy',
+  vesselDelayRate: 'vessel-delay-rate',
+  customsDwellTime: 'customs-dwell-time',
+  weatherRisk: 'weather-risk',
   disruptionIndex: 'port-status',
 } as const;
 

@@ -11,11 +11,11 @@ public class ThresholdSettingsService : IThresholdSettingsService
     // Seed defaults — kept in sync with SeedData.cs. Used by ResetAsync.
     private static readonly Dictionary<string, ThresholdPairDto> SeedDefaults = new()
     {
-        ["port-status"]   = new(30, 60),
-        ["berth"]         = new(70, 90),
-        ["vessel-delays"] = new(10, 25),
-        ["weather"]       = new(20, 40),
-        ["customs"]       = new(24, 72),
+        ["port-status"]        = new(30, 60),
+        ["berth-occupancy"]    = new(70, 90),
+        ["vessel-delay-rate"]  = new(10, 25),
+        ["weather-risk"]       = new(20, 40),
+        ["customs-dwell-time"] = new(24, 72),
     };
 
     public ThresholdSettingsService(IKriAdminRepository kriRepo)
