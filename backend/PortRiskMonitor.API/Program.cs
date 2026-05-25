@@ -102,6 +102,7 @@ try
     builder.Services.AddSingleton<IAisSnapshotCache, AisSnapshotCache>();
 
     // Application Services (Business Logic Layer)
+    builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
     builder.Services.AddScoped<IDasboardService, DashboardService>();
     builder.Services.AddScoped<IPortRiskMonitorService, PortRiskMonitorService>();
     builder.Services.AddScoped<IThresholdSettingsService, ThresholdSettingsService>();
