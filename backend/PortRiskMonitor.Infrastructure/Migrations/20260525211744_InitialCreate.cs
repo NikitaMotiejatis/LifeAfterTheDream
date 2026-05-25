@@ -15,18 +15,18 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 name: "AuditLogs",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ClassName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    MethodName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    UserIdentifier = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    Permissions = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    ExecutedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    DurationMs = table.Column<long>(type: "INTEGER", nullable: false),
-                    Success = table.Column<bool>(type: "INTEGER", nullable: false),
-                    ErrorMessage = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
-                    HttpMethod = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false),
-                    RequestPath = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    ResponseStatusCode = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ClassName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    MethodName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    UserIdentifier = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Permissions = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    ExecutedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DurationMs = table.Column<long>(type: "bigint", nullable: false),
+                    Success = table.Column<bool>(type: "boolean", nullable: false),
+                    ErrorMessage = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    HttpMethod = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    RequestPath = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    ResponseStatusCode = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -37,18 +37,18 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 name: "Kris",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 1024, nullable: false),
-                    Unit = table.Column<string>(type: "TEXT", maxLength: 16, nullable: false),
-                    Slug = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "BLOB", rowVersion: true, nullable: false, defaultValueSql: "randomblob(8)"),
-                    GreenMax = table.Column<double>(type: "REAL", nullable: false),
-                    YellowMax = table.Column<double>(type: "REAL", nullable: false),
-                    MockBaseline = table.Column<double>(type: "REAL", nullable: false),
-                    MockVariance = table.Column<double>(type: "REAL", nullable: false),
-                    MockPattern = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    Description = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false),
+                    Unit = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    Slug = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    GreenMax = table.Column<float>(type: "REAL", nullable: false),
+                    YellowMax = table.Column<float>(type: "REAL", nullable: false),
+                    MockBaseline = table.Column<float>(type: "REAL", nullable: false),
+                    MockVariance = table.Column<float>(type: "REAL", nullable: false),
+                    MockPattern = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -59,14 +59,14 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 name: "Alerts",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    KriId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    KriName = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
-                    Level = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false),
-                    TriggerValue = table.Column<double>(type: "REAL", nullable: false),
-                    TriggeredAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    ResolvedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    Message = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    KriId = table.Column<Guid>(type: "uuid", nullable: false),
+                    KriName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    Level = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    TriggerValue = table.Column<float>(type: "REAL", nullable: false),
+                    TriggeredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ResolvedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Message = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -83,10 +83,10 @@ namespace PortRiskMonitor.Infrastructure.Migrations
                 name: "KriReadings",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Value = table.Column<double>(type: "REAL", nullable: false),
-                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    KriId = table.Column<Guid>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Value = table.Column<float>(type: "REAL", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    KriId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
