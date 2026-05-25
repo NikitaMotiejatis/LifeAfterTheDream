@@ -12,89 +12,30 @@ using RiskMonitor.Repositories;
 
 namespace PortRiskMonitor.Infrastructure.Repositories;
 
-public class KriRepository : IKriRepository
+public abstract class KriRepository : IKriRepository
 {
     private readonly AppDbContext _db;
+    private readonly string _slug;
 
-    public KriRepository(AppDbContext db) => _db = db;
+    protected KriRepository(
+            AppDbContext db,
+            string slug)
+    {
+        _db = db;
+        _slug = slug;
+    }
 
-    // ── KRI definitions ────────────────────────────────────────────────────────
+    public Task<Kri?> GetKri()
+        => _db.Kris
+            .FirstOrDefaultAsync(kri => kri.Slug == _slug);
 
-    public async Task<Kri> GetKri()
-        => new Kri
-        {
-            Name = "",
-            Description = "",
-        };
+    public Task<Kri?> GetKriWithReadings(DateTime from, DateTime to)
+        => _db.Kris
+            .Include(kri => kri.Readings
+                .Where(r => from <= r.Timestamp && r.Timestamp <= to))
+            .FirstOrDefaultAsync(kri => kri.Slug == _slug);
+
     public IQueryable<KriReading> GetAllReadings()
-        => _db.KriReadings;
-
-    public async Task<IEnumerable<Kri>> GetAllAsync()
-        => await _db.Kris
-            .OrderByDescending(k => k.CreatedAt)
-            .AsNoTracking()
-            .ToListAsync();
-
-    public async Task<Kri?> GetByIdAsync(Guid id)
-        => await _db.Kris.FirstOrDefaultAsync(k => k.Id == id);
-
-    public async Task<Kri?> GetBySlugAsync(string slug)
-        => await _db.Kris
-            .AsNoTracking()
-            .FirstOrDefaultAsync(k => k.Slug == slug);
-
-    public async Task<Kri> CreateAsync(Kri kri)
-    {
-        kri.Id = Guid.NewGuid();
-        kri.CreatedAt = DateTime.UtcNow;
-        _db.Kris.Add(kri);
-        await _db.SaveChangesAsync();
-        return kri;
-    }
-
-    public async Task<Kri> UpdateAsync(Kri kri)
-    {
-        _db.Kris.Update(kri);
-        await _db.SaveChangesAsync();
-        return kri;
-    }
-
-    public async Task DeleteAsync(Guid id)
-    {
-        var kri = await _db.Kris.FindAsync(id);
-        if (kri is null) return;
-        _db.Kris.Remove(kri);
-        await _db.SaveChangesAsync();
-    }
-
-    public async Task<IEnumerable<KriReading>> GetReadingsAsync(
-        Guid kriId, DateTime from, DateTime to, int take = 1000)
-        => await _db.KriReadings
-            .Where(r => r.KriId == kriId && r.Timestamp >= from && r.Timestamp <= to)
-            .OrderBy(r => r.Timestamp)
-            .Take(take)
-            .AsNoTracking()
-            .ToListAsync();
-
-    public async Task<KriReading> AddReadingAsync(KriReading reading)
-    {
-        reading.Id = Guid.NewGuid();
-        _db.KriReadings.Add(reading);
-        await _db.SaveChangesAsync();
-        return reading;
-    }
-
-    public async Task AddReadingsBatchAsync(IEnumerable<KriReading> readings)
-    {
-        // Assign IDs only — do NOT override Timestamp here.
-        // Callers (SeedData, background services) set their own timestamps.
-        var list = readings.Select(r =>
-        {
-            r.Id = Guid.NewGuid();
-            return r;
-        }).ToList();
-
-        await _db.KriReadings.AddRangeAsync(list);
-        await _db.SaveChangesAsync();
-    }
+        => _db.KriReadings
+            .Where(r => r.Kri.Slug == _slug);
 }

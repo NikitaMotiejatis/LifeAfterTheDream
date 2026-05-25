@@ -84,7 +84,6 @@ try
     // NEVER use AddSingleton for DbContext — EF Core is not thread-safe across requests
 
     // Repositories (Data Access Layer)
-    builder.Services.AddScoped<IKriRepository, KriRepository>(); // IKriRepository = RiskMonitor.Repositories.IKriRepository
     builder.Services.AddScoped<IAlertRepository, AlertRepository>();
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
     builder.Services.AddScoped<IRiskMonitorRepository, PortRiskMonitorRepo>();

@@ -121,6 +121,7 @@ export default function TrendChart({
                 timeStyle: 'short',
               });
             }}
+            formatter={(value: any) => [Number(value).toFixed(1), 'Value']}
           />
           <Legend />
 

@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
@@ -29,13 +27,10 @@ public class AnalyticsService : IAnalyticsService
         const long numberOfBuckets = 50;
         var bucketLength = (to - from) / numberOfBuckets;
 
-        var kri = await _portRiskMonitorRepo
-            .GetAllIndicators()
-            .Where(kri => kri.Slug == slug)
-            .FirstOrDefaultAsync()
+        var kri = await _portRiskMonitorRepo.GetBySlugAsync(slug)
             ?? throw new NotFoundException("Risk indicator not found");
 
-        var readings = await _portRiskMonitorRepo
+        var scores = await _portRiskMonitorRepo
             .GetKriReadings(slug)
             .Where(r => from <= r.Timestamp && r.Timestamp <= to)
             .Select(r => new ScoreInfo
@@ -49,7 +44,7 @@ public class AnalyticsService : IAnalyticsService
             Title: kri.Name,
             GreenMax: kri.GreenMax,
             YellowMax: kri.YellowMax,
-            Sparkline: readings
+            Sparkline: scores
                 .Select(b => new DataPoint
                 {
                     Label = b.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),

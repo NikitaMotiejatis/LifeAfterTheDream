@@ -40,16 +40,12 @@ public class DashboardService : IDasboardService
         var bucketLength = (to - from) / numberOfBuckets;
 
         var scores = await _portStatusRepo
-            .GetReadings(from, to)
-            .Select(r => new ScoreInfo
-            {
-                Timestamp = r.Timestamp,
-                Value = r.Value,
-            })
+            .GetScores(from, to)
             .DownsampleM4Async(from, 4 * bucketLength);
 
         var disruptionIndex = (await _portStatusRepo.GetLatestReading())?.Value;
-        var kri = await _portStatusRepo.GetKri();
+        var kri = await _portStatusRepo.GetKriWithReadings(from, to)
+            ?? throw new InternalErrorException("Could not find Kri");
 
         return new PortStatusDto
         {
@@ -125,14 +121,10 @@ public class DashboardService : IDasboardService
     public async Task<IEnumerable<DataPoint>> GetTrend(string trendTimeFrame)
     {
         var (from, bucketCount, interval) = _filterInputParser.ParseFilterInput(trendTimeFrame);
+        var to = DateTime.UtcNow;
 
         var scores = await _portStatusRepo
-            .GetAllReadings()
-            .Select(r => new ScoreInfo
-            {
-                Timestamp = r.Timestamp,
-                Value = r.Value,
-            })
+            .GetScores(from, to)
             .DownsampleAverageAsync(from, bucketCount, interval);
 
         return scores

@@ -25,5 +25,4 @@ public interface IRiskMonitorRepository
                 .OrderByDescending(r => r.Timestamp)
                 .FirstOrDefault())
             .Where(r => r != null)!;
-
 }
