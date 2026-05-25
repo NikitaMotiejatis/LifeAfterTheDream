@@ -8,4 +8,5 @@ public interface IDasboardService
     Task<WeatherSnapshot> GetWeather();
     Task<IEnumerable<KriCardDto>> GetKriCards(string preset, string? from, string? to);
     Task<IEnumerable<DataPoint>> GetTrend(string trendTimeFrame);
+    Task<AisSnapshot> GetAis();
 }

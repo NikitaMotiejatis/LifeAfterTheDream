@@ -99,6 +99,7 @@ try
     builder.Services.AddScoped<IWeatherConditionRepo, WeatherConditionRepo>();
 
     builder.Services.AddSingleton<IWeatherSnapshotCache, WeatherSnapshotCache>();
+    builder.Services.AddSingleton<IAisSnapshotCache, AisSnapshotCache>();
 
     // Application Services (Business Logic Layer)
     builder.Services.AddScoped<IDasboardService, DashboardService>();
@@ -141,6 +142,9 @@ try
 
     builder.Services.AddHttpClient<WeatherFetcherService>();
     builder.Services.AddHostedService<WeatherFetcherService>();
+
+    builder.Services.AddHttpClient<AisFetcherService>();
+    builder.Services.AddHostedService<AisFetcherService>();
 
 
     // TODO

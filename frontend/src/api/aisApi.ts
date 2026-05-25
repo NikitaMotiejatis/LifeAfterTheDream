@@ -13,7 +13,9 @@ export interface AisVessel {
 }
 
 export async function fetchAisVessels(): Promise<AisVessel[]> {
-  const { data: geojson } = await axiosInstance.get('/ais');
+  const {
+    data: { targets: geojson },
+  } = await axiosInstance.get('dashboard/ais');
 
   return geojson.features.map((f: any) => ({
     mmsi: f.properties.mmsi,

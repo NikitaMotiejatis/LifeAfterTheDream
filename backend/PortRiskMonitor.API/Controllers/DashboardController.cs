@@ -45,4 +45,11 @@ public class DashboardController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTrend([FromQuery] string trendTimeFrame)
         => Ok((await _dashboardService.GetTrend(trendTimeFrame)).ToArray());
+
+    [HttpGet("ais")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetAis()
+        => Ok((await _dashboardService.GetAis()));
 }

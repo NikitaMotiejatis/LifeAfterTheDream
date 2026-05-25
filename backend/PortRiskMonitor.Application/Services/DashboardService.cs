@@ -15,15 +15,18 @@ public class DashboardService : IDasboardService
     private readonly IRiskMonitorRepository _riskMonitorRepo;
     private readonly IPortStatusRepo _portStatusRepo;
     private readonly IWeatherSnapshotCache _weatherCache;
+    private readonly IAisSnapshotCache _aisCache;
 
     public DashboardService(
             IRiskMonitorRepository riskMonitorRepo,
             IPortStatusRepo portStatusRepo,
-            IWeatherSnapshotCache weatherCache)
+            IWeatherSnapshotCache weatherCache,
+            IAisSnapshotCache aisCache)
     {
         _riskMonitorRepo = riskMonitorRepo;
         _portStatusRepo = portStatusRepo;
         _weatherCache = weatherCache;
+        _aisCache = aisCache;
     }
 
     public async Task<PortStatusDto> GetPortStatus(string preset, string? fromStr, string? toStr)
@@ -136,6 +139,9 @@ public class DashboardService : IDasboardService
                 Value = bucket.Value,
             });
     }
+
+    public Task<AisSnapshot> GetAis()
+        => Task.FromResult(_aisCache.GetLatest());
 
     private static (DateTime from, DateTime to) ParseFilterInput(string preset, string? fromStr, string? toStr)
     {
