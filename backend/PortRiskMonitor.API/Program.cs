@@ -21,15 +21,11 @@ using PortRiskMonitor.Application.BackgroundServices;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Application.Services;
 using PortRiskMonitor.Infrastructure.Alerts;
-using PortRiskMonitor.Infrastructure.BerthOccupancy;
-using PortRiskMonitor.Infrastructure.CustomsDwellTime;
 using PortRiskMonitor.Infrastructure.Data;
 using PortRiskMonitor.Infrastructure.Notifications;
 using PortRiskMonitor.Infrastructure.PortStatus;
 using PortRiskMonitor.Infrastructure.Repositories;
 using PortRiskMonitor.Infrastructure.RiskMonitor;
-using PortRiskMonitor.Infrastructure.VesselDelayRate;
-using PortRiskMonitor.Infrastructure.WeatherCondition;
 using RiskMonitor.Repositories;
 using RiskMonitor.Services;
 using Serilog;
@@ -93,10 +89,6 @@ try
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
     builder.Services.AddScoped<IRiskMonitorRepository, PortRiskMonitorRepo>();
     builder.Services.AddScoped<IPortStatusRepo, PortStatusRepo>();
-    builder.Services.AddScoped<IVesselDelayRateRepo, VesselDelayRateRepo>();
-    builder.Services.AddScoped<IBerthOccupancyRepo, BerthOccupancyRepo>();
-    builder.Services.AddScoped<ICustomsDwellTimeRepo, CustomsDwellTimeRepo>();
-    builder.Services.AddScoped<IWeatherConditionRepo, WeatherConditionRepo>();
 
     builder.Services.AddSingleton<IWeatherSnapshotCache, WeatherSnapshotCache>();
     builder.Services.AddSingleton<IAisSnapshotCache, AisSnapshotCache>();
@@ -104,7 +96,6 @@ try
     // Application Services (Business Logic Layer)
     builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
     builder.Services.AddScoped<IDasboardService, DashboardService>();
-    builder.Services.AddScoped<IPortRiskMonitorService, PortRiskMonitorService>();
     builder.Services.AddScoped<IThresholdSettingsService, ThresholdSettingsService>();
     builder.Services.AddScoped<IAlertingService, AlertingService>();
 
@@ -135,13 +126,6 @@ try
     }
 
     builder.Services.AddHostedService<AlertEvaluationBackgroundService>();
-
-    // Indicator Services
-    builder.Services.AddScoped<IPortStatusService, PortStatusService>();
-    builder.Services.AddScoped<IBerthOccupancyService, BerthOccupancyService>();
-    builder.Services.AddScoped<IVesselDelayRateService, VesselDelayRateService>();
-    builder.Services.AddScoped<ICustomsDwellTimeService, CustomsDwellTimeService>();
-    builder.Services.AddScoped<IWeatherConditionService, WeatherConditionService>();
 
     builder.Services.AddHttpClient<WeatherFetcherService>();
     builder.Services.AddHostedService<WeatherFetcherService>();
