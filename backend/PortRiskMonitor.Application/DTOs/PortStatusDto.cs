@@ -17,14 +17,5 @@ public record PortStatusDto
     public required double YellowMax { get; init; }
 
     [JsonPropertyName("sparkline")]
-    public required ICollection<SparkPoint> Sparkline { get; init; }
-
-    public record SparkPoint
-    {
-        [JsonPropertyName("label")]
-        public required string Label { get; init; }
-
-        [JsonPropertyName("value")]
-        public required double Value { get; init; }
-    }
+    public required ICollection<DataPoint> Sparkline { get; init; }
 };

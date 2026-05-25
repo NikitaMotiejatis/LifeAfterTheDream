@@ -54,7 +54,10 @@ function loadExtras(): FormulaExtras {
   const stored = localStorage.getItem(EXTRAS_KEY);
   if (!stored) return defaultExtras();
   try {
-    return { ...defaultExtras(), ...(JSON.parse(stored) as Partial<FormulaExtras>) };
+    return {
+      ...defaultExtras(),
+      ...(JSON.parse(stored) as Partial<FormulaExtras>),
+    };
   } catch {
     return defaultExtras();
   }
@@ -79,9 +82,21 @@ function pair(
 function mergeWithExtras(resp: ThresholdsResponse): FormulaSettings {
   const extras = loadExtras();
   return {
-    berthOccupancy: pair(resp, 'berthOccupancy', DEFAULT_SETTINGS.berthOccupancy),
-    vesselDelayRate: pair(resp, 'vesselDelayRate', DEFAULT_SETTINGS.vesselDelayRate),
-    customsDwellTime: pair(resp, 'customsDwellTime', DEFAULT_SETTINGS.customsDwellTime),
+    berthOccupancy: pair(
+      resp,
+      'berthOccupancy',
+      DEFAULT_SETTINGS.berthOccupancy,
+    ),
+    vesselDelayRate: pair(
+      resp,
+      'vesselDelayRate',
+      DEFAULT_SETTINGS.vesselDelayRate,
+    ),
+    customsDwellTime: pair(
+      resp,
+      'customsDwellTime',
+      DEFAULT_SETTINGS.customsDwellTime,
+    ),
     weatherRisk: {
       ...pair(resp, 'weatherRisk', DEFAULT_SETTINGS.weatherRisk),
       waveHeightMultiplier: extras.waveHeightMultiplier,
@@ -116,7 +131,9 @@ function toBackendPayload(settings: FormulaSettings): ThresholdsResponse {
 }
 
 export async function getFormulaSettings(): Promise<FormulaSettings> {
-  const resp = await axiosInstance.get<ThresholdsResponse>('/settings/thresholds');
+  const resp = await axiosInstance.get<ThresholdsResponse>(
+    '/settings/thresholds',
+  );
   return mergeWithExtras(resp.data);
 }
 

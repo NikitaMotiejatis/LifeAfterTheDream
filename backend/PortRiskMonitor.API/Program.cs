@@ -14,22 +14,18 @@
 
 using Amazon.SimpleNotificationService;
 using FluentValidation;
-using PortRiskMonitor.API.Filters;
-using PortRiskMonitor.API.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using PortRiskMonitor.API.Exceptions;
+using PortRiskMonitor.API.Filters;
+using PortRiskMonitor.Application.BackgroundServices;
 using PortRiskMonitor.Application.Interfaces;
 using PortRiskMonitor.Application.Services;
-using PortRiskMonitor.Application.BackgroundServices;
 using PortRiskMonitor.Infrastructure.Alerts;
-using PortRiskMonitor.Infrastructure.BerthOccupancy;
-using PortRiskMonitor.Infrastructure.CustomsDwellTime;
 using PortRiskMonitor.Infrastructure.Data;
 using PortRiskMonitor.Infrastructure.Notifications;
 using PortRiskMonitor.Infrastructure.PortStatus;
 using PortRiskMonitor.Infrastructure.Repositories;
 using PortRiskMonitor.Infrastructure.RiskMonitor;
-using PortRiskMonitor.Infrastructure.VesselDelayRate;
-using PortRiskMonitor.Infrastructure.WeatherCondition;
 using RiskMonitor.Repositories;
 using RiskMonitor.Services;
 using Serilog;
@@ -88,22 +84,21 @@ try
     // NEVER use AddSingleton for DbContext — EF Core is not thread-safe across requests
 
     // Repositories (Data Access Layer)
-    builder.Services.AddScoped<IKriRepository, KriRepository>(); // IKriRepository = RiskMonitor.Repositories.IKriRepository
     builder.Services.AddScoped<IAlertRepository, AlertRepository>();
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
     builder.Services.AddScoped<IRiskMonitorRepository, PortRiskMonitorRepo>();
     builder.Services.AddScoped<IPortStatusRepo, PortStatusRepo>();
-    builder.Services.AddScoped<IVesselDelayRateRepo, VesselDelayRateRepo>();
-    builder.Services.AddScoped<IBerthOccupancyRepo, BerthOccupancyRepo>();
-    builder.Services.AddScoped<ICustomsDwellTimeRepo, CustomsDwellTimeRepo>();
-    builder.Services.AddScoped<IWeatherConditionRepo, WeatherConditionRepo>();
 
     builder.Services.AddSingleton<IWeatherSnapshotCache, WeatherSnapshotCache>();
+    builder.Services.AddSingleton<IAisSnapshotCache, AisSnapshotCache>();
 
     // Application Services (Business Logic Layer)
-    builder.Services.AddScoped<IPortRiskMonitorService, PortRiskMonitorService>();
+    builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+    builder.Services.AddScoped<IDasboardService, DashboardService>();
     builder.Services.AddScoped<IThresholdSettingsService, ThresholdSettingsService>();
     builder.Services.AddScoped<IAlertingService, AlertingService>();
+
+    builder.Services.AddSingleton<IFilterInputParser, FilterInputParser>();
 
     // ── Alerting / SMS ──────────────────────────────────────────────────────────
     // Recipient phone list + on/off switch live in appsettings under "Alerts:Sms".
@@ -131,15 +126,11 @@ try
 
     builder.Services.AddHostedService<AlertEvaluationBackgroundService>();
 
-    // Indicator Services
-    builder.Services.AddScoped<IPortStatusService, PortStatusService>();
-    builder.Services.AddScoped<IBerthOccupancyService, BerthOccupancyService>();
-    builder.Services.AddScoped<IVesselDelayRateService, VesselDelayRateService>();
-    builder.Services.AddScoped<ICustomsDwellTimeService, CustomsDwellTimeService>();
-    builder.Services.AddScoped<IWeatherConditionService, WeatherConditionService>();
-
     builder.Services.AddHttpClient<WeatherFetcherService>();
     builder.Services.AddHostedService<WeatherFetcherService>();
+
+    builder.Services.AddHttpClient<AisFetcherService>();
+    builder.Services.AddHostedService<AisFetcherService>();
 
 
     // TODO

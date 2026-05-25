@@ -16,7 +16,7 @@ public class AlertingService : IAlertingService
     private readonly ILogger<AlertingService> _logger;
 
     public AlertingService(
-        IRiskMonitorRepository  riskRepo,
+        IRiskMonitorRepository riskRepo,
         IAlertRepository alertRepo,
         IAlertNotifier notifier,
         ILogger<AlertingService> logger)

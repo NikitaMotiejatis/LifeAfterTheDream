@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Infrastructure.Data;
 using RiskMonitor.Entities;
 using RiskMonitor.Repositories;
@@ -15,15 +14,14 @@ public class PortRiskMonitorRepo : IRiskMonitorRepository
     }
 
     public IQueryable<Kri> GetAllIndicators()
-        => _db.Kris
-            .Include(kri => kri.Readings);
+        => _db.Kris;
 
     public IQueryable<KriReading> GetAllReadings()
         => _db.KriReadings;
 
     public IQueryable<Alert> GetAllAlerts()
         => _db.Alerts;
-        
+
     public async Task<Kri> UpdateAsync(Kri kri)
     {
         _db.Kris.Update(kri);

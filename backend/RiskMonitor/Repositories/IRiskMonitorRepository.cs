@@ -1,5 +1,5 @@
-using RiskMonitor.Entities;
 using Microsoft.EntityFrameworkCore;
+using RiskMonitor.Entities;
 
 namespace RiskMonitor.Repositories;
 
@@ -25,5 +25,4 @@ public interface IRiskMonitorRepository
                 .OrderByDescending(r => r.Timestamp)
                 .FirstOrDefault())
             .Where(r => r != null)!;
-
 }

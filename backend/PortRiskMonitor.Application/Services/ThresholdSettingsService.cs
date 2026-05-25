@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Application.DTOs;
+using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
 using RiskMonitor.Repositories;
-using PortRiskMonitor.Application.Exceptions;
-using Microsoft.EntityFrameworkCore;
 
 namespace PortRiskMonitor.Application.Services;
 
@@ -13,10 +13,10 @@ public class ThresholdSettingsService : IThresholdSettingsService
     // Seed defaults — kept in sync with SeedData.cs. Used by ResetAsync.
     private static readonly Dictionary<string, ThresholdPairDto> SeedDefaults = new()
     {
-        ["port-status"]        = new(30, 60),
-        ["berth-occupancy"]    = new(70, 90),
-        ["vessel-delay-rate"]  = new(10, 25),
-        ["weather-risk"]       = new(20, 40),
+        ["port-status"] = new(30, 60),
+        ["berth-occupancy"] = new(70, 90),
+        ["vessel-delay-rate"] = new(10, 25),
+        ["weather-risk"] = new(20, 40),
         ["customs-dwell-time"] = new(24, 72),
     };
 

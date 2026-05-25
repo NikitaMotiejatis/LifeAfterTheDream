@@ -8,12 +8,10 @@ namespace PortRiskMonitor.API.Controllers;
 [Produces("application/json")]
 public class AnalyticsController : ControllerBase
 {
-    private readonly IPortRiskMonitorService _portRiskMonitorService;
+    private readonly IAnalyticsService _analyticsService;
 
-    public AnalyticsController(IPortRiskMonitorService portRiskMonitorService)
-    {
-        _portRiskMonitorService = portRiskMonitorService;
-    }
+    public AnalyticsController(IAnalyticsService analyticsService)
+        => _analyticsService = analyticsService;
 
     [HttpGet("{slug}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -21,5 +19,5 @@ public class AnalyticsController : ControllerBase
             [FromRoute] string slug,
             [FromQuery] string? from,
             [FromQuery] string? to)
-        => Ok(await _portRiskMonitorService.GetAnalytics(slug, from, to));
+        => Ok(await _analyticsService.GetAnalytics(slug, from, to));
 }

@@ -1,65 +1,74 @@
-using System.Data;
 using Microsoft.EntityFrameworkCore;
+
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
+using PortRiskMonitor.Infrastructure.PortStatus;
 using RiskMonitor.DTOs;
 using RiskMonitor.Extensions;
 using RiskMonitor.Repositories;
-using RiskMonitor.Services;
 
 namespace PortRiskMonitor.Application.Services;
 
-public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorService
+public class DashboardService : IDasboardService
 {
-    private readonly IRiskMonitorRepository _portRiskMonitorRepo;
+    private readonly IFilterInputParser _filterInputParser;
+    private readonly IRiskMonitorRepository _riskMonitorRepo;
+    private readonly IPortStatusRepo _portStatusRepo;
+    private readonly IWeatherSnapshotCache _weatherCache;
+    private readonly IAisSnapshotCache _aisCache;
 
-    public PortRiskMonitorService(IRiskMonitorRepository portRiskMonitorRepo)
-        : base(portRiskMonitorRepo)
+    public DashboardService(
+            IFilterInputParser filterInputParser,
+            IRiskMonitorRepository riskMonitorRepo,
+            IPortStatusRepo portStatusRepo,
+            IWeatherSnapshotCache weatherCache,
+            IAisSnapshotCache aisCache)
     {
-        _portRiskMonitorRepo = portRiskMonitorRepo;
+        _filterInputParser = filterInputParser;
+        _riskMonitorRepo = riskMonitorRepo;
+        _portStatusRepo = portStatusRepo;
+        _weatherCache = weatherCache;
+        _aisCache = aisCache;
     }
 
-    public async Task<AnalyticsDto> GetAnalytics(string slug, string? fromStr, string? toStr)
+    public async Task<PortStatusDto> GetPortStatus(string preset, string? fromStr, string? toStr)
     {
-        var (from, to) = ParseFilterInput("custom", fromStr, toStr);
+        var (from, to) = _filterInputParser.ParseFilterInput(preset, fromStr, toStr);
 
-        const long numberOfBuckets = 50;
+        const long numberOfBuckets = 30;
         var bucketLength = (to - from) / numberOfBuckets;
 
-        var kri = await _riskMonitorRepo
-            .GetAllIndicators()
-            .Where(kri => kri.Slug == slug)
-            .FirstOrDefaultAsync()
-            ?? throw new NotFoundException("Risk indicator not found");
-
-        var readings = await _riskMonitorRepo
-            .GetKriReadings(slug)
-            .Where(r => from <= r.Timestamp && r.Timestamp <= to)
-            .Select(r => new ScoreInfo
-            {
-                Timestamp = r.Timestamp,
-                Value = r.Value,
-            })
+        var scores = await _portStatusRepo
+            .GetScores(from, to)
             .DownsampleM4Async(from, 4 * bucketLength);
 
-        return new AnalyticsDto(
-            Title: kri.Name,
-            GreenMax: kri.GreenMax,
-            YellowMax: kri.YellowMax,
-            Sparkline: readings
-                .Select(b => new DataPoint
+        var disruptionIndex = (await _portStatusRepo.GetLatestReading())?.Value;
+        var kri = await _portStatusRepo.GetKriWithReadings(from, to)
+            ?? throw new InternalErrorException("Could not find Kri");
+
+        return new PortStatusDto
+        {
+            DisruptionIndex = disruptionIndex ?? 0.0,
+            RiskLevel = disruptionIndex <= kri.GreenMax ? "Low" : disruptionIndex <= kri.YellowMax ? "Moderate" : "High",
+            GreenMax = kri.GreenMax,
+            YellowMax = kri.YellowMax,
+            Sparkline = scores
+                .Select(s => new DataPoint
                 {
-                    Label = b.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                    Value = b.Value,
+                    Label = s.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    Value = s.Value,
                 })
-                .ToArray()
-        );
+                .ToArray(),
+        };
     }
+
+    public Task<WeatherSnapshot> GetWeather()
+        => Task.FromResult(_weatherCache.GetLatest());
 
     public async Task<IEnumerable<KriCardDto>> GetKriCards(string preset, string? fromStr, string? toStr)
     {
-        var (from, to) = ParseFilterInput(preset, fromStr, toStr);
+        var (from, to) = _filterInputParser.ParseFilterInput(preset, fromStr, toStr);
 
         const long numberOfBuckets = 30;
         var bucketLength = (to - from) / numberOfBuckets;
@@ -109,37 +118,25 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
             ));
     }
 
-    private (DateTime from, DateTime to) ParseFilterInput(string preset, string? fromStr, string? toStr)
+    public async Task<IEnumerable<DataPoint>> GetTrend(string trendTimeFrame)
     {
-        var from = DateTime.MinValue;
+        var (from, bucketCount, interval) = _filterInputParser.ParseFilterInput(trendTimeFrame);
         var to = DateTime.UtcNow;
 
-        if (preset == "custom")
-        {
-            if (fromStr is not null && !DateTime.TryParse(fromStr, out from))
-                throw new BadInputException("Failed to parse 'from' filter option");
+        var scores = await _portStatusRepo
+            .GetScores(from, to)
+            .DownsampleAverageAsync(from, bucketCount, interval);
 
-            if (toStr is not null && !DateTime.TryParse(toStr, out to))
-                throw new BadInputException("Failed to parse 'to' filter option");
-
-            return (from.ToUniversalTime(), to);
-        }
-
-        from = preset switch
-        {
-            "6h" => to.AddHours(-6),
-            "12h" => to.AddHours(-12),
-            "24h" => to.AddHours(-24),
-            "48h" => to.AddHours(-48),
-            "72h" => to.AddHours(-72),
-            "week" => to.AddDays(-7),
-            "month" => to.AddMonths(-1),
-            "year" => to.AddYears(-1),
-            _ => throw new BadInputException("Invalid data filter 'preset'"),
-        };
-
-        return (from, to);
+        return scores
+            .Select(bucket => new DataPoint
+            {
+                Label = bucket.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                Value = bucket.Value,
+            });
     }
+
+    public Task<AisSnapshot> GetAis()
+        => Task.FromResult(_aisCache.GetLatest());
 
     private static ThresholdDto[] BuildThresholds(double greenMax, double yellowMax, string unit)
     {

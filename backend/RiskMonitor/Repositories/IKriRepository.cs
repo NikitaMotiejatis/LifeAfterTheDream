@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore;
-
+using RiskMonitor.DTOs;
 using RiskMonitor.Entities;
 
 namespace RiskMonitor.Repositories;
 
 public interface IKriRepository
 {
-    Task<Kri> GetKri();
+    Task<Kri?> GetKri();
+    Task<Kri?> GetKriWithReadings(DateTime from, DateTime to);
+
     IQueryable<KriReading> GetAllReadings();
 
     Task<KriReading?> GetLatestReading()
@@ -22,4 +24,12 @@ public interface IKriRepository
             .Where(r => from <= r.Timestamp && r.Timestamp <= to)
             .OrderBy(r => r.Timestamp);
     }
+
+    IQueryable<ScoreInfo> GetScores(DateTime from, DateTime to)
+        => GetReadings(from, to)
+            .Select(r => new ScoreInfo
+            {
+                Timestamp = r.Timestamp,
+                Value = r.Value,
+            });
 }
