@@ -14,6 +14,7 @@ using PortRiskMonitor.Infrastructure.RiskMonitor;
 using RiskMonitor.Repositories;
 using RiskMonitor.Services;
 using Serilog;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -44,7 +45,7 @@ try
 
     builder.Services.AddDbContext<AppDbContext>(options =>
     {
-        options.UseSqlite(connectionString);
+        options.UseNpgsql(connectionString);
     });
 
     // NFR: Memory Management — all services registered as Scoped (per-request lifetime).
