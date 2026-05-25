@@ -39,9 +39,10 @@ public class DashboardService : IDasboardService
         const long numberOfBuckets = 30;
         var bucketLength = (to - from) / numberOfBuckets;
 
-        var scores = await _portStatusRepo
+        var scores = (await _portStatusRepo
             .GetScores(from, to)
-            .DownsampleM4Async(from, 4 * bucketLength);
+            .ToListAsync())
+            .DownsampleM4Enumerable(from, 4 * bucketLength);
 
         var disruptionIndex = (await _portStatusRepo.GetLatestReading())?.Value;
         var kri = await _portStatusRepo.GetKriWithReadings(from, to)

@@ -1,6 +1,6 @@
 namespace PortRiskMonitor.Application.DTOs;
 
-public record ThresholdPairDto(double Green, double Yellow);
+public record ThresholdPairDto(double Green, double Yellow, uint xmin);
 
 // Keyed by Kri.Slug, e.g. { "berth": { green: 70, yellow: 90 }, ... }
 public class ThresholdSettingsDto : Dictionary<string, ThresholdPairDto>

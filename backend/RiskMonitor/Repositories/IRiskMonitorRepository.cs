@@ -17,7 +17,7 @@ public interface IRiskMonitorRepository
         => GetAllIndicators()
             .FirstOrDefaultAsync(k => k.Slug == slug);
 
-    Task<Kri> UpdateAsync(Kri kri);
+    Task<Kri> UpdateAsync(Kri kri, uint? originalXmin = null);
 
     IQueryable<KriReading> GetLatestReadings()
         => GetAllIndicators()

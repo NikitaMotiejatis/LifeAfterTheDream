@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PortRiskMonitor.Application.DTOs;
+using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
 
 namespace PortRiskMonitor.API.Controllers;
@@ -24,8 +25,18 @@ public class SettingsController : ControllerBase
     [HttpPut("thresholds")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UpdateThresholds([FromBody] ThresholdSettingsDto settings)
-        => Ok(await _service.UpdateAsync(settings));
+    {
+        try
+        {
+            return Ok(await _service.UpdateAsync(settings));
+        }
+        catch (ConflictException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
 
     [HttpPost("thresholds/reset")]
     [ProducesResponseType(StatusCodes.Status200OK)]

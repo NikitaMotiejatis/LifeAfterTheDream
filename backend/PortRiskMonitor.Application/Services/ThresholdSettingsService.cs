@@ -13,11 +13,11 @@ public class ThresholdSettingsService : IThresholdSettingsService
     // Seed defaults — kept in sync with SeedData.cs. Used by ResetAsync.
     private static readonly Dictionary<string, ThresholdPairDto> SeedDefaults = new()
     {
-        ["port-status"] = new(30, 60),
-        ["berth-occupancy"] = new(70, 90),
-        ["vessel-delay-rate"] = new(10, 25),
-        ["weather-risk"] = new(20, 40),
-        ["customs-dwell-time"] = new(24, 72),
+        ["port-status"] = new(30, 60, 0),
+        ["berth-occupancy"] = new(70, 90, 0),
+        ["vessel-delay-rate"] = new(10, 25, 0),
+        ["weather-risk"] = new(20, 40, 0),
+        ["customs-dwell-time"] = new(24, 72, 0),
     };
 
     public ThresholdSettingsService(IRiskMonitorRepository kriRepo)
@@ -33,12 +33,12 @@ public class ThresholdSettingsService : IThresholdSettingsService
         var result = new ThresholdSettingsDto();
         foreach (var kri in kris)
         {
-            result[kri.Slug] = new ThresholdPairDto(kri.GreenMax, kri.YellowMax);
+            result[kri.Slug] = new ThresholdPairDto(kri.GreenMax, kri.YellowMax, kri.xmin);
         }
         return result;
     }
 
-    public async Task<ThresholdSettingsDto> UpdateAsync(ThresholdSettingsDto settings)
+    public async Task<ThresholdSettingsDto> UpdateAsync(ThresholdSettingsDto settings, bool force = false)
     {
         foreach (var (slug, pair) in settings)
         {
@@ -47,10 +47,19 @@ public class ThresholdSettingsService : IThresholdSettingsService
             var kri = await _kriRepo.GetBySlugAsync(slug)
                 ?? throw new BadInputException($"Unknown metric slug: {slug}");
 
+
             // GetBySlugAsync returns AsNoTracking — re-attach for update.
             kri.GreenMax = pair.Green;
             kri.YellowMax = pair.Yellow;
-            await _kriRepo.UpdateAsync(kri);
+            try
+            {
+                // When resetting, we skip concurrency check since we're overwriting all values anyway. Otherwise, we use the xmin value for optimistic concurrency control.
+                await _kriRepo.UpdateAsync(kri, force ? null : pair.xmin);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw new ConflictException($"'{kri.Name}' was modified by someone else. Refresh and try again.");
+            }
         }
         return await GetAllAsync();
     }
@@ -58,7 +67,7 @@ public class ThresholdSettingsService : IThresholdSettingsService
     public async Task<ThresholdSettingsDto> ResetAsync()
     {
         var defaults = new ThresholdSettingsDto(SeedDefaults);
-        return await UpdateAsync(defaults);
+        return await UpdateAsync(defaults, force: true);
     }
 
     private static void ValidatePair(string slug, ThresholdPairDto pair)
