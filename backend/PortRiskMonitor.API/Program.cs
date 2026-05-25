@@ -1,5 +1,8 @@
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using Autofac.Extras.DynamicProxy;
+using Castle.DynamicProxy;
 using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 using PortRiskMonitor.API.Exceptions;
 using PortRiskMonitor.API.Filters;
 using PortRiskMonitor.Application.BackgroundServices;
@@ -25,6 +28,21 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+
+    builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
+    builder.Services.AddHttpContextAccessor();
+
+    builder.Services.AddDistributedMemoryCache();
+    builder.Services.AddSession(options =>
+    {
+        options.IdleTimeout = TimeSpan.FromMinutes(20);
+
+        options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true;
+
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    });
 
     builder.Host.UseSerilog((context, services, config) =>
     {
@@ -62,26 +80,68 @@ try
     builder.Services.AddSingleton<IWeatherSnapshotCache, WeatherSnapshotCache>();
     builder.Services.AddSingleton<IAisSnapshotCache, AisSnapshotCache>();
 
-    // Application Services (Business Logic Layer)
-    builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
-    builder.Services.AddScoped<IDasboardService, DashboardService>();
-    builder.Services.AddScoped<IThresholdSettingsService, ThresholdSettingsService>();
-    builder.Services.AddScoped<INotificationService, NotificationService>();
-    builder.Services.AddScoped<IAlertingService, AlertingService>();
-
-    builder.Services.AddSingleton<IFilterInputParser, FilterInputParser>();
-
     // NFR: Extensibility / Strategy + Decorator — IAlertNotifier is selected at
     // runtime by ChannelDispatchingNotifier, which reads IOptionsMonitor every
     // call.
     builder.Services.Configure<NotificationOptions>(
         builder.Configuration.GetSection(NotificationOptions.SectionName));
 
-    builder.Services.AddKeyedScoped<IAlertNotifier, NullAlertNotifier>("Off");
-    builder.Services.AddKeyedScoped<IAlertNotifier, TwilioSmsAlertNotifier>("Twilio");
-    builder.Services.AddKeyedScoped<IAlertNotifier, SmtpEmailAlertNotifier>("Email");
+    builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
+    {
+        containerBuilder.RegisterType<LoggingInterceptor>()
+                        .As<IInterceptor>()
+                        .AsSelf();
 
-    builder.Services.AddScoped<IAlertNotifier, ChannelDispatchingNotifier>();
+        // Add logging interceptor to business logic services
+        {
+            var businessServices = new[]
+            {
+                typeof(AnalyticsService),
+                typeof(DashboardService),
+                typeof(ThresholdSettingsService),
+                typeof(NotificationService),
+                typeof(AlertingService),
+            };
+
+            foreach (var service in businessServices)
+            {
+                containerBuilder.RegisterType(service)
+                                .AsImplementedInterfaces()
+                                .InstancePerLifetimeScope()
+                                .EnableInterfaceInterceptors()
+                                .InterceptedBy(typeof(LoggingInterceptor));
+            }
+        }
+
+        // Add logging interceptor to alert services
+        {
+            containerBuilder.RegisterType<ChannelDispatchingNotifier>()
+                            .As<IAlertNotifier>()
+                            .InstancePerLifetimeScope()
+                            .EnableInterfaceInterceptors()
+                            .InterceptedBy(typeof(LoggingInterceptor));
+
+            var alertNotifiers = new[]
+            {
+                (typeof(NullAlertNotifier), "Off"),
+                (typeof(TwilioSmsAlertNotifier), "Twilio"),
+                (typeof(SmtpEmailAlertNotifier), "Email"),
+            };
+
+            foreach (var (service, key) in alertNotifiers)
+            {
+                containerBuilder.RegisterType(service)
+                                .Keyed<IAlertNotifier>(key)
+                                .InstancePerLifetimeScope()
+                                .EnableInterfaceInterceptors()
+                                .InterceptedBy(typeof(LoggingInterceptor));
+            }
+        }
+
+        containerBuilder.RegisterType<FilterInputParser>()
+                        .As<IFilterInputParser>()
+                        .SingleInstance();
+    });
 
     // NFR: Reactive / Async — background services run on separate threads,
     // never blocking HTTP request handlers.
@@ -162,6 +222,19 @@ try
     app.UseSerilogRequestLogging();
     app.UseCors("ReactDevPolicy");
     app.UseHttpsRedirection();
+
+    app.UseRouting();
+    app.UseSession();
+
+    app.Use(async (context, next) =>
+    {
+        if (string.IsNullOrEmpty(context.Session.GetString("SessionInit")))
+        {
+            context.Session.SetString("SessionInit", "True");
+        }
+        await next();
+    });
+
     app.MapControllers();
 
     Log.Information("Port Risk Monitor API starting on {Environment}", app.Environment.EnvironmentName);

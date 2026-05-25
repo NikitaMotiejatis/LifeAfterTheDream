@@ -83,7 +83,8 @@ export default function DashboardPage() {
               return;
             }
             const recipients = (res.recipients ?? []).join(', ');
-            const verb = res.channel === 'Email' ? 'Email sent to' : 'SMS sent to';
+            const verb =
+              res.channel === 'Email' ? 'Email sent to' : 'SMS sent to';
             showToast(
               recipients
                 ? `${verb} ${recipients}`

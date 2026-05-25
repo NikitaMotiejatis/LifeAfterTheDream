@@ -46,8 +46,9 @@ export function useSettings() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-tiles'] });
       return true;
     } catch (err) {
-      const data = (err as { response?: { data?: { detail?: string; message?: string } } })
-        ?.response?.data;
+      const data = (
+        err as { response?: { data?: { detail?: string; message?: string } } }
+      )?.response?.data;
       setError(data?.detail ?? data?.message ?? 'Failed to save settings.');
       return false;
     } finally {
