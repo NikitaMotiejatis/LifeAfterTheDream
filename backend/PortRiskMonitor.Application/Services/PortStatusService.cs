@@ -28,9 +28,8 @@ public class PortStatusService : KriService, IPortStatusService
         var disruptionIndex = await GetLatestScore() ?? 0.0;
         var kri = await _portStatusRepo.GetKri();
 
-        var scores = await _kriRepo
-            .GetAllReadings()
-            .Where(r => from <= r.Timestamp && r.Timestamp <= to)
+        var scores = await _portStatusRepo
+            .GetReadings(from, to)
             .Select(r => new ScoreInfo
             {
                 Timestamp = r.Timestamp,
@@ -67,7 +66,7 @@ public class PortStatusService : KriService, IPortStatusService
             _ => throw new InternalErrorException("Invalid time interval length"),
         };
 
-        var scores = await _kriRepo
+        var scores = await _portStatusRepo
             .GetAllReadings()
             .Select(r => new ScoreInfo
             {

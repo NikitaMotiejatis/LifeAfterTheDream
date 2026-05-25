@@ -107,6 +107,8 @@ try
     builder.Services.AddScoped<IThresholdSettingsService, ThresholdSettingsService>();
     builder.Services.AddScoped<IAlertingService, AlertingService>();
 
+    builder.Services.AddSingleton<IFilterInputParser, FilterInputParser>();
+
     // ── Alerting / SMS ──────────────────────────────────────────────────────────
     // Recipient phone list + on/off switch live in appsettings under "Alerts:Sms".
     // When Enabled=true, an AWS SNS client is registered and SMS is sent on RED

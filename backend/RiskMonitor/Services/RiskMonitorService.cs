@@ -8,7 +8,7 @@ namespace RiskMonitor.Services;
 
 public abstract class RiskMonitorService : IRiskMonitorService
 {
-    protected readonly IRiskMonitorRepository _riskMonitorRepo;
+    private readonly IRiskMonitorRepository _riskMonitorRepo;
 
     protected RiskMonitorService(IRiskMonitorRepository riskMonitorRepo)
     {

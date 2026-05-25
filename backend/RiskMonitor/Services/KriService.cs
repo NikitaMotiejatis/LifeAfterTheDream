@@ -5,7 +5,7 @@ namespace RiskMonitor.Services;
 
 public abstract class KriService : IKriService
 {
-    protected readonly IKriRepository _kriRepo;
+    private readonly IKriRepository _kriRepo;
 
     protected KriService(IKriRepository kriRepo)
     {

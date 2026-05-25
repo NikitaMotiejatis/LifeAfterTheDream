@@ -27,13 +27,13 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
         const long numberOfBuckets = 50;
         var bucketLength = (to - from) / numberOfBuckets;
 
-        var kri = await _riskMonitorRepo
+        var kri = await _portRiskMonitorRepo
             .GetAllIndicators()
             .Where(kri => kri.Slug == slug)
             .FirstOrDefaultAsync()
             ?? throw new NotFoundException("Risk indicator not found");
 
-        var readings = await _riskMonitorRepo
+        var readings = await _portRiskMonitorRepo
             .GetKriReadings(slug)
             .Where(r => from <= r.Timestamp && r.Timestamp <= to)
             .Select(r => new ScoreInfo
@@ -64,7 +64,7 @@ public class PortRiskMonitorService : RiskMonitorService, IPortRiskMonitorServic
         const long numberOfBuckets = 30;
         var bucketLength = (to - from) / numberOfBuckets;
 
-        var krisWithReadings = await _riskMonitorRepo
+        var krisWithReadings = await _portRiskMonitorRepo
             .GetAllIndicators()
             .Where(kri => kri.Slug != "port-status")
             .Select(kri => new
