@@ -1,161 +1,136 @@
-# 🚢 Port / Cargo Operations Risk Monitor
+# Port Risk Monitor — Backend
 
-> Internal Proof of Concept — .NET 8 + React 18
+.NET 10 Web API for real-time port operations risk monitoring.
 
-A real-time risk monitoring dashboard for port operations, built on a 3-tier architecture using ASP.NET Core, Entity Framework Core, and React.
-
----
-
-## Architecture
+## Architecture (3-tier multi-layer)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Presentation Layer     React 18 + Vite (frontend/)      │
-│                         Tailwind CSS + Recharts           │
+│  Presentation Layer     React 18 + Vite (frontend/)     │
+│                         Tailwind CSS + Recharts         │
 └──────────────────────────┬──────────────────────────────┘
                            │ HTTP / REST
 ┌──────────────────────────▼──────────────────────────────┐
-│  Business Logic Layer   ASP.NET Core 8 Web API           │
-│                         PortRiskMonitor.API               │
-│                         PortRiskMonitor.Application       │
+│  Business Logic Layer   ASP.NET Core 10 Web API         │
+│                         PortRiskMonitor.API             │
+│                         PortRiskMonitor.Application     │
+│                         RiskMonitor (domain library)    │
 └──────────────────────────┬──────────────────────────────┘
                            │ EF Core
 ┌──────────────────────────▼──────────────────────────────┐
-│  Data Access Layer      Entity Framework Core 8          │
-│                         PortRiskMonitor.Infrastructure    │
-│                         SQLite (PoC) / SQL Server (Prod) │
+│  Data Access Layer      Entity Framework Core 10        │
+│                         PortRiskMonitor.Infrastructure  │
+│                         SQLite                          │
 └─────────────────────────────────────────────────────────┘
 ```
 
----
-
-## Quick Start
+## Setup
 
 ### Prerequisites
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Node.js 20+](https://nodejs.org/)
-- [EF Core CLI tools](https://learn.microsoft.com/en-us/ef/core/cli/dotnet): `dotnet tool install --global dotnet-ef`
 
-### Backend setup
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [EF Core CLI tools](https://learn.microsoft.com/en-us/ef/core/cli/dotnet):
+    ```bash
+    dotnet tool install --global dotnet-ef
+    ```
+
+### Database
+
+The project uses **SQLite** (file-based, zero external dependencies). The database file `port_risk_monitor.db` is created automatically in `PortRiskMonitor.API/` on first run.
+
+**Automatic setup (default):** EF migrations and seed data are applied on every startup in `Program.cs`. No manual steps needed.
+
+**Manual migration commands** (if you need to reset or re-create):
 
 ```bash
-# From the repo root
-cd src/PortRiskMonitor.API
+cd PortRiskMonitor.API
 
-# Restore packages
-dotnet restore ../../PortRiskMonitor.sln
-
-# Apply database migrations (creates port_risk_monitor.db)
+# Apply all migrations (creates/updates the DB schema)
 dotnet ef database update --project ../PortRiskMonitor.Infrastructure
 
-# Run the API (starts on https://localhost:5001)
+# Reset the database (delete and recreate from scratch)
+del port_risk_monitor.db
+dotnet ef database update --project ../PortRiskMonitor.Infrastructure
+
+# Add a new migration after entity changes
+dotnet ef migrations add <MigrationName> --project ../PortRiskMonitor.Infrastructure
+```
+
+The connection string is configured in `appsettings.json` under `ConnectionStrings:DefaultConnection`.
+
+### Run
+
+```bash
+cd PortRiskMonitor.API
+dotnet restore ../../PortRiskMonitor.sln
 dotnet run
 ```
 
-Swagger UI is available at: **https://localhost:5001** (in Development mode)
-
-### Frontend setup
-
-```bash
-cd frontend
-npm install
-npm run dev   # starts on http://localhost:5173
-```
-
----
-
-## Non-Functional Requirements — Quick Reference
-
-| NFR | Where to find it |
-|-----|-----------------|
-| Concurrency (no session state) | `Program.cs` — all services `AddScoped`, no `AddSingleton` for stateful objects |
-| Security (SQL injection) | `KriRepository.cs` — all queries use EF Core LINQ |
-| Data Access (ORM + tx scope) | `KriRepository.cs` — `SaveChangesAsync` called once per method |
-| Optimistic Locking | `KriDefinition.cs` — `[Timestamp] RowVersion` property; `KrisController.cs` — catches `DbUpdateConcurrencyException` → returns 409 |
-| Memory Management | `Program.cs` — `AddScoped<>` for all services |
-| Async / Non-blocking | All controllers and services use `async/await`; `MockDataBackgroundService` runs on background thread |
-| Interceptors / Audit Logging | `BusinessLogicAuditFilter.cs`; toggle via `appsettings.json` `Auditing:Enabled` |
-| Extensibility / Strategy | `RiskScoreEngine.cs` + `DefaultWeightedStrategy.cs`; swap via `appsettings.json` `RiskScoring:Strategy` |
-
----
-
-## Configuration
-
-Key settings in `src/PortRiskMonitor.API/appsettings.json`:
-
-```json
-{
-  "Auditing": { "Enabled": true },
-  "RiskScoring": { "Strategy": "DefaultWeighted" },
-  "MockData": {
-    "Enabled": true,
-    "IntervalSeconds": 30,
-    "DefaultScenario": "Normal"
-  }
-}
-```
-
-## Demo Scenarios (Development only)
-
-Use the Demo Control Panel in the React UI, or call directly:
-
-```bash
-curl -X POST https://localhost:5001/api/scenarios/activate \
-  -H "Content-Type: application/json" \
-  -d '{"scenarioName": "StormEvent"}'
-```
-
-Available: `Normal` | `MildCongestion` | `StormEvent` | `CustomsCrisis` | `FullRedAlert`
-
----
+Swagger UI available at the root URL (Development mode). Seed data (5 KRI definitions + 1 year of hourly readings) is inserted if the DB is empty.
 
 ## Project Structure
 
 ```
-PortRiskMonitor/
+backend/
 ├── PortRiskMonitor.sln
-├── README.md
-└── src/
-    ├── PortRiskMonitor.API/               ← Presentation Layer
-    │   ├── Controllers/
-    │   │   ├── KrisController.cs          ← CRUD + dashboard polling
-    │   │   └── OtherControllers.cs        ← Alerts, Reports, Scenarios
-    │   ├── Filters/
-    │   │   └── BusinessLogicAuditFilter.cs ← NFR: Interceptors
-    │   ├── Program.cs                     ← DI wiring, middleware pipeline
-    │   └── appsettings.json               ← All toggle flags
-    ├── PortRiskMonitor.Application/       ← Business Logic Layer
-    │   ├── DTOs/
-    │   │   └── Dtos.cs                    ← API contract (mirror in React types)
-    │   ├── Interfaces/
-    │   │   └── IServiceInterfaces.cs      ← Service contracts
-    │   └── Services/
-    │       ├── KriService.cs              ← Main CRUD + dashboard logic
-    │       ├── RiskScoreEngine.cs         ← NFR: Strategy Pattern
-    │       ├── AlertAndMockServices.cs    ← AlertService + MockDataBackgroundService
-    │       └── ReportService.cs           ← Report generation
-    └── PortRiskMonitor.Infrastructure/    ← Data Access Layer
-        ├── Data/
-        │   └── AppDbContext.cs            ← EF Core DbContext
-        ├── Entities/
-        │   ├── KriDefinition.cs           ← NFR: Optimistic locking (RowVersion)
-        │   ├── KriReading.cs              ← Time-series readings
-        │   ├── Alert.cs                   ← Threshold breach events
-        │   └── AuditLog.cs               ← NFR: Audit trail records
-        └── Repositories/
-            ├── IKriRepository.cs          ← NFR: Security (all parameterized)
-            ├── KriRepository.cs           ← NFR: Data Access (tx per request)
-            ├── AlertRepository.cs
-            └── AuditLogRepository.cs
+├── PortRiskMonitor.API/                ← Presentation Layer
+│   ├── Controllers/
+│   │   ├── DashboardController.cs
+│   │   ├── AnalyticsController.cs
+│   │   └── SettingsController.cs
+│   ├── Filters/
+│   │   └── BusinessLogicAuditFilter.cs    ← NFR: Interceptors
+│   ├── Exceptions/
+│   │   └── GlobalExceptionHandler.cs
+│   ├── Program.cs                         ← DI wiring, middleware pipeline
+│   └── appsettings.json                   ← Toggle flags (auditing, strategy)
+├── PortRiskMonitor.Application/        ← Business Logic Layer
+│   ├── Interfaces/                        ← Service contracts
+│   ├── Services/
+│   │   ├── DashboardService.cs
+│   │   ├── AnalyticsService.cs
+│   │   ├── ThresholdSettingsService.cs
+│   │   ├── AlertingService.cs
+│   │   └── FilterInputParser.cs
+│   ├── BackgroundServices/
+│   │   ├── AlertEvaluationBackgroundService.cs  ← NFR: Async
+│   │   ├── WeatherFetcherService.cs
+│   │   └── AisFetcherService.cs
+│   └── DTOs/
+├── PortRiskMonitor.Infrastructure/     ← Data Access Layer
+│   ├── Data/
+│   │   ├── AppDbContext.cs                ← NFR: Optimistic Locking (RowVersion)
+│   │   └── SeedData.cs
+│   ├── Entities/
+│   │   ├── KriDefinition.cs
+│   │   └── AuditLog.cs
+│   ├── Repositories/
+│   │   ├── KriRepository.cs              ← NFR: Security (EF Core LINQ only)
+│   │   └── AuditLogRepository.cs
+│   ├── Alerts/
+│   │   └── AlertRepository.cs
+│   ├── Notifications/
+│   │   ├── AwsSnsAlertNotifier.cs         ← NFR: Extensibility (Strategy)
+│   │   └── NullAlertNotifier.cs           ← NFR: Extensibility (Strategy)
+│   └── PortStatus/
+└── RiskMonitor/                        ← Domain library
+    ├── Entities/ (Kri, KriReading, Alert)
+    ├── DTOs/ (ScoreInfo, RiskLevel, BucketType)
+    ├── Logic/ (IRiskCalculator, IKriScore)
+    ├── Repositories/ (IKriRepository, IRiskMonitorRepository)
+    ├── Services/ (IAlertNotifier)
+    └── Extensions/ (ScoreInfoExtensions — M4 downsampling)
 ```
 
----
+## Non-Functional Requirements
 
-## Team
-
-| Person | Owns |
-|--------|------|
-| Person A (this repo) | .NET backend skeleton — all files in `src/` |
-| Person B | React frontend — all files in `frontend/` |
-
-**Sync point:** Align TypeScript interfaces in `frontend/src/types/` with DTOs in `Application/DTOs/Dtos.cs` — field names must match (camelCase on frontend, PascalCase on backend — ASP.NET Core serializes automatically).
+| NFR                              | Implementation                                                                                                                                                                                                                | File & Line                                                                                                         |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Concurrency**                  | All services are Scoped (per-request). No session state. Multiple browser tabs use the same account without conflicts.                                                                                                        | `Program.cs` — `AddScoped<>` registrations                                                                          |
+| **Security (SQL injection)**     | All DB queries use EF Core LINQ — no raw SQL, no string interpolation in queries.                                                                                                                                             | `KriRepository.cs`, `AlertRepository.cs`, `PortRiskMonitorRepo.cs`                                                  |
+| **Data Access (ORM + tx scope)** | Entity Framework Core ORM. `SaveChangesAsync()` is called within a single method per HTTP request — transaction never spans user interaction.                                                                                 | `KriRepository.cs`, `AuditLogRepository.cs`, `AlertRepository.cs`                                                   |
+| **Optimistic Locking**           | `Kri.RowVersion` with `[Timestamp]` attribute. EF Core throws `DbUpdateConcurrencyException` on conflict. Frontend intercepts 409 responses.                                                                                  | `Kri.cs` — `RowVersion` property; `AppDbContext.cs` — `.IsConcurrencyToken()`; `axiosInstance.ts` — 409 interceptor |
+| **Memory Management**            | Services registered as Scoped (new instance per request). Only stateless caches (`WeatherSnapshotCache`, `AisSnapshotCache`) are Singleton with `volatile` field.                                                             | `Program.cs`                                                                                                        |
+| **Async / Non-blocking**         | All controller actions are `async Task`. Background services (`AlertEvaluationBackgroundService`, `WeatherFetcherService`, `AisFetcherService`) run on separate threads. Frontend uses React Query with auto-refetch.         | `AlertEvaluationBackgroundService.cs`, `WeatherFetcherService.cs`                                                   |
+| **Cross-cutting / Interceptors** | `BusinessLogicAuditFilter` (global `IAsyncActionFilter`) logs every action: class, method, user, permissions, timestamp, duration, outcome. Toggle via `appsettings.json` `"Auditing:Enabled"` — no code modification needed. | `BusinessLogicAuditFilter.cs`, `appsettings.json`                                                                   |
+| **Extensibility / Strategy**     | `IAlertNotifier` interface with implementations `AwsSnsAlertNotifier` and `NullAlertNotifier`. Selected via config (`Alerts:Sms:Enabled`). New notifiers can be added without modifying existing code.                        | `IAlertNotifier.cs`, `AwsSnsAlertNotifier.cs`, `NullAlertNotifier.cs`, `Program.cs`                                 |

@@ -1,9 +1,5 @@
-// ============================================================
-// KriRepository.cs — EF Core implementation of IKriRepository
-//
-// This is the only place in the codebase that directly accesses AppDbContext.
-// All queries use EF Core LINQ — no raw SQL string interpolation, ever.
-// ============================================================
+// NFR: Security — all queries use EF Core LINQ (parameterized), preventing SQL injection.
+// NFR: Data Access — ORM (EF Core); SaveChangesAsync scoped to a single HTTP request.
 
 using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Infrastructure.Data;

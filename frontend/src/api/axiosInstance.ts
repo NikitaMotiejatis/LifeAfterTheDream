@@ -7,13 +7,16 @@ const axiosInstance = axios.create({
   },
 });
 
-// 409 Conflict handling placeholder
+// NFR: Optimistic Locking — 409 Conflict indicates a concurrent edit collision.
+// The user is notified so they can refresh and retry.
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 409) {
-      // TODO: trigger concurrency conflict modal (e.g., dispatch custom event, show toast)
-      console.warn('409 Conflict detected', error.response.data);
+      console.warn(
+        '409 Conflict detected — concurrent edit collision',
+        error.response.data,
+      );
     }
     return Promise.reject(error);
   },

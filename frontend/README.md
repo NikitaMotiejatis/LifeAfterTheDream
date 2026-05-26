@@ -1,77 +1,49 @@
-# React + TypeScript + Vite
+# Port Risk Monitor — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 18 + TypeScript + Vite single-page application.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 18** with lazy-loaded routes
+- **Vite** (dev server + build)
+- **Tailwind CSS** for styling
+- **TanStack React Query** for server state (auto-refetch every 30 s)
+- **Axios** for HTTP requests
+- **Recharts** for charts
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev          # http://localhost:5173
+npm run build        # production bundle in dist/
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── api/              HTTP clients (axios-based)
+├── components/       Reusable UI components
+├── contexts/         React context providers (Auth, Toast)
+├── hooks/            Custom hooks (useDashboard, useSettings, etc.)
+├── mocks/            Static mock data for offline development
+├── pages/            Route-level page components
+├── types/            TypeScript type definitions
+└── utils/            Pure utility functions
 ```
 
-npm run build
-npm run dev          # localhost:5173
-    
+## NFR: Concurrency
+
+No use-case data is stored in browser session. Each tab/window operates independently using
+the same `sessionStorage` auth token — multiple tabs work without conflicts.
+
+## NFR: Optimistic Locking (client side)
+
+`axiosInstance.ts` intercepts HTTP 409 responses (concurrency conflict from backend RowVersion
+mismatch) and warns the user, allowing them to refresh and retry.
+
+## NFR: Reactive / Non-blocking
+
+React Query keeps the UI responsive — data fetches run asynchronously with loading/error states.
+The dashboard auto-refreshes every 30 seconds without blocking user interaction.

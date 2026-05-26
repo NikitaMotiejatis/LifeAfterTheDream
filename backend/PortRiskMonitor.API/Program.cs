@@ -1,19 +1,4 @@
-// ============================================================
-// PROGRAM.CS — Application entry point
-// This file wires together the entire 3-tier application:
-//   - Presentation layer: ASP.NET Core HTTP pipeline
-//   - Business Logic layer: Application services
-//   - Data Access layer: EF Core + SQLite
-//
-// TODO for implementors:
-//   1. Replace SQLite with SQL Server for production
-//      (change UseSqlite → UseSqlServer, update connection string)
-//   2. Add ASP.NET Core Identity here when user auth is needed
-//   3. Swap Serilog sinks to a log aggregator (e.g. Seq, Datadog)
-// ============================================================
-
 using Amazon.SimpleNotificationService;
-using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.API.Exceptions;
 using PortRiskMonitor.API.Filters;
@@ -30,16 +15,6 @@ using RiskMonitor.Repositories;
 using RiskMonitor.Services;
 using Serilog;
 
-// ── Storage note ─────────────────────────────────────────────────────────────
-// Historical data is stored in the same SQLite DB using EF Core (KriDefinitions
-// + KriReadings tables). To migrate to Postgres:
-//   1. Change connection string in appsettings.json
-//   2. Replace `options.UseSqlite(...)` with `options.UseNpgsql(...)`
-//   3. Add the Npgsql.EntityFrameworkCore.PostgreSQL NuGet package
-//   4. Run `dotnet ef migrations add PostgresMigration`
-// Zero application-layer code needs to change.
-
-// ── Serilog bootstrap logger (catches startup errors before full config) ──────
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateBootstrapLogger();
@@ -48,13 +23,10 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    // ── Serilog full configuration ────────────────────────────────────────────
-    // TODO: Add Serilog.Sinks.Seq for structured log viewing in development
-    // TODO: In production consider Serilog.Sinks.ApplicationInsights
     builder.Host.UseSerilog((context, services, config) =>
     {
         config
-            .ReadFrom.Configuration(context.Configuration) // reads from appsettings.json Serilog section
+            .ReadFrom.Configuration(context.Configuration)
             .ReadFrom.Services(services)
             .Enrich.FromLogContext()
             .WriteTo.Console()
@@ -65,23 +37,18 @@ try
             );
     });
 
-    // ── Database — Data Access Layer ─────────────────────────────────────────
-    // NFR: Data Access — EF Core ORM, transactions scoped to single HTTP request
-    // SQLite is used for PoC (zero config). Swap to SQL Server for production.
+    // NFR: Data Access — EF Core ORM; DbContext is scoped per HTTP request,
+    // so each DB transaction starts and ends within a single request.
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
         ?? "Data Source=port_risk_monitor.db";
 
     builder.Services.AddDbContext<AppDbContext>(options =>
     {
         options.UseSqlite(connectionString);
-        // TODO: Enable sensitive data logging only in Development
-        // options.EnableSensitiveDataLogging(builder.Environment.IsDevelopment());
     });
 
-    // ── Dependency Injection — Business Logic Layer ───────────────────────────
-    // NFR: Memory Management — all services registered as Scoped (per-request lifetime)
-    // NEVER use AddSingleton for stateful services — would cause cross-request data leakage
-    // NEVER use AddSingleton for DbContext — EF Core is not thread-safe across requests
+    // NFR: Memory Management — all services registered as Scoped (per-request lifetime).
+    // No use-case state is stored in session; each request gets fresh instances.
 
     // Repositories (Data Access Layer)
     builder.Services.AddScoped<IAlertRepository, AlertRepository>();
@@ -100,10 +67,9 @@ try
 
     builder.Services.AddSingleton<IFilterInputParser, FilterInputParser>();
 
-    // ── Alerting / SMS ──────────────────────────────────────────────────────────
-    // Recipient phone list + on/off switch live in appsettings under "Alerts:Sms".
-    // When Enabled=true, an AWS SNS client is registered and SMS is sent on RED
-    // alerts; otherwise NullAlertNotifier just logs.
+    // NFR: Extensibility / Strategy — IAlertNotifier implementation is selected
+    // via appsettings.json "Alerts:Sms:Enabled". New notifiers (e.g. email, Slack)
+    // can be added without modifying existing code — only config changes needed.
     builder.Services.Configure<SmsAlertOptions>(
         builder.Configuration.GetSection(SmsAlertOptions.SectionName));
 
@@ -124,6 +90,8 @@ try
         Log.Information("SMS alerts DISABLED — using NullAlertNotifier (log-only)");
     }
 
+    // NFR: Reactive / Async — background services run on separate threads,
+    // never blocking HTTP request handlers.
     builder.Services.AddHostedService<AlertEvaluationBackgroundService>();
 
     builder.Services.AddHttpClient<WeatherFetcherService>();
@@ -133,34 +101,6 @@ try
     builder.Services.AddHostedService<AisFetcherService>();
 
 
-    // TODO
-    // NFR: Extensibility — Strategy Pattern for risk score calculation
-    // To swap algorithm: change "RiskScoring:Strategy" in appsettings.json
-    // No code recompilation needed — only config change
-    //var strategyName = builder.Configuration["RiskScoring:Strategy"] ?? "DefaultWeighted";
-    //builder.Services.AddScoped<IRiskScoreStrategy>(sp =>
-    //{
-    //    // TODO: Add more strategy implementations here as the system grows
-    //    // Each new strategy is a new class — existing code is never modified
-    //    return strategyName switch
-    //    {
-    //        "MaxRisk" => new MaxRiskStrategy(),       // Takes worst single KRI score
-    //        "AverageRisk" => new AverageRiskStrategy(),   // Simple arithmetic mean
-    //        _ => new DefaultWeightedStrategy() // Default: weighted sum
-    //    };
-    //});
-
-    // NFR: Async Communication — BackgroundService for mock data generation
-    // Runs in background thread, never blocks HTTP request handlers
-    // TODO: Remove MockDataBackgroundService when real data sources are connected
-    //builder.Services.AddHostedService<MockDataBackgroundService>();
-
-    // ── FluentValidation ──────────────────────────────────────────────────────
-    // TODO: Register all validators — FluentValidation will auto-scan the assembly
-    //builder.Services.AddValidatorsFromAssemblyContaining<IKriService>();
-
-    // ── CORS — allow React dev server ─────────────────────────────────────────
-    // TODO: Lock down CORS origins for production (remove AllowAnyOrigin)
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("ReactDevPolicy", policy =>
@@ -179,10 +119,9 @@ try
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
 
-    // ── Controllers + Action Filters ─────────────────────────────────────────
-    // NFR: Interceptors — BusinessLogicAuditFilter registered globally
-    // Logs every controller action: class, method, user, timestamp, duration
-    // Toggle via appsettings.json "Auditing:Enabled" — no recompile needed
+    // NFR: Cross-cutting / Interceptors — BusinessLogicAuditFilter logs every
+    // controller action (class, method, user, timestamp, duration).
+    // Toggle via appsettings.json "Auditing:Enabled" — no recompile needed.
     builder.Services.AddControllers(options =>
     {
         var auditingEnabled = builder.Configuration.GetValue<bool>("Auditing:Enabled");
@@ -202,50 +141,34 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
-        // TODO: Add XML comments for better Swagger documentation
-        // options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "PortRiskMonitor.API.xml"));
         options.SwaggerDoc("v1", new() { Title = "Port Risk Monitor API", Version = "v1" });
     });
 
-    // ── Build the app ─────────────────────────────────────────────────────────
     var app = builder.Build();
 
-    // ── Auto-run EF migrations on startup ────────────────────────────────────
-    // TODO: In production, run migrations as part of the deployment pipeline
-    //       rather than on every startup — can cause issues with rolling deployments
+    // Apply pending EF migrations on startup (PoC convenience)
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync();
         Log.Information("Database migrations applied successfully");
-
-        // Seed KRI definitions + 30 days of hourly historical readings for development.
-        // SeedData.SeedAsync is idempotent — it checks AnyAsync() first and skips if data exists.
         await SeedData.SeedAsync(db);
     }
 
-    // ── HTTP Pipeline ─────────────────────────────────────────────────────────
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
         app.UseSwaggerUI(options =>
         {
             options.SwaggerEndpoint("/swagger/v1/swagger.json", "Port Risk Monitor v1");
-            // Makes Swagger the default page in development
             options.RoutePrefix = string.Empty;
         });
     }
 
     app.UseExceptionHandler(_ => { });
-
-    app.UseSerilogRequestLogging(); // logs every HTTP request with timing
-
+    app.UseSerilogRequestLogging();
     app.UseCors("ReactDevPolicy");
-
     app.UseHttpsRedirection();
-
-    // TODO: Add app.UseAuthentication() and app.UseAuthorization() when user accounts are added
-
     app.MapControllers();
 
     Log.Information("Port Risk Monitor API starting on {Environment}", app.Environment.EnvironmentName);
