@@ -4,7 +4,7 @@ using RiskMonitor.Services;
 
 namespace PortRiskMonitor.Infrastructure.Notifications;
 
-// Log-only notifier used when outbound SMS is disabled or not configured.
+// NFR: Extensibility / Strategy — no-op IAlertNotifier used when SMS is disabled.
 public class NullAlertNotifier : IAlertNotifier
 {
     private readonly ILogger<NullAlertNotifier> _logger;

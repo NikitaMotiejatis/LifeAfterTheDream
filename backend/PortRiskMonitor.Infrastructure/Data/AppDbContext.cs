@@ -1,11 +1,3 @@
-// ============================================================
-// AppDbContext.cs — EF Core database context
-//
-// Swapping to Postgres: change UseSqlite → UseNpgsql in Program.cs
-// and remove the HasDefaultValueSql — Postgres has native rowversion.
-// Zero changes required here.
-// ============================================================
-
 using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Infrastructure.Entities;
 using RiskMonitor.Entities;
@@ -16,7 +8,6 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    // ── Tables ─────────────────────────────────────────────────────────────────
     public DbSet<Kri> Kris => Set<Kri>();
     public DbSet<KriReading> KriReadings => Set<KriReading>();
     public DbSet<Alert> Alerts => Set<Alert>();
@@ -26,12 +17,13 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // ── Kri ────────────────────────────────────────────────────────────────
         modelBuilder.Entity<Kri>(entity =>
         {
             entity.ToTable("Kris");
             entity.HasKey(e => e.Id);
 
+            // NFR: Optimistic Locking — RowVersion is used as a concurrency token.
+            // EF Core throws DbUpdateConcurrencyException on conflicting writes.
             entity.Property(e => e.RowVersion)
                 .IsRowVersion()
                 .IsConcurrencyToken()
@@ -46,7 +38,6 @@ public class AppDbContext : DbContext
                 .HasDatabaseName("IX_Kris_Slug");
         });
 
-        // ── KriReading ─────────────────────────────────────────────────────────
         modelBuilder.Entity<KriReading>(entity =>
         {
             entity.ToTable("KriReadings");
@@ -57,12 +48,10 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.KriId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Covers the most common query: readings for KRI X ordered by time
             entity.HasIndex(e => new { e.KriId, e.Timestamp })
                 .HasDatabaseName("IX_KriReadings_KriId_Timestamp");
         });
 
-        // ── Alert ──────────────────────────────────────────────────────────────
         modelBuilder.Entity<Alert>(entity =>
         {
             entity.ToTable("Alerts");
@@ -77,7 +66,6 @@ public class AppDbContext : DbContext
                 .HasDatabaseName("IX_Alerts_ResolvedAt");
         });
 
-        // ── AuditLog ───────────────────────────────────────────────────────────
         modelBuilder.Entity<AuditLog>(entity =>
         {
             entity.ToTable("AuditLogs");

@@ -1,18 +1,9 @@
-// ============================================================
-// SeedData.cs — Development seed data
-//
-// Seeds 4 Kri definitions + 30 days of hourly KriReadings on first startup.
-// Idempotent: skips if any Kris already exist (AnyAsync guard).
-// Called from Program.cs after MigrateAsync().
-//
-// To reset: delete the .db file and restart.
-// ============================================================
-
 using Microsoft.EntityFrameworkCore;
 using RiskMonitor.Entities;
 
 namespace PortRiskMonitor.Infrastructure.Data;
 
+// Seeds KRI definitions + 1 year of hourly readings on first startup. Idempotent.
 public static class SeedData
 {
     // Slugs used by GET /api/history/{slug}
@@ -29,7 +20,6 @@ public static class SeedData
         var now = DateTime.UtcNow;
         var from = now.AddYears(-1);
 
-        // ── KRI definitions ────────────────────────────────────────────────────
         var kris = new List<Kri>
         {
             new()
@@ -106,7 +96,7 @@ public static class SeedData
 
         await db.Kris.AddRangeAsync(kris);
 
-        var rng = new Random(42); // fixed seed = reproducible dev data
+        var rng = new Random(42);
         var readings = new List<KriReading>(kris.Count * 2 * 24 * 365);
 
         foreach (var kri in kris)
@@ -115,8 +105,6 @@ public static class SeedData
         await db.KriReadings.AddRangeAsync(readings);
         await db.SaveChangesAsync();
     }
-
-    // ── Generator ──────────────────────────────────────────────────────────────
 
     private static IEnumerable<KriReading> GenerateReadings(
         Kri kri, DateTime from, DateTime to, Random rng)
@@ -151,9 +139,6 @@ public static class SeedData
         return readings;
     }
 
-    /// <summary>
-    /// Peaks at shift-change hours (06:00 and 18:00 UTC).
-    /// </summary>
     private static double Sinusoidal(Kri kri, DateTime t, Random rng)
     {
         var cycle = Math.Sin(2 * Math.PI * t.Hour / 24.0) * (kri.MockVariance * 0.55);
@@ -161,9 +146,6 @@ public static class SeedData
         return kri.MockBaseline + cycle + noise;
     }
 
-    /// <summary>
-    /// Drifts randomly with mean-reversion toward the baseline.
-    /// </summary>
     private static double RandomWalk(ref double current, Kri kri, Random rng)
     {
         current += (rng.NextDouble() - 0.5) * kri.MockVariance * 0.25;
@@ -171,9 +153,6 @@ public static class SeedData
         return current;
     }
 
-    /// <summary>
-    /// Holds baseline, spikes on Mon/Thu inspection days and Friday evening backlog.
-    /// </summary>
     private static double StepFunction(Kri kri, DateTime t, Random rng)
     {
         var isInspection = t.DayOfWeek is DayOfWeek.Monday or DayOfWeek.Thursday

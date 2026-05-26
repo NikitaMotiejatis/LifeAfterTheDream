@@ -7,9 +7,8 @@ using RiskMonitor.Services;
 
 namespace PortRiskMonitor.Infrastructure.Notifications;
 
-// Publishes a one-shot SMS via AWS SNS to each recipient configured in
-// Alerts:Sms:RecipientPhoneNumbers. AWS credentials come from the standard SDK
-// chain (env vars, user secrets, IAM role) — never committed.
+// NFR: Extensibility / Strategy — one of the IAlertNotifier implementations.
+// Sends SMS via AWS SNS. Swapped in/out via appsettings.json config only.
 public class AwsSnsAlertNotifier : IAlertNotifier
 {
     private readonly IAmazonSimpleNotificationService _sns;
@@ -51,7 +50,6 @@ public class AwsSnsAlertNotifier : IAlertNotifier
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send SNS SMS to {Number}", number);
-                // Continue to the next recipient — one bad number doesn't block the rest.
             }
         }
     }

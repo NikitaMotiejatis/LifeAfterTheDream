@@ -1,3 +1,6 @@
+// NFR: Security — all queries use EF Core LINQ (parameterized).
+// NFR: Data Access — SaveChangesAsync completes within a single HTTP request.
+
 using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Infrastructure.Data;
 using RiskMonitor.Entities;
