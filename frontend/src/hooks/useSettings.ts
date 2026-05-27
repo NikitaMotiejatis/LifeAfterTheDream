@@ -40,16 +40,15 @@ export function useSettings() {
     setIsSaving(true);
     setError(null);
     try {
-      const data = await saveFormulaSettings(settings);
+      const data = await saveFormulaSettings(settings, saved);
       setSaved(data);
       setSettings(data);
       queryClient.invalidateQueries({ queryKey: ['dashboard-tiles'] });
       return true;
     } catch (err) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? 'Failed to save settings.';
-      setError(message);
+      const data = (err as { response?: { data?: { detail?: string; message?: string } } })
+        ?.response?.data;
+      setError(data?.detail ?? data?.message ?? 'Failed to save settings.');
       return false;
     } finally {
       setIsSaving(false);

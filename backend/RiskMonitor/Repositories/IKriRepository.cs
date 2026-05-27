@@ -12,9 +12,13 @@ public interface IKriRepository
     IQueryable<KriReading> GetAllReadings();
 
     Task<KriReading?> GetLatestReading()
-        => GetAllReadings()
+    {
+        var now = DateTime.UtcNow;
+        return GetAllReadings()
+            .Where(r => r.Timestamp <= now)
             .OrderByDescending(r => r.Timestamp)
             .FirstOrDefaultAsync();
+    }
 
     IQueryable<KriReading> GetReadings(DateTime? from, DateTime? to)
     {

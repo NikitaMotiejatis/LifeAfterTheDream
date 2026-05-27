@@ -34,7 +34,7 @@ public static class SeedData
                 MockBaseline = 50,
                 MockVariance = 50,
                 MockPattern  = "Sinusoidal",
-                CreatedAt    = now,
+                CreatedAt    = from,
             },
             new()
             {
@@ -48,7 +48,7 @@ public static class SeedData
                 MockBaseline = 60,
                 MockVariance = 30,
                 MockPattern  = "Sinusoidal",
-                CreatedAt    = now,
+                CreatedAt    = from,
             },
             new()
             {
@@ -62,7 +62,7 @@ public static class SeedData
                 MockBaseline = 22,
                 MockVariance = 18,
                 MockPattern  = "RandomWalk",
-                CreatedAt    = now,
+                CreatedAt    = from,
             },
             new()
             {
@@ -76,7 +76,7 @@ public static class SeedData
                 MockBaseline = 18,
                 MockVariance = 28,
                 MockPattern  = "Sinusoidal",
-                CreatedAt    = now,
+                CreatedAt    = from,
             },
             new()
             {
@@ -90,17 +90,17 @@ public static class SeedData
                 MockBaseline = 18,
                 MockVariance = 40,
                 MockPattern  = "StepFunction",
-                CreatedAt    = now,
+                CreatedAt    = from,
             },
         };
 
         await db.Kris.AddRangeAsync(kris);
 
-        var rng = new Random(42);
-        var readings = new List<KriReading>(kris.Count * 2 * 24 * 365);
+        var rng = new Random(42); // fixed seed = reproducible dev data
+        var readings = new List<KriReading>(kris.Count * 4 * 24 * 365);
 
         foreach (var kri in kris)
-            readings.AddRange(GenerateReadings(kri, from, now, rng));
+            readings.AddRange(GenerateReadings(kri, from, now.AddYears(1), rng));
 
         await db.KriReadings.AddRangeAsync(readings);
         await db.SaveChangesAsync();

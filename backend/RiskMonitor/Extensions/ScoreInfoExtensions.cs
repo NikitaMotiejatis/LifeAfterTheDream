@@ -80,7 +80,7 @@ public static class ScoreInfoExtentions
         return buckets
             .Select(b => new ScoreInfo
             {
-                Timestamp = new DateTime(b.Ticks),
+                Timestamp = new DateTime(b.Ticks, DateTimeKind.Utc),
                 Value = b.Value,
             });
     }

@@ -22,12 +22,10 @@ public class AppDbContext : DbContext
             entity.ToTable("Kris");
             entity.HasKey(e => e.Id);
 
-            // NFR: Optimistic Locking — RowVersion is used as a concurrency token.
-            // EF Core throws DbUpdateConcurrencyException on conflicting writes.
-            entity.Property(e => e.RowVersion)
+            entity.Property<uint>("xmin")
+                .HasColumnName("xmin")
                 .IsRowVersion()
-                .IsConcurrencyToken()
-                .HasDefaultValueSql("randomblob(8)");
+                .IsConcurrencyToken();
 
             entity.HasIndex(e => e.Name)
                 .IsUnique()

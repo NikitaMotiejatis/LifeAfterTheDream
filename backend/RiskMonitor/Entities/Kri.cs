@@ -22,10 +22,7 @@ public class Kri
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // NFR: Optimistic Locking — concurrency token; EF Core checks this on update
-    // and throws DbUpdateConcurrencyException if another request modified the row.
-    [Timestamp]
-    public byte[] RowVersion { get; set; } = new byte[8];
+    public uint xmin { get; set; }
 
     public ICollection<KriReading> Readings { get; set; } = new List<KriReading>();
 

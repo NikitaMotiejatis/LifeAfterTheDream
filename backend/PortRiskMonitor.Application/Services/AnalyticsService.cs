@@ -4,6 +4,7 @@ using PortRiskMonitor.Application.Interfaces;
 using RiskMonitor.DTOs;
 using RiskMonitor.Extensions;
 using RiskMonitor.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace PortRiskMonitor.Application.Services;
 
@@ -23,22 +24,26 @@ public class AnalyticsService : IAnalyticsService
     public async Task<AnalyticsDto> GetAnalytics(string slug, string? fromStr, string? toStr)
     {
         var (from, to) = _filterInputParser.ParseFilterInput("custom", fromStr, toStr);
+        var fromUtc = DateTime.SpecifyKind(from, DateTimeKind.Utc);
+        var toUtc = DateTime.SpecifyKind(to, DateTimeKind.Utc);
 
         const long numberOfBuckets = 50;
-        var bucketLength = (to - from) / numberOfBuckets;
+        var bucketLength = (toUtc - fromUtc) / numberOfBuckets;
 
         var kri = await _portRiskMonitorRepo.GetBySlugAsync(slug)
             ?? throw new NotFoundException("Risk indicator not found");
 
-        var scores = await _portRiskMonitorRepo
+        var scores = (await _portRiskMonitorRepo
             .GetKriReadings(slug)
-            .Where(r => from <= r.Timestamp && r.Timestamp <= to)
+            .Where(r => fromUtc <= r.Timestamp && r.Timestamp <= toUtc)
             .Select(r => new ScoreInfo
             {
                 Timestamp = r.Timestamp,
                 Value = r.Value,
             })
-            .DownsampleM4Async(from, 4 * bucketLength);
+            .ToListAsync())
+            .AsEnumerable()
+            .DownsampleM4Enumerable(fromUtc, 4 * bucketLength);
 
         return new AnalyticsDto(
             Title: kri.Name,

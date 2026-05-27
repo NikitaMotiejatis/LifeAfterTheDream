@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 namespace PortRiskMonitor.Infrastructure.Data;
 
@@ -8,8 +9,10 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
     {
-        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        optionsBuilder.UseSqlite("Data Source=port_risk_monitor_designtime.db");
-        return new AppDbContext(optionsBuilder.Options);
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql("Host=localhost;Port=5433;Database=portrisks;Username=portuser;Password=portpass")
+            .Options;
+
+        return new AppDbContext(options);
     }
 }

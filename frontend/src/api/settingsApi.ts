@@ -67,7 +67,10 @@ function saveExtras(extras: FormulaExtras) {
   localStorage.setItem(EXTRAS_KEY, JSON.stringify(extras));
 }
 
-type ThresholdsResponse = Record<string, { green: number; yellow: number }>;
+type ThresholdsResponse = Record<
+  string,
+  { green: number; yellow: number; xmin?: number }
+>;
 
 function pair(
   resp: ThresholdsResponse,
@@ -112,21 +115,17 @@ function mergeWithExtras(resp: ThresholdsResponse): FormulaSettings {
 }
 
 function toBackendPayload(settings: FormulaSettings): ThresholdsResponse {
+  const pick = (t: { green: number; yellow: number; xmin?: number }) => ({
+    green: t.green,
+    yellow: t.yellow,
+    xmin: t.xmin,
+  });
   return {
-    [UI_TO_SLUG.berthOccupancy]: settings.berthOccupancy,
-    [UI_TO_SLUG.vesselDelayRate]: settings.vesselDelayRate,
-    [UI_TO_SLUG.customsDwellTime]: {
-      green: settings.customsDwellTime.green,
-      yellow: settings.customsDwellTime.yellow,
-    },
-    [UI_TO_SLUG.weatherRisk]: {
-      green: settings.weatherRisk.green,
-      yellow: settings.weatherRisk.yellow,
-    },
-    [UI_TO_SLUG.disruptionIndex]: {
-      green: settings.disruptionIndex.green,
-      yellow: settings.disruptionIndex.yellow,
-    },
+    [UI_TO_SLUG.berthOccupancy]: pick(settings.berthOccupancy),
+    [UI_TO_SLUG.vesselDelayRate]: pick(settings.vesselDelayRate),
+    [UI_TO_SLUG.customsDwellTime]: pick(settings.customsDwellTime),
+    [UI_TO_SLUG.weatherRisk]: pick(settings.weatherRisk),
+    [UI_TO_SLUG.disruptionIndex]: pick(settings.disruptionIndex),
   };
 }
 
@@ -137,8 +136,15 @@ export async function getFormulaSettings(): Promise<FormulaSettings> {
   return mergeWithExtras(resp.data);
 }
 
+type SlugPair = { green: number; yellow: number; xmin?: number };
+
+function thresholdChanged(a: SlugPair, b: SlugPair): boolean {
+  return a.green !== b.green || a.yellow !== b.yellow;
+}
+
 export async function saveFormulaSettings(
   settings: FormulaSettings,
+  saved: FormulaSettings,
 ): Promise<FormulaSettings> {
   saveExtras({
     waveHeightMultiplier: settings.weatherRisk.waveHeightMultiplier,
@@ -147,9 +153,23 @@ export async function saveFormulaSettings(
     customsWeight: settings.disruptionIndex.customsWeight,
     weatherWeight: settings.disruptionIndex.weatherWeight,
   });
-  const resp = await axiosInstance.put<ThresholdsResponse>(
+
+  const payload = toBackendPayload(settings);
+  const savedPayload = toBackendPayload(saved);
+
+  // Per-slug PUTs so each KRI's xmin is only checked against its own row.
+  // Concurrent edits on different KRIs won't collide.
+  await Promise.all(
+    Object.entries(payload)
+      .filter(([slug, pair]) => thresholdChanged(pair, savedPayload[slug]))
+      .map(([slug, pair]) =>
+        axiosInstance.put<SlugPair>(`/settings/thresholds/${slug}`, pair),
+      ),
+  );
+
+  // Re-fetch to pick up fresh xmins for all rows (changed and unchanged).
+  const resp = await axiosInstance.get<ThresholdsResponse>(
     '/settings/thresholds',
-    toBackendPayload(settings),
   );
   return mergeWithExtras(resp.data);
 }

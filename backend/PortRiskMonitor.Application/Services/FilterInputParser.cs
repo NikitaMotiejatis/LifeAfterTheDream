@@ -55,10 +55,10 @@ public class FilterInputParser : IFilterInputParser
 
         var from = interval switch
         {
-            BucketType.Hour => (new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0)).AddHours(1 - bucketCount),
-            BucketType.Day => (new DateTime(now.Year, now.Month, now.Day)).AddDays(1 - bucketCount),
-            BucketType.Month => (new DateTime(now.Year, now.Month, 1)).AddMonths(1 - bucketCount),
-            BucketType.Year => (new DateTime(now.Year, 1, 1)).AddYears(1 - bucketCount),
+            BucketType.Hour => (new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc)).AddHours(1 - bucketCount),
+            BucketType.Day => (new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc)).AddDays(1 - bucketCount),
+            BucketType.Month => (new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc)).AddMonths(1 - bucketCount),
+            BucketType.Year => (new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc)).AddYears(1 - bucketCount),
             _ => throw new InternalErrorException("Invalid time interval length"),
         };
 
