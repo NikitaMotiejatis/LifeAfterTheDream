@@ -27,16 +27,8 @@ public class SettingsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UpdateThresholds([FromBody] ThresholdSettingsDto settings)
-    {
-        try
-        {
-            return Ok(await _service.UpdateAsync(settings));
-        }
-        catch (ConflictException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-    }
+        => Ok(await _service.UpdateAsync(settings));
+
 
     [HttpPost("thresholds/reset")]
     [ProducesResponseType(StatusCodes.Status200OK)]

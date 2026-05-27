@@ -12,7 +12,7 @@ using PortRiskMonitor.Infrastructure.Data;
 namespace PortRiskMonitor.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260525211744_InitialCreate")]
+    [Migration("20260527121654_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

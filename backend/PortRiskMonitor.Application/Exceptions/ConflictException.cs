@@ -1,3 +1,10 @@
-﻿namespace PortRiskMonitor.Application.Exceptions;
+﻿using System.Net;
 
-public class ConflictException(string message) : Exception(message);
+namespace PortRiskMonitor.Application.Exceptions;
+
+// 409 Confict
+public class ConflictException : CustomException
+{
+    public ConflictException(string message) : base(message, HttpStatusCode.Conflict) { }
+}
+
