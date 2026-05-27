@@ -181,3 +181,29 @@ export async function resetFormulaSettings(): Promise<FormulaSettings> {
   );
   return mergeWithExtras(resp.data);
 }
+
+export type NotificationChannel = 'Off' | 'Twilio' | 'Email' | string;
+
+export interface NotifyRequest {
+  kriName: string;
+  value: number;
+  message?: string;
+}
+
+export interface NotifyResponse {
+  ok: boolean;
+  channel: NotificationChannel;
+  decorators: string[];
+  recipients: string[] | null;
+  error: string | null;
+}
+
+export async function notifyRedZone(
+  payload: NotifyRequest,
+): Promise<NotifyResponse> {
+  const resp = await axiosInstance.post<NotifyResponse>(
+    '/settings/notify',
+    payload,
+  );
+  return resp.data;
+}
