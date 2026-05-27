@@ -1,6 +1,7 @@
 export interface ThresholdPair {
   green: number;
   yellow: number;
+  xmin?: number;
 }
 
 export interface WeatherRiskSettings extends ThresholdPair {

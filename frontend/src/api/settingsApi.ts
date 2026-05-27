@@ -67,7 +67,10 @@ function saveExtras(extras: FormulaExtras) {
   localStorage.setItem(EXTRAS_KEY, JSON.stringify(extras));
 }
 
-type ThresholdsResponse = Record<string, { green: number; yellow: number }>;
+type ThresholdsResponse = Record<
+  string,
+  { green: number; yellow: number; xmin?: number }
+>;
 
 function pair(
   resp: ThresholdsResponse,
@@ -112,21 +115,17 @@ function mergeWithExtras(resp: ThresholdsResponse): FormulaSettings {
 }
 
 function toBackendPayload(settings: FormulaSettings): ThresholdsResponse {
+  const pick = (t: { green: number; yellow: number; xmin?: number }) => ({
+    green: t.green,
+    yellow: t.yellow,
+    xmin: t.xmin,
+  });
   return {
-    [UI_TO_SLUG.berthOccupancy]: settings.berthOccupancy,
-    [UI_TO_SLUG.vesselDelayRate]: settings.vesselDelayRate,
-    [UI_TO_SLUG.customsDwellTime]: {
-      green: settings.customsDwellTime.green,
-      yellow: settings.customsDwellTime.yellow,
-    },
-    [UI_TO_SLUG.weatherRisk]: {
-      green: settings.weatherRisk.green,
-      yellow: settings.weatherRisk.yellow,
-    },
-    [UI_TO_SLUG.disruptionIndex]: {
-      green: settings.disruptionIndex.green,
-      yellow: settings.disruptionIndex.yellow,
-    },
+    [UI_TO_SLUG.berthOccupancy]: pick(settings.berthOccupancy),
+    [UI_TO_SLUG.vesselDelayRate]: pick(settings.vesselDelayRate),
+    [UI_TO_SLUG.customsDwellTime]: pick(settings.customsDwellTime),
+    [UI_TO_SLUG.weatherRisk]: pick(settings.weatherRisk),
+    [UI_TO_SLUG.disruptionIndex]: pick(settings.disruptionIndex),
   };
 }
 
