@@ -64,6 +64,26 @@ public class ThresholdSettingsService : IThresholdSettingsService
         return await GetAllAsync();
     }
 
+    public async Task<ThresholdPairDto> UpdateOneAsync(string slug, ThresholdPairDto pair)
+    {
+        ValidatePair(slug, pair);
+
+        var kri = await _kriRepo.GetBySlugAsync(slug)
+            ?? throw new BadInputException($"Unknown metric slug: {slug}");
+
+        kri.GreenMax = pair.Green;
+        kri.YellowMax = pair.Yellow;
+        try
+        {
+            var updated = await _kriRepo.UpdateAsync(kri, pair.xmin);
+            return new ThresholdPairDto(updated.GreenMax, updated.YellowMax, updated.xmin);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException($"'{kri.Name}' was modified by someone else. Refresh and try again.");
+        }
+    }
+
     public async Task<ThresholdSettingsDto> ResetAsync()
     {
         var defaults = new ThresholdSettingsDto(SeedDefaults);

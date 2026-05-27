@@ -29,6 +29,14 @@ public class SettingsController : ControllerBase
     public async Task<IActionResult> UpdateThresholds([FromBody] ThresholdSettingsDto settings)
         => Ok(await _service.UpdateAsync(settings));
 
+    [HttpPut("thresholds/{slug}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> UpdateThreshold(string slug, [FromBody] ThresholdPairDto pair)
+        => Ok(await _service.UpdateOneAsync(slug, pair));
+
 
     [HttpPost("thresholds/reset")]
     [ProducesResponseType(StatusCodes.Status200OK)]

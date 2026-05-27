@@ -136,8 +136,15 @@ export async function getFormulaSettings(): Promise<FormulaSettings> {
   return mergeWithExtras(resp.data);
 }
 
+type SlugPair = { green: number; yellow: number; xmin?: number };
+
+function thresholdChanged(a: SlugPair, b: SlugPair): boolean {
+  return a.green !== b.green || a.yellow !== b.yellow;
+}
+
 export async function saveFormulaSettings(
   settings: FormulaSettings,
+  saved: FormulaSettings,
 ): Promise<FormulaSettings> {
   saveExtras({
     waveHeightMultiplier: settings.weatherRisk.waveHeightMultiplier,
@@ -146,9 +153,23 @@ export async function saveFormulaSettings(
     customsWeight: settings.disruptionIndex.customsWeight,
     weatherWeight: settings.disruptionIndex.weatherWeight,
   });
-  const resp = await axiosInstance.put<ThresholdsResponse>(
+
+  const payload = toBackendPayload(settings);
+  const savedPayload = toBackendPayload(saved);
+
+  // Per-slug PUTs so each KRI's xmin is only checked against its own row.
+  // Concurrent edits on different KRIs won't collide.
+  await Promise.all(
+    Object.entries(payload)
+      .filter(([slug, pair]) => thresholdChanged(pair, savedPayload[slug]))
+      .map(([slug, pair]) =>
+        axiosInstance.put<SlugPair>(`/settings/thresholds/${slug}`, pair),
+      ),
+  );
+
+  // Re-fetch to pick up fresh xmins for all rows (changed and unchanged).
+  const resp = await axiosInstance.get<ThresholdsResponse>(
     '/settings/thresholds',
-    toBackendPayload(settings),
   );
   return mergeWithExtras(resp.data);
 }

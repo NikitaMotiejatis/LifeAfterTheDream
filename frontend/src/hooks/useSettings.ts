@@ -40,7 +40,7 @@ export function useSettings() {
     setIsSaving(true);
     setError(null);
     try {
-      const data = await saveFormulaSettings(settings);
+      const data = await saveFormulaSettings(settings, saved);
       setSaved(data);
       setSettings(data);
       queryClient.invalidateQueries({ queryKey: ['dashboard-tiles'] });
