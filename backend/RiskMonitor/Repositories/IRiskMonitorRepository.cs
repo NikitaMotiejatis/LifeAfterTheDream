@@ -20,9 +20,13 @@ public interface IRiskMonitorRepository
     Task<Kri> UpdateAsync(Kri kri, uint? originalXmin = null);
 
     IQueryable<KriReading> GetLatestReadings()
-        => GetAllIndicators()
+    {
+        var now = DateTime.UtcNow;
+        return GetAllIndicators()
             .Select(k => k.Readings
+                .Where(r => r.Timestamp <= now)
                 .OrderByDescending(r => r.Timestamp)
                 .FirstOrDefault())
             .Where(r => r != null)!;
+    }
 }

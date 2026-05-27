@@ -70,6 +70,7 @@ public class DashboardService : IDasboardService
     public async Task<IEnumerable<KriCardDto>> GetKriCards(string preset, string? fromStr, string? toStr)
     {
         var (from, to) = _filterInputParser.ParseFilterInput(preset, fromStr, toStr);
+        var now = DateTime.UtcNow;
 
         const long numberOfBuckets = 30;
         var bucketLength = (to - from) / numberOfBuckets;
@@ -85,6 +86,7 @@ public class DashboardService : IDasboardService
                 GreenMax = kri.GreenMax,
                 YellowMax = kri.YellowMax,
                 LatestReading = kri.Readings
+                    .Where(r => r.Timestamp <= now)
                     .OrderByDescending(r => r.Timestamp)
                     .FirstOrDefault(),
                 Scores = kri.Readings
