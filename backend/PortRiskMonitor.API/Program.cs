@@ -1,5 +1,6 @@
 using Amazon.SimpleNotificationService;
 using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 using PortRiskMonitor.API.Exceptions;
 using PortRiskMonitor.API.Filters;
 using PortRiskMonitor.Application.BackgroundServices;
@@ -14,7 +15,6 @@ using PortRiskMonitor.Infrastructure.RiskMonitor;
 using RiskMonitor.Repositories;
 using RiskMonitor.Services;
 using Serilog;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
