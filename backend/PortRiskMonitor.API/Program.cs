@@ -1,4 +1,3 @@
-using Amazon.SimpleNotificationService;
 using Microsoft.EntityFrameworkCore;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
 using PortRiskMonitor.API.Exceptions;
@@ -9,6 +8,9 @@ using PortRiskMonitor.Application.Services;
 using PortRiskMonitor.Infrastructure.Alerts;
 using PortRiskMonitor.Infrastructure.Data;
 using PortRiskMonitor.Infrastructure.Notifications;
+using PortRiskMonitor.Infrastructure.Notifications.Dispatch;
+using PortRiskMonitor.Infrastructure.Notifications.Options;
+using PortRiskMonitor.Infrastructure.Notifications.Strategies;
 using PortRiskMonitor.Infrastructure.PortStatus;
 using PortRiskMonitor.Infrastructure.Repositories;
 using PortRiskMonitor.Infrastructure.RiskMonitor;
@@ -68,28 +70,17 @@ try
 
     builder.Services.AddSingleton<IFilterInputParser, FilterInputParser>();
 
-    // NFR: Extensibility / Strategy — IAlertNotifier implementation is selected
-    // via appsettings.json "Alerts:Sms:Enabled". New notifiers (e.g. email, Slack)
-    // can be added without modifying existing code — only config changes needed.
-    builder.Services.Configure<SmsAlertOptions>(
-        builder.Configuration.GetSection(SmsAlertOptions.SectionName));
+    // NFR: Extensibility / Strategy + Decorator — IAlertNotifier is selected at
+    // runtime by ChannelDispatchingNotifier, which reads IOptionsMonitor every
+    // call.
+    builder.Services.Configure<NotificationOptions>(
+        builder.Configuration.GetSection(NotificationOptions.SectionName));
 
-    var smsOptions = builder.Configuration.GetSection(SmsAlertOptions.SectionName).Get<SmsAlertOptions>()
-        ?? new SmsAlertOptions();
-    if (smsOptions.Enabled)
-    {
-        builder.Services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
-            new AmazonSimpleNotificationServiceClient(
-                Amazon.RegionEndpoint.GetBySystemName(smsOptions.AwsRegion)));
-        builder.Services.AddScoped<IAlertNotifier, AwsSnsAlertNotifier>();
-        Log.Information("SMS alerts ENABLED via AWS SNS (region: {Region}, recipients: {Count})",
-            smsOptions.AwsRegion, smsOptions.RecipientPhoneNumbers.Count);
-    }
-    else
-    {
-        builder.Services.AddScoped<IAlertNotifier, NullAlertNotifier>();
-        Log.Information("SMS alerts DISABLED — using NullAlertNotifier (log-only)");
-    }
+    builder.Services.AddKeyedScoped<IAlertNotifier, NullAlertNotifier>("Off");
+    builder.Services.AddKeyedScoped<IAlertNotifier, TwilioSmsAlertNotifier>("Twilio");
+    builder.Services.AddKeyedScoped<IAlertNotifier, SmtpEmailAlertNotifier>("Email");
+
+    builder.Services.AddScoped<IAlertNotifier, ChannelDispatchingNotifier>();
 
     // NFR: Reactive / Async — background services run on separate threads,
     // never blocking HTTP request handlers.
