@@ -1,6 +1,6 @@
 using RiskMonitor.Repositories;
 
-namespace PortRiskMonitor.Infrastructure.PortStatus;
+namespace PortRiskMonitor.Data.PortStatus;
 
 public interface IPortStatusRepo : IKriRepository
 {

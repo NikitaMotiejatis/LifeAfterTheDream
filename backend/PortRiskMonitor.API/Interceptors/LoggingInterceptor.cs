@@ -1,5 +1,7 @@
 using Castle.DynamicProxy;
 
+namespace PortRiskMonitor.API.Interceptors;
+
 public class LoggingInterceptor : IAsyncInterceptor, IInterceptor
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -94,6 +96,6 @@ public class LoggingInterceptor : IAsyncInterceptor, IInterceptor
         string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
         _logger.LogInformation("[Session: {SessionId}] {Phase} -> {Class}.{Method}",
-                sessionId, phase, className, methodName);
+            sessionId, phase, className, methodName);
     }
 }

@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 
-namespace PortRiskMonitor.Infrastructure.Data;
+namespace PortRiskMonitor.Data.Data;
 
 // Design-time factory for EF Core CLI tools (dotnet ef migrations).
 public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>

@@ -14,7 +14,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PortRiskMonitor.API", "Port
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PortRiskMonitor.Application", "PortRiskMonitor.Application\PortRiskMonitor.Application.csproj", "{F80F85B8-98C0-25B0-A972-4B9767918CDC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PortRiskMonitor.Infrastructure", "PortRiskMonitor.Infrastructure\PortRiskMonitor.Infrastructure.csproj", "{E1201B3E-D89F-3CA3-D9FE-D2F23781A8B7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PortRiskMonitor.Data", "PortRiskMonitor.Data\PortRiskMonitor.Data.csproj", "{E1201B3E-D89F-3CA3-D9FE-D2F23781A8B7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

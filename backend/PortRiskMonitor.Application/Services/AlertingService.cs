@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PortRiskMonitor.Application.Interfaces;
-using PortRiskMonitor.Infrastructure.Alerts;
+using PortRiskMonitor.Data.Alerts;
 using RiskMonitor.Entities;
 using RiskMonitor.Repositories;
 using RiskMonitor.Services;

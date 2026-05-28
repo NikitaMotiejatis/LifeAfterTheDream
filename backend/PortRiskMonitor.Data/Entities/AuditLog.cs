@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace PortRiskMonitor.Infrastructure.Entities;
+namespace PortRiskMonitor.Data.Entities;
 
 // NFR: Cross-cutting / Interceptors — written by BusinessLogicAuditFilter.
 // Records WHO did WHAT, WHEN, duration, and outcome for every controller action.

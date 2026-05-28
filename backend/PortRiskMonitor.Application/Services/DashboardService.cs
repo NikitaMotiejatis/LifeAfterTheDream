@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
-using PortRiskMonitor.Infrastructure.PortStatus;
+using PortRiskMonitor.Data.PortStatus;
 using RiskMonitor.DTOs;
 using RiskMonitor.Extensions;
 using RiskMonitor.Repositories;

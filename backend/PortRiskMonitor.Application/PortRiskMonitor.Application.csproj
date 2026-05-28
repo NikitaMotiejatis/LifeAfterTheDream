@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PortRiskMonitor.Infrastructure\PortRiskMonitor.Infrastructure.csproj" />
+    <ProjectReference Include="..\PortRiskMonitor.Data\PortRiskMonitor.Data.csproj" />
     <ProjectReference Include="..\RiskMonitor\RiskMonitor.csproj" />
   </ItemGroup>
 

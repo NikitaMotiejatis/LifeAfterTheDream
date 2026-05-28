@@ -1,7 +1,7 @@
-using PortRiskMonitor.Infrastructure.Data;
-using PortRiskMonitor.Infrastructure.Entities;
+using PortRiskMonitor.Data.Data;
+using PortRiskMonitor.Data.Entities;
 
-namespace PortRiskMonitor.Infrastructure.Repositories;
+namespace PortRiskMonitor.Data.Repositories;
 
 public interface IAuditLogRepository
 {

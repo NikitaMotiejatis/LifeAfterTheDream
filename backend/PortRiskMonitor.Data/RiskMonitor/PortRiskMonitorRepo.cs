@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using PortRiskMonitor.Infrastructure.Data;
+using PortRiskMonitor.Data.Data;
 using RiskMonitor.Entities;
 using RiskMonitor.Repositories;
 
-namespace PortRiskMonitor.Infrastructure.RiskMonitor;
+namespace PortRiskMonitor.Data.RiskMonitor;
 
 public class PortRiskMonitorRepo : IRiskMonitorRepository
 {

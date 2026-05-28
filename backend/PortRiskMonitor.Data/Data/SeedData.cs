@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RiskMonitor.Entities;
 
-namespace PortRiskMonitor.Infrastructure.Data;
+namespace PortRiskMonitor.Data.Data;
 
 // Seeds KRI definitions + 1 year of hourly readings on first startup. Idempotent.
 public static class SeedData
