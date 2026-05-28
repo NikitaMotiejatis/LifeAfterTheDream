@@ -3,8 +3,8 @@ using Autofac.Extensions.DependencyInjection;
 using Autofac.Extras.DynamicProxy;
 using Castle.DynamicProxy;
 using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL; // For UseNpgsql extension method
 using PortRiskMonitor.API.Exceptions;
+using PortRiskMonitor.API.Extensions;
 using PortRiskMonitor.API.Filters;
 using PortRiskMonitor.API.Interceptors;
 using PortRiskMonitor.Application.BackgroundServices;
@@ -18,7 +18,6 @@ using PortRiskMonitor.Data.Alerts;
 using PortRiskMonitor.Data.Data;
 using PortRiskMonitor.Data.PortStatus;
 using PortRiskMonitor.Data.Repositories;
-using PortRiskMonitor.Data.RiskMonitor;
 using RiskMonitor.Repositories;
 using RiskMonitor.Services;
 using Serilog;
@@ -74,13 +73,15 @@ try
     // No use-case state is stored in session; each request gets fresh instances.
 
     // Repositories (Data Access Layer)
-    builder.Services.AddScoped<IAlertRepository, AlertRepository>();
-    builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
-    builder.Services.AddScoped<IRiskMonitorRepository, PortRiskMonitorRepo>();
-    builder.Services.AddScoped<IPortStatusRepo, PortStatusRepo>();
+    builder.Services
+        .AddScopedFromConfig<IAlertRepository>(builder.Configuration, "DynamicStrategies:IAlertRepository")
+        .AddScopedFromConfig<IAuditLogRepository>(builder.Configuration, "DynamicStrategies:IAuditLogRepository")
+        .AddScopedFromConfig<IRiskMonitorRepository>(builder.Configuration, "DynamicStrategies:IRiskMonitorRepository")
+        .AddScopedFromConfig<IPortStatusRepo>(builder.Configuration, "DynamicStrategies:IPortStatusRepo");
 
-    builder.Services.AddSingleton<IWeatherSnapshotCache, WeatherSnapshotCache>();
-    builder.Services.AddSingleton<IAisSnapshotCache, AisSnapshotCache>();
+    builder.Services
+        .AddSingletonFromConfig<IWeatherSnapshotCache>(builder.Configuration, "DynamicStrategies:IWeatherSnapshotCache")
+        .AddSingletonFromConfig<IAisSnapshotCache>(builder.Configuration, "DynamicStrategies:IAisSnapshotCache");
 
     // NFR: Extensibility / Strategy + Decorator — IAlertNotifier is selected at
     // runtime by ChannelDispatchingNotifier, which reads IOptionsMonitor every
@@ -98,11 +99,11 @@ try
         {
             var businessServices = new[]
             {
-                typeof(AnalyticsService),
-                typeof(DashboardService),
-                typeof(ThresholdSettingsService),
-                typeof(NotificationService),
-                typeof(AlertingService),
+                builder.Configuration.ReadTypeFromConfig<IAnalyticsService>("DynamicStrategies:IAnalyticsService"),
+                builder.Configuration.ReadTypeFromConfig<IDasboardService>("DynamicStrategies:IDashboardService"),
+                builder.Configuration.ReadTypeFromConfig<IThresholdSettingsService>("DynamicStrategies:IThresholdSettingsService"),
+                builder.Configuration.ReadTypeFromConfig<INotificationService>("DynamicStrategies:INotificationService"),
+                builder.Configuration.ReadTypeFromConfig<IAlertingService>("DynamicStrategies:IAlertingService"),
             };
 
             foreach (var service in businessServices)
