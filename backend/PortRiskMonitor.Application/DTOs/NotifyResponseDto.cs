@@ -1,4 +1,5 @@
-namespace PortRiskMonitor.Application.DTOs; 
+namespace PortRiskMonitor.Application.DTOs;
+
 public record NotifyResponse(
     bool Ok,
     string Channel,

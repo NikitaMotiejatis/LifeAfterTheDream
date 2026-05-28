@@ -43,5 +43,5 @@ public class SettingsController : ControllerBase
     [HttpPost("thresholds/reset")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ResetThresholds()
-        => Ok(await _service.ResetAsync());    
+        => Ok(await _service.ResetAsync());
 }

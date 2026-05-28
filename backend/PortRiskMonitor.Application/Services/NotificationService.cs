@@ -42,6 +42,6 @@ public class NotificationService : INotificationService
         catch (Exception ex)
         {
             return new NotifyResponse(false, current.Channel, current.Decorators, recipients, ex.Message);
-        } 
+        }
     }
 }
