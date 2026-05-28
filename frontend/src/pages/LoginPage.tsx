@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('operator@klaipeda.lt');
+  const [password, setPassword] = useState('operator123');
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();

@@ -32,8 +32,18 @@ public class BusinessLogicAuditFilter : IAsyncActionFilter
         var methodName = context.ActionDescriptor.DisplayName ?? "Unknown";
         var httpMethod = context.HttpContext.Request.Method;
         var path = context.HttpContext.Request.Path.Value ?? "";
-        var userIdentifier = context.HttpContext.User.Identity?.Name ?? "anonymous";
-        var permissions = "operator";
+
+        string userIdentifier = "anonymous";
+        var httpContext = context.HttpContext;
+
+        if (httpContext.User?.Identity != null && httpContext.User.Identity.IsAuthenticated)
+        {
+            userIdentifier = httpContext.User.Identity.Name ?? "authenticated_user";
+        }
+        else if (httpContext.Session != null && !string.IsNullOrEmpty(httpContext.Session.Id))
+        {
+            userIdentifier = $"Session: {httpContext.Session.Id}";
+        }
 
         var executedContext = await next();
 
@@ -50,7 +60,6 @@ public class BusinessLogicAuditFilter : IAsyncActionFilter
             ClassName = className,
             MethodName = methodName,
             UserIdentifier = userIdentifier,
-            Permissions = permissions,
             ExecutedAt = DateTime.UtcNow,
             DurationMs = stopwatch.ElapsedMilliseconds,
             Success = success,

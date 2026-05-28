@@ -27,7 +27,7 @@ public class ChannelDispatchingNotifier : IAlertNotifier
         _logger = logger;
     }
 
-    // Wroks based on current config value, at each notification. On RED alerts. 
+    // Wroks based on current config value, at each notification. On RED alerts.
     public async Task NotifyRedAsync(Alert alert, CancellationToken cancellationToken = default)
     {
         var opts = _options.CurrentValue;
