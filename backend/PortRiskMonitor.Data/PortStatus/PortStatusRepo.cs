@@ -1,7 +1,7 @@
-using PortRiskMonitor.Infrastructure.Data;
-using PortRiskMonitor.Infrastructure.Repositories;
+using PortRiskMonitor.Data.Data;
+using PortRiskMonitor.Data.Repositories;
 
-namespace PortRiskMonitor.Infrastructure.PortStatus;
+namespace PortRiskMonitor.Data.PortStatus;
 
 public class PortStatusRepo : KriRepository, IPortStatusRepo
 {

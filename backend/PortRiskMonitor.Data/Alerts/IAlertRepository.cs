@@ -1,6 +1,6 @@
 using RiskMonitor.Entities;
 
-namespace PortRiskMonitor.Infrastructure.Alerts;
+namespace PortRiskMonitor.Data.Alerts;
 
 public interface IAlertRepository
 {

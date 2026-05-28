@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PortRiskMonitor.Application\PortRiskMonitor.Application.csproj" />
-    <ProjectReference Include="..\PortRiskMonitor.Infrastructure\PortRiskMonitor.Infrastructure.csproj" />
+    <ProjectReference Include="..\PortRiskMonitor.Data\PortRiskMonitor.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

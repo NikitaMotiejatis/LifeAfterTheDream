@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using PortRiskMonitor.Infrastructure.Entities;
+using PortRiskMonitor.Data.Entities;
 using RiskMonitor.Entities;
 
-namespace PortRiskMonitor.Infrastructure.Data;
+namespace PortRiskMonitor.Data.Data;
 
 public class AppDbContext : DbContext
 {

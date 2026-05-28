@@ -4,8 +4,8 @@
 
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc.Filters;
-using PortRiskMonitor.Infrastructure.Entities;
-using PortRiskMonitor.Infrastructure.Repositories;
+using PortRiskMonitor.Data.Entities;
+using PortRiskMonitor.Data.Repositories;
 
 namespace PortRiskMonitor.API.Filters;
 

@@ -2,11 +2,11 @@
 // NFR: Data Access — ORM (EF Core); SaveChangesAsync scoped to a single HTTP request.
 
 using Microsoft.EntityFrameworkCore;
-using PortRiskMonitor.Infrastructure.Data;
+using PortRiskMonitor.Data.Data;
 using RiskMonitor.Entities;
 using RiskMonitor.Repositories;
 
-namespace PortRiskMonitor.Infrastructure.Repositories;
+namespace PortRiskMonitor.Data.Repositories;
 
 public abstract class KriRepository : IKriRepository
 {
