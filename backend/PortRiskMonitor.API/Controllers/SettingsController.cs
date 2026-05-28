@@ -43,46 +43,5 @@ public class SettingsController : ControllerBase
     [HttpPost("thresholds/reset")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ResetThresholds()
-        => Ok(await _service.ResetAsync());
-    public record NotifyRequest(string KriName, double Value, string? Message);
-
-    public record NotifyResponse(
-        bool Ok,
-        string Channel,
-        IReadOnlyList<string> Decorators,
-        IReadOnlyList<string>? Recipients,
-        string? Error);
-
-    [HttpPost("notify")]
-    public async Task<IActionResult> Notify(
-        [FromBody] NotifyRequest req,
-        [FromServices] RiskMonitor.Services.IAlertNotifier notifier,
-        [FromServices] IOptionsMonitor<NotificationOptions> opts,
-        CancellationToken ct)
-    {
-        var current = opts.CurrentValue;
-        var recipients = current.Channel switch
-        {
-            "Twilio" => (IReadOnlyList<string>)current.Twilio.ToNumbers,
-            "Email" => current.Email.ToAddresses,
-            _ => null,
-        };
-
-        try
-        {
-            await notifier.NotifyRedAsync(new RiskMonitor.Entities.Alert
-            {
-                KriName = req.KriName,
-                Level = "Red",
-                TriggerValue = req.Value,
-                Message = req.Message ?? $"{req.KriName} entered red zone at {req.Value}",
-            }, ct);
-
-            return Ok(new NotifyResponse(true, current.Channel, current.Decorators, recipients, null));
-        }
-        catch (Exception ex)
-        {
-            return Ok(new NotifyResponse(false, current.Channel, current.Decorators, recipients, ex.Message));
-        }
-    }
+        => Ok(await _service.ResetAsync());    
 }

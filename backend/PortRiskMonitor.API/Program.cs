@@ -66,6 +66,7 @@ try
     builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
     builder.Services.AddScoped<IDasboardService, DashboardService>();
     builder.Services.AddScoped<IThresholdSettingsService, ThresholdSettingsService>();
+    builder.Services.AddScoped<INotificationService, NotificationService>();
     builder.Services.AddScoped<IAlertingService, AlertingService>();
 
     builder.Services.AddSingleton<IFilterInputParser, FilterInputParser>();
