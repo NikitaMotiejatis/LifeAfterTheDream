@@ -21,6 +21,7 @@ export function evaluateToasts(
   cards: KriCardDto[],
   toastedKeys: Set<string>,
   showToast: ShowToast,
+  onRedTransition?: (card: KriCardDto, value: number) => void,
 ) {
   for (const card of cards) {
     const last = card.sparkline[card.sparkline.length - 1];
@@ -38,6 +39,7 @@ export function evaluateToasts(
       showToast(`${card.title} entered yellow zone (${valueText})`, 'warning');
     } else {
       showToast(`${card.title} entered RED zone (${valueText})`, 'error');
+      onRedTransition?.(card, last.value);
     }
   }
 }

@@ -1,10 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
 using RiskMonitor.DTOs;
 using RiskMonitor.Extensions;
 using RiskMonitor.Repositories;
-using Microsoft.EntityFrameworkCore;
 
 namespace PortRiskMonitor.Application.Services;
 

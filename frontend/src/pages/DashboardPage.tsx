@@ -11,6 +11,7 @@ import DisruptionTrendChart from '../components/charts/DisruptionTrendChart';
 import DashboardDateFilter from '../components/dashboard/DashboardDateFilter';
 import { useToast } from '../contexts/ToastContext';
 import { evaluateToasts } from '../utils/thresholdToasts';
+import { notifyRedZone } from '../api/settingsApi';
 import type { DateRange, TimeFrame } from '../types/Dashboard';
 
 const defaultRange: DateRange = { preset: '24h', from: null, to: null };
@@ -54,9 +55,48 @@ export default function DashboardPage() {
   const toastedKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (tiles.data?.kriCards) {
-      evaluateToasts(tiles.data.kriCards, toastedKeysRef.current, showToast);
-    }
+    if (!tiles.data?.kriCards) return;
+    evaluateToasts(
+      tiles.data.kriCards,
+      toastedKeysRef.current,
+      showToast,
+      (card, value) => {
+        const valueText = card.value || value.toString();
+        notifyRedZone({
+          kriName: card.title,
+          value,
+          message: `${card.title} entered RED zone at ${valueText}`,
+        })
+          .then((res) => {
+            if (res.channel === 'Off') {
+              showToast(
+                'Notification channel is OFF — no message sent',
+                'info',
+              );
+              return;
+            }
+            if (!res.ok) {
+              showToast(
+                `${res.channel} notification failed: ${res.error ?? 'unknown error'}`,
+                'error',
+              );
+              return;
+            }
+            const recipients = (res.recipients ?? []).join(', ');
+            const verb = res.channel === 'Email' ? 'Email sent to' : 'SMS sent to';
+            showToast(
+              recipients
+                ? `${verb} ${recipients}`
+                : `${res.channel} configured, but no recipients`,
+              'success',
+            );
+          })
+          .catch((err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            showToast(`Notification call failed: ${msg}`, 'error');
+          });
+      },
+    );
   }, [tiles.data, showToast]);
 
   if (isLoading) return <Spinner />;

@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
+using PortRiskMonitor.Application.Notifications.Options;
 
 namespace PortRiskMonitor.API.Controllers;
 
