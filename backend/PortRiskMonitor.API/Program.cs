@@ -3,6 +3,7 @@ using Autofac.Extensions.DependencyInjection;
 using Autofac.Extras.DynamicProxy;
 using Castle.DynamicProxy;
 using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL; // For UseNpgsql extension method
 using PortRiskMonitor.API.Exceptions;
 using PortRiskMonitor.API.Filters;
 using PortRiskMonitor.Application.BackgroundServices;
