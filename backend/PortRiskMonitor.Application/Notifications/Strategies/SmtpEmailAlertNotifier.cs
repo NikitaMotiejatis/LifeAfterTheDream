@@ -3,11 +3,11 @@ using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using PortRiskMonitor.Infrastructure.Notifications.Options;
+using PortRiskMonitor.Application.Notifications.Options;
 using RiskMonitor.Entities;
 using RiskMonitor.Services;
 
-namespace PortRiskMonitor.Infrastructure.Notifications.Strategies;
+namespace PortRiskMonitor.Application.Notifications.Strategies;
 
 public class SmtpEmailAlertNotifier : IAlertNotifier
 {

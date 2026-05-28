@@ -1,12 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PortRiskMonitor.Infrastructure.Notifications.Decorators;
-using PortRiskMonitor.Infrastructure.Notifications.Options;
+using PortRiskMonitor.Application.Notifications.Decorators;
+using PortRiskMonitor.Application.Notifications.Options;
 using RiskMonitor.Entities;
 using RiskMonitor.Services;
 
-namespace PortRiskMonitor.Infrastructure.Notifications.Dispatch;
+namespace PortRiskMonitor.Application.Notifications.Dispatch;
 
 public class ChannelDispatchingNotifier : IAlertNotifier
 {

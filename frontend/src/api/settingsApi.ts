@@ -202,7 +202,7 @@ export async function notifyRedZone(
   payload: NotifyRequest,
 ): Promise<NotifyResponse> {
   const resp = await axiosInstance.post<NotifyResponse>(
-    '/settings/notify',
+    '/notification/notify',
     payload,
   );
   return resp.data;

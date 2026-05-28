@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using RiskMonitor.Entities;
 using RiskMonitor.Services;
 
-namespace PortRiskMonitor.Infrastructure.Notifications.Decorators;
+namespace PortRiskMonitor.Application.Notifications.Decorators;
 
 public class RetryNotifierDecorator : IAlertNotifier
 {

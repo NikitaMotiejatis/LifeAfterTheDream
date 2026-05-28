@@ -1,4 +1,4 @@
-namespace PortRiskMonitor.Infrastructure.Notifications.Options;
+namespace PortRiskMonitor.Application.Notifications.Options;
 
 public class TwilioOptions
 {

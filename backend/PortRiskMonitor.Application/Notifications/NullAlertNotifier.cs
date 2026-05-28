@@ -2,9 +2,8 @@ using Microsoft.Extensions.Logging;
 using RiskMonitor.Entities;
 using RiskMonitor.Services;
 
-namespace PortRiskMonitor.Infrastructure.Notifications;
+namespace PortRiskMonitor.Application.Notifications;
 
-// NFR: Extensibility / Strategy — no-op IAlertNotifier used when SMS is disabled.
 public class NullAlertNotifier : IAlertNotifier
 {
     private readonly ILogger<NullAlertNotifier> _logger;

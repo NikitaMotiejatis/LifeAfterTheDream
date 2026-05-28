@@ -1,13 +1,13 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PortRiskMonitor.Infrastructure.Notifications.Options;
+using PortRiskMonitor.Application.Notifications.Options;
 using RiskMonitor.Entities;
 using RiskMonitor.Services;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 
-namespace PortRiskMonitor.Infrastructure.Notifications.Strategies;
+namespace PortRiskMonitor.Application.Notifications.Strategies;
 
 public class TwilioSmsAlertNotifier : IAlertNotifier
 {
