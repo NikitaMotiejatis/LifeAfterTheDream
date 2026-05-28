@@ -27,4 +27,28 @@ public static class IConfigurationExntesions
 
         return type!;
     }
+
+    public static Type ReadTypeFromConfig(
+        this IConfiguration configuration,
+        string configKey)
+    {
+        string? className = configuration[configKey];
+
+        if (string.IsNullOrEmpty(className))
+            throw new InvalidOperationException($"Configuration key '{configKey}' is missing or empty.");
+
+        Type? type = AppDomain.CurrentDomain
+            .GetAssemblies()
+            .SelectMany(a => a.GetTypes())
+            .FirstOrDefault(t =>
+                    t.FullName == className
+                    && !t.IsInterface
+                    && !t.IsAbstract);
+
+        if (type is null)
+            throw new InvalidOperationException(
+                $"Could not find a valid, concrete object named '{className}'.");
+
+        return type!;
+    }
 }

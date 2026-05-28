@@ -40,4 +40,29 @@ public static class IServiceCollectionExtensions
 
         return services;
     }
+
+    public static IServiceCollection AddBackgroundService(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        string configKey)
+    {
+        var serviceType = configuration.ReadTypeFromConfig(configKey);
+
+        services.AddTransient(typeof(IHostedService), serviceType);
+
+        return services;
+    }
+
+    public static IServiceCollection AddHttpBackgroundService(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        string configKey)
+    {
+        var serviceType = configuration.ReadTypeFromConfig(configKey);
+
+        services.AddHttpClient(serviceType.FullName ?? "");
+        services.AddTransient(typeof(IHostedService), serviceType);
+
+        return services;
+    }
 }

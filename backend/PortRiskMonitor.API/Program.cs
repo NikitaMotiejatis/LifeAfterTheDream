@@ -2,18 +2,11 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Autofac.Extras.DynamicProxy;
 using Castle.DynamicProxy;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
-using PortRiskMonitor.API.Exceptions;
 using PortRiskMonitor.API.Extensions;
-using PortRiskMonitor.API.Filters;
-using PortRiskMonitor.API.Interceptors;
-using PortRiskMonitor.Application.BackgroundServices;
 using PortRiskMonitor.Application.Interfaces;
-using PortRiskMonitor.Application.Notifications;
-using PortRiskMonitor.Application.Notifications.Dispatch;
 using PortRiskMonitor.Application.Notifications.Options;
-using PortRiskMonitor.Application.Notifications.Strategies;
-using PortRiskMonitor.Application.Services;
 using PortRiskMonitor.Data.Alerts;
 using PortRiskMonitor.Data.Data;
 using PortRiskMonitor.Data.PortStatus;
@@ -91,7 +84,8 @@ try
 
     builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
     {
-        containerBuilder.RegisterType<LoggingInterceptor>()
+        var loggerClass = builder.Configuration.ReadTypeFromConfig<IInterceptor>("DynamicStrategies:LoggerInterceptor");
+        containerBuilder.RegisterType(loggerClass)
                         .As<IInterceptor>()
                         .AsSelf();
 
@@ -112,50 +106,52 @@ try
                                 .AsImplementedInterfaces()
                                 .InstancePerLifetimeScope()
                                 .EnableInterfaceInterceptors()
-                                .InterceptedBy(typeof(LoggingInterceptor));
+                                .InterceptedBy(loggerClass);
             }
         }
 
         // Add logging interceptor to alert services
         {
-            containerBuilder.RegisterType<ChannelDispatchingNotifier>()
+            var alertNotifierDecorator = builder.Configuration.ReadTypeFromConfig<IAlertNotifier>("DynamicStrategies:AlertNotifierDecorator");
+            containerBuilder.RegisterType(alertNotifierDecorator)
                             .As<IAlertNotifier>()
                             .InstancePerLifetimeScope()
                             .EnableInterfaceInterceptors()
-                            .InterceptedBy(typeof(LoggingInterceptor));
+                            .InterceptedBy(loggerClass);
 
             var alertNotifiers = new[]
             {
-                (typeof(NullAlertNotifier), "Off"),
-                (typeof(TwilioSmsAlertNotifier), "Twilio"),
-                (typeof(SmtpEmailAlertNotifier), "Email"),
+                (builder.Configuration.ReadTypeFromConfig<IAlertNotifier>("DynamicStrategies:NullAlertNotifier"), "Off"),
+                (builder.Configuration.ReadTypeFromConfig<IAlertNotifier>("DynamicStrategies:TwilioSmsAlertNotifier"), "Twilio"),
+                (builder.Configuration.ReadTypeFromConfig<IAlertNotifier>("DynamicStrategies:SmtpEmailAlertNotifier"), "Email"),
             };
 
-            foreach (var (service, key) in alertNotifiers)
+            foreach (var (notifier, key) in alertNotifiers)
             {
-                containerBuilder.RegisterType(service)
+                containerBuilder.RegisterType(notifier)
                                 .Keyed<IAlertNotifier>(key)
                                 .InstancePerLifetimeScope()
                                 .EnableInterfaceInterceptors()
-                                .InterceptedBy(typeof(LoggingInterceptor));
+                                .InterceptedBy(loggerClass);
             }
         }
 
-        containerBuilder.RegisterType<FilterInputParser>()
-                        .As<IFilterInputParser>()
-                        .SingleInstance();
+        {
+            var filterInputParser = builder.Configuration.ReadTypeFromConfig<IFilterInputParser>("DynamicStrategies:IFilterInputParser");
+            containerBuilder.RegisterType(filterInputParser)
+                            .As<IFilterInputParser>()
+                            .SingleInstance();
+        }
     });
 
     // NFR: Reactive / Async — background services run on separate threads,
     // never blocking HTTP request handlers.
-    builder.Services.AddHostedService<AlertEvaluationBackgroundService>();
+    builder.Services
+        .AddBackgroundService(builder.Configuration, "DynamicStrategies:AlertEvaluationBackgroundService");
 
-    builder.Services.AddHttpClient<WeatherFetcherService>();
-    builder.Services.AddHostedService<WeatherFetcherService>();
-
-    builder.Services.AddHttpClient<AisFetcherService>();
-    builder.Services.AddHostedService<AisFetcherService>();
-
+    builder.Services
+        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:WeatherFetcherService")
+        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:AisFetcherService");
 
     builder.Services.AddCors(options =>
     {
@@ -172,7 +168,7 @@ try
         });
     });
 
-    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddSingletonFromConfig<IExceptionHandler>(builder.Configuration, "DynamicStrategies:GlobalExceptionHandler");
     builder.Services.AddProblemDetails();
 
     // NFR: Cross-cutting / Interceptors — BusinessLogicAuditFilter logs every
@@ -183,7 +179,8 @@ try
         var auditingEnabled = builder.Configuration.GetValue<bool>("Auditing:Enabled");
         if (auditingEnabled)
         {
-            options.Filters.Add<BusinessLogicAuditFilter>();
+            var auditFilter = builder.Configuration.ReadTypeFromConfig("DynamicStrategies:AuditFilter");
+            options.Filters.Add(auditFilter);
             Log.Information("Audit logging is ENABLED");
         }
         else
