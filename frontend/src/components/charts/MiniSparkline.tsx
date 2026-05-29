@@ -206,7 +206,7 @@ export default function MiniSparkline({
             stroke={strokeColor}
             strokeWidth={2}
             fill={`url(#${gradientId})`}
-            dot={greenMax != null ? renderDot : false}
+            dot={greenMax != null && chartData.length < 30 ? renderDot : false}
             activeDot={(props: any) => (
               <SparkActiveDot
                 {...props}

@@ -36,13 +36,21 @@ public class DashboardService : IDasboardService
     {
         var (from, to) = _filterInputParser.ParseFilterInput(preset, fromStr, toStr);
 
-        const long numberOfBuckets = 30;
-        var bucketLength = (to - from) / numberOfBuckets;
+        from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
+        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
 
-        var scores = (await _portStatusRepo
+        const long desiredNumberOfPoints = 100;
+        var bucketLength = (to - from) / (desiredNumberOfPoints / 4);
+
+        var scores = await _portStatusRepo
             .GetScores(from, to)
-            .ToListAsync())
-            .DownsampleM4Enumerable(from, 4 * bucketLength);
+            .Where(r => from <= r.Timestamp && r.Timestamp <= to)
+            .Select(r => new ScoreInfo
+            {
+                Timestamp = r.Timestamp,
+                Value = r.Value,
+            })
+            .DownsampleM4Async(from, bucketLength);
 
         var disruptionIndex = (await _portStatusRepo.GetLatestReading())?.Value;
         var kri = await _portStatusRepo.GetKriWithReadings(from, to)
@@ -72,8 +80,11 @@ public class DashboardService : IDasboardService
         var (from, to) = _filterInputParser.ParseFilterInput(preset, fromStr, toStr);
         var now = DateTime.UtcNow;
 
-        const long numberOfBuckets = 30;
-        var bucketLength = (to - from) / numberOfBuckets;
+        from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
+        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
+
+        const long desiredNumberOfPoints = 300;
+        var bucketLength = (to - from) / (desiredNumberOfPoints / 4);
 
         var krisWithReadings = await _riskMonitorRepo
             .GetAllIndicators()
@@ -96,8 +107,7 @@ public class DashboardService : IDasboardService
                         Timestamp = r.Timestamp,
                         Value = r.Value,
                     })
-                    .DownsampleM4Enumerable(from, 4 * bucketLength)
-                    .ToArray(),
+                    .DownsampleM4(from, bucketLength),
             })
             .ToArrayAsync();
 
@@ -125,6 +135,9 @@ public class DashboardService : IDasboardService
     {
         var (from, bucketCount, interval) = _filterInputParser.ParseFilterInput(trendTimeFrame);
         var to = DateTime.UtcNow;
+
+        from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
+        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
 
         var scores = await _portStatusRepo
             .GetScores(from, to)
