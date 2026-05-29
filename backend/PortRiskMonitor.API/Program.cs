@@ -223,7 +223,6 @@ try
     }
 
     app.UseExceptionHandler(_ => { });
-    app.UseSerilogRequestLogging();
     app.UseCors("ReactDevPolicy");
     app.UseHttpsRedirection();
 

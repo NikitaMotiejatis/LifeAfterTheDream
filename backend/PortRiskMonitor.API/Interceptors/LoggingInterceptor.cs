@@ -5,13 +5,16 @@ namespace PortRiskMonitor.API.Interceptors;
 public class LoggingInterceptor : IAsyncInterceptor, IInterceptor
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IConfiguration _config;
     private readonly ILogger<LoggingInterceptor> _logger;
 
     public LoggingInterceptor(
         IHttpContextAccessor httpContextAccessor,
+        IConfiguration config,
         ILogger<LoggingInterceptor> logger)
     {
         _httpContextAccessor = httpContextAccessor;
+        _config = config;
         _logger = logger;
     }
 
