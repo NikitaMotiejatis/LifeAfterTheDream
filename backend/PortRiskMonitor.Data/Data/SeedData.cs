@@ -97,10 +97,10 @@ public static class SeedData
         await db.Kris.AddRangeAsync(kris);
 
         var rng = new Random(42); // fixed seed = reproducible dev data
-        var readings = new List<KriReading>(kris.Count * 4 * 24 * 365);
+        var readings = new List<KriReading>(kris.Count * 2 * 24 * 365);
 
         foreach (var kri in kris)
-            readings.AddRange(GenerateReadings(kri, from, now.AddYears(1), rng));
+            readings.AddRange(GenerateReadings(kri, from, now, rng));
 
         await db.KriReadings.AddRangeAsync(readings);
         await db.SaveChangesAsync();

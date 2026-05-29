@@ -75,8 +75,17 @@ public class VesselDelayRateFetcherService : BackgroundService
 
     private Task<VesselDelayRate> FetchData()
     {
+        var now = DateTime.UtcNow;
+        var baseline = 22.0;
+        var variance = 18.0;
+
+        var cycle = Math.Sin(2 * Math.PI * now.Hour / 24.0) * (variance * 0.55);
+        var noise = (Random.Shared.NextDouble() - 0.5) * variance * 0.45;
+
+        var percentage = baseline + cycle + noise;
+
         var total = (uint)Random.Shared.NextInt64(10, 50);
-        var delayed = (uint)Random.Shared.NextInt64(0, total / 4);
+        var delayed = (uint)(0.01 * percentage * total);
 
         return Task.FromResult(new VesselDelayRate(total, delayed));
     }

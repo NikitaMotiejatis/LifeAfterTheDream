@@ -74,8 +74,16 @@ public class CustomsDwellTimeFetcherService : BackgroundService
         => customsDwellTime.hours;
 
     private Task<CustomsDwellTime> FetchData()
-        => Task.FromResult(new CustomsDwellTime(
-                    50.0 * Random.Shared.NextDouble()));
+    {
+        var now = DateTime.UtcNow;
+        var baseline = 60.0;
+        var variance = 30.0;
+
+        var cycle = Math.Sin(2 * Math.PI * now.Hour / 24.0) * (variance * 0.55);
+        var noise = (Random.Shared.NextDouble() - 0.5) * variance * 0.45;
+
+        return Task.FromResult(new CustomsDwellTime(baseline + cycle + noise));
+    }
 
     private record CustomsDwellTime(double hours);
 }

@@ -75,10 +75,19 @@ public class BerthOccupancyFetcherService : BackgroundService
 
     private Task<BerthOccupancy> FetchData()
     {
-        var total = (uint)Random.Shared.NextInt64(10, 20);
-        var occupied = (uint)Random.Shared.NextInt64(0, total / 2);
+        var now = DateTime.UtcNow;
+        var baseline = 60.0;
+        var variance = 30.0;
 
-        return Task.FromResult(new BerthOccupancy(total, occupied));
+        var cycle = Math.Sin(2 * Math.PI * now.Hour / 24.0) * (variance * 0.55);
+        var noise = (Random.Shared.NextDouble() - 0.5) * variance * 0.45;
+
+        var percentage = baseline + cycle + noise;
+
+        var total = (uint)Random.Shared.NextInt64(10, 50);
+        var delayed = (uint)(0.01 * percentage * total);
+
+        return Task.FromResult(new BerthOccupancy(total, delayed));
     }
 
     private record BerthOccupancy(uint total, uint occupied);
