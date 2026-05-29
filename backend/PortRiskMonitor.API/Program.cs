@@ -98,6 +98,7 @@ try
                 builder.Configuration.ReadTypeFromConfig<IThresholdSettingsService>("DynamicStrategies:IThresholdSettingsService"),
                 builder.Configuration.ReadTypeFromConfig<INotificationService>("DynamicStrategies:INotificationService"),
                 builder.Configuration.ReadTypeFromConfig<IAlertingService>("DynamicStrategies:IAlertingService"),
+                builder.Configuration.ReadTypeFromConfig<IIndicatorService>("DynamicStrategies:IIndicatorService"),
             };
 
             foreach (var service in businessServices)
@@ -150,8 +151,11 @@ try
         .AddBackgroundService(builder.Configuration, "DynamicStrategies:AlertEvaluationBackgroundService");
 
     builder.Services
-        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:WeatherFetcherService")
-        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:AisFetcherService");
+        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:AisFetcherService")
+        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:BerthOccupancyFetcherService")
+        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:CustomsDwellTimeFetcherService")
+        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:VesselDelayRateFetcherService")
+        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:WeatherFetcherService");
 
     builder.Services.AddCors(options =>
     {
@@ -219,7 +223,6 @@ try
     }
 
     app.UseExceptionHandler(_ => { });
-    app.UseSerilogRequestLogging();
     app.UseCors("ReactDevPolicy");
     app.UseHttpsRedirection();
 

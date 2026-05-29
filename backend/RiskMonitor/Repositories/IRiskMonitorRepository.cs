@@ -19,6 +19,21 @@ public interface IRiskMonitorRepository
 
     Task<Kri> UpdateAsync(Kri kri, uint? originalXmin = null);
 
+    Task<KriReading> AddReadingAsync(KriReading newReading);
+    async Task<KriReading> AddReadingAsync(string slug, double value)
+    {
+        var kri = await GetBySlugAsync(slug)
+            ?? throw new KeyNotFoundException("Could not find weather kri.");
+
+        var newReading = new KriReading
+        {
+            Value = value,
+            KriId = kri.Id,
+            Kri = kri,
+        };
+        return await AddReadingAsync(newReading);
+    }
+
     IQueryable<KriReading> GetLatestReadings()
     {
         var now = DateTime.UtcNow;
