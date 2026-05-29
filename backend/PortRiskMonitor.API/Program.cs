@@ -98,6 +98,7 @@ try
                 builder.Configuration.ReadTypeFromConfig<IThresholdSettingsService>("DynamicStrategies:IThresholdSettingsService"),
                 builder.Configuration.ReadTypeFromConfig<INotificationService>("DynamicStrategies:INotificationService"),
                 builder.Configuration.ReadTypeFromConfig<IAlertingService>("DynamicStrategies:IAlertingService"),
+                builder.Configuration.ReadTypeFromConfig<IIndicatorService>("DynamicStrategies:IIndicatorService"),
             };
 
             foreach (var service in businessServices)

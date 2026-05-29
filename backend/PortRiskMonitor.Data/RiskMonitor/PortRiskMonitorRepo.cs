@@ -38,4 +38,30 @@ public class PortRiskMonitorRepo : IRiskMonitorRepository
         _db.Entry(existing).State = EntityState.Detached;
         return existing;
     }
+
+    public async Task<KriReading> AddReadingAsync(KriReading newReading)
+    {
+        if (newReading == null)
+            throw new ArgumentNullException(nameof(newReading), "Reading cannot be null.");
+
+        await _db.KriReadings.AddAsync(newReading);
+        await _db.SaveChangesAsync();
+
+        return newReading;
+    }
+
+    public async Task<KriReading> UpdateReadingAsync(KriReading incomingReading)
+    {
+        var existingReading = await _db.KriReadings
+            .FirstOrDefaultAsync(r => r.Id == incomingReading.Id);
+
+        if (existingReading == null)
+            throw new KeyNotFoundException($"KriReading with ID {incomingReading.Id} was not found.");
+
+        existingReading.Value = incomingReading.Value;
+        existingReading.Timestamp = incomingReading.Timestamp;
+        await _db.SaveChangesAsync();
+
+        return existingReading;
+    }
 }

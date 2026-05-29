@@ -19,6 +19,9 @@ public interface IRiskMonitorRepository
 
     Task<Kri> UpdateAsync(Kri kri, uint? originalXmin = null);
 
+    Task<KriReading> AddReadingAsync(KriReading newReading);
+    Task<KriReading> UpdateReadingAsync(KriReading incomingReading);
+
     IQueryable<KriReading> GetLatestReadings()
     {
         var now = DateTime.UtcNow;
