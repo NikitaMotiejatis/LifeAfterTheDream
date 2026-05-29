@@ -11,10 +11,11 @@ public static class ScoreInfoExtentions
             DateTime from,
             TimeSpan bucketLength)
     {
+        var bucketSeconds = bucketLength.TotalSeconds;
         var buckets = await scores
             .GroupBy(s => new
             {
-                TimeBucket = (s.Timestamp.Ticks - from.Ticks) / bucketLength.Ticks,
+                TimeBucket = Math.Floor((s.Timestamp - from).TotalSeconds / bucketSeconds),
             })
             .Select(g => new ScoreInfo?[]
             {
@@ -23,7 +24,7 @@ public static class ScoreInfoExtentions
                 g.OrderBy(r => r.Timestamp).FirstOrDefault(),
                 g.OrderByDescending(r => r.Timestamp).FirstOrDefault(),
             })
-            .ToArrayAsync();
+            .ToListAsync();
 
         return buckets
             .SelectMany(p => p)
@@ -64,23 +65,25 @@ public static class ScoreInfoExtentions
             DateTime from,
             TimeSpan bucketLength)
     {
+        var bucketSeconds = bucketLength.TotalSeconds;
+
         var buckets = await scores
             .GroupBy(s => new
             {
-                TimeBucket = (s.Timestamp.Ticks - from.Ticks) / bucketLength.Ticks,
+                TimeBucket = Math.Floor((s.Timestamp - from).TotalSeconds / bucketSeconds),
             })
             .Select(g => new
             {
-                Ticks = from.Ticks + bucketLength.Ticks * g.Key.TimeBucket,
+                BucketIndex = g.Key.TimeBucket,
                 Value = g.Select(r => r.Value).Average(),
             })
-            .OrderBy(r => r.Ticks)
+            .OrderBy(r => r.BucketIndex)
             .ToListAsync();
 
         return buckets
             .Select(b => new ScoreInfo
             {
-                Timestamp = new DateTime(b.Ticks, DateTimeKind.Utc),
+                Timestamp = from.AddSeconds(b.BucketIndex * bucketSeconds),
                 Value = b.Value,
             });
     }

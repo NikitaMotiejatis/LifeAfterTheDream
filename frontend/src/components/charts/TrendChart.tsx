@@ -131,9 +131,11 @@ export default function TrendChart({
             dataKey="historical"
             stroke="#2563eb"
             strokeWidth={3}
-            dot={{ r: 5, strokeWidth: 0, fill: '#2563eb' }}
+            dot={false}
+            activeDot={{ r: 5, strokeWidth: 0, fill: '#2563eb' }}
             name="Historical"
             connectNulls={false}
+            isAnimationActive={false}
           />
 
           {/* Forecast line (red) */}
@@ -144,7 +146,8 @@ export default function TrendChart({
               stroke="#dc2626"
               strokeWidth={3}
               strokeDasharray="5 5"
-              dot={(props: any) => {
+              dot={false}
+              activeDot={(props: any) => {
                 const { payload } = props;
                 if (payload.historical === null) {
                   const { cx, cy } = props;
