@@ -42,9 +42,6 @@ public class DashboardService : IDasboardService
     {
         var (from, to) = _filterInputParser.ParseFilterInput(preset, fromStr, toStr);
 
-        from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
-        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
-
         var desiredNumberOfPoints = _config.GetValue<long>("Graphing:DesiredNumberOfPoints:PortStatusMini", 100);
         var bucketLength = (to - from) / (desiredNumberOfPoints / 4);
 
@@ -85,9 +82,6 @@ public class DashboardService : IDasboardService
     {
         var (from, to) = _filterInputParser.ParseFilterInput(preset, fromStr, toStr);
         var now = DateTime.UtcNow;
-
-        from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
-        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
 
         var desiredNumberOfPoints = _config.GetValue<long>("Graphing:DesiredNumberOfPoints:KriCard", 300);
         var bucketLength = (to - from) / (desiredNumberOfPoints / 4);
@@ -141,9 +135,6 @@ public class DashboardService : IDasboardService
     {
         var (from, bucketCount, interval) = _filterInputParser.ParseFilterInput(trendTimeFrame);
         var to = DateTime.UtcNow;
-
-        from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
-        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
 
         var scores = await _portStatusRepo
             .GetScores(from, to)

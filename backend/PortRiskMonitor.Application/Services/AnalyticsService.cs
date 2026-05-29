@@ -29,9 +29,6 @@ public class AnalyticsService : IAnalyticsService
     {
         var (from, to) = _filterInputParser.ParseFilterInput("custom", fromStr, toStr);
 
-        from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
-        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
-
         var desiredNumberOfPoints = _config.GetValue<long>("Graphing:DesiredNumberOfPoints:AnalyticsCard", 500);
         var bucketLength = (to - from) / (desiredNumberOfPoints / 4);
 

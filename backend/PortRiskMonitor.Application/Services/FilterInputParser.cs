@@ -1,3 +1,4 @@
+using System.Globalization;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
 using RiskMonitor.DTOs;
@@ -11,15 +12,35 @@ public class FilterInputParser : IFilterInputParser
         var from = DateTime.MinValue;
         var to = DateTime.UtcNow;
 
+        const string format = "yyyy-MM-ddTHH:mm:ss.fff'Z'";
+
         if (preset == "custom")
         {
             if (fromStr is not null && !DateTime.TryParse(fromStr, out from))
                 throw new BadInputException("Failed to parse 'from' filter option");
 
-            if (toStr is not null && !DateTime.TryParse(toStr, out to))
+            if (fromStr is not null
+                    && !DateTime.TryParseExact(
+                        fromStr,
+                        format,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
+                        out from))
+                throw new BadInputException("Failed to parse 'from' filter option");
+
+            if (toStr is not null
+                    && !DateTime.TryParseExact(
+                        toStr,
+                        format,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal,
+                        out to))
                 throw new BadInputException("Failed to parse 'to' filter option");
 
-            return (from.ToUniversalTime(), to);
+            to = DateTime.UtcNow < to ? DateTime.UtcNow : to;
+
+            return (DateTime.SpecifyKind(from, DateTimeKind.Utc),
+                    DateTime.SpecifyKind(to, DateTimeKind.Utc));
         }
 
         from = preset switch
@@ -35,7 +56,8 @@ public class FilterInputParser : IFilterInputParser
             _ => throw new BadInputException("Invalid data filter 'preset'"),
         };
 
-        return (from, to);
+        return (DateTime.SpecifyKind(from, DateTimeKind.Utc),
+                DateTime.SpecifyKind(to, DateTimeKind.Utc));
     }
 
     public (DateTime from, int bucketCount, BucketType interval) ParseFilterInput(string trendTimeFrame)
@@ -62,6 +84,6 @@ public class FilterInputParser : IFilterInputParser
             _ => throw new InternalErrorException("Invalid time interval length"),
         };
 
-        return (from, bucketCount, interval);
+        return (DateTime.SpecifyKind(from, DateTimeKind.Utc), bucketCount, interval);
     }
 }
