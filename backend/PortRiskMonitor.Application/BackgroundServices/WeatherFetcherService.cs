@@ -1,15 +1,18 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
+using RiskMonitor.Repositories;
 
 namespace PortRiskMonitor.Application.BackgroundServices;
 
 public class WeatherFetcherService : BackgroundService
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly HttpClient _httpClient;
     private readonly IWeatherSnapshotCache _cache;
     private readonly ILogger<WeatherFetcherService> _logger;
@@ -23,10 +26,12 @@ public class WeatherFetcherService : BackgroundService
     };
 
     public WeatherFetcherService(
+        IServiceProvider serviceProvider,
         HttpClient httpClient,
         IWeatherSnapshotCache cache,
         ILogger<WeatherFetcherService> logger)
     {
+        _serviceProvider = serviceProvider;
         _httpClient = httpClient;
         _cache = cache;
         _logger = logger;
@@ -53,6 +58,7 @@ public class WeatherFetcherService : BackgroundService
             _logger.LogInformation("Fetching fresh port status from external API...");
 
             var newSnapshot = await FetchData();
+            await AddKriReading(newSnapshot);
             _cache.UpdateSnapshot(newSnapshot);
 
             _logger.LogInformation("Snapshot successfully updated in memory.");
@@ -62,6 +68,21 @@ public class WeatherFetcherService : BackgroundService
             _logger.LogError(ex, "Failed to fetch port status from external API.");
         }
     }
+
+    private async Task AddKriReading(WeatherSnapshot weatherSnapshot)
+    {
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            await scope.ServiceProvider
+                .GetRequiredService<IRiskMonitorRepository>()
+                .AddReadingAsync("weather-risk", CalculateKriScore(weatherSnapshot));
+
+            _logger.LogInformation("Successfully saved API metrics to the database at {Time}.", DateTime.UtcNow);
+        }
+    }
+
+    private double CalculateKriScore(WeatherSnapshot weatherSnapshot)
+        => weatherSnapshot.WindSpeedKts + (weatherSnapshot.WaveHeightM * 5.0);
 
     private async Task<WeatherSnapshot> FetchData()
     {
