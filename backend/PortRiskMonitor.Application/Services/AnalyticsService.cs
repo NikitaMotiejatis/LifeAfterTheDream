@@ -1,4 +1,5 @@
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
@@ -10,13 +11,16 @@ namespace PortRiskMonitor.Application.Services;
 
 public class AnalyticsService : IAnalyticsService
 {
+    private readonly IConfiguration _config;
     private readonly IFilterInputParser _filterInputParser;
     private readonly IRiskMonitorRepository _portRiskMonitorRepo;
 
     public AnalyticsService(
+        IConfiguration config,
         IFilterInputParser filterInputParser,
         IRiskMonitorRepository portRiskMonitorRepo)
     {
+        _config = config;
         _filterInputParser = filterInputParser;
         _portRiskMonitorRepo = portRiskMonitorRepo;
     }
@@ -24,26 +28,22 @@ public class AnalyticsService : IAnalyticsService
     public async Task<AnalyticsDto> GetAnalytics(string slug, string? fromStr, string? toStr)
     {
         var (from, to) = _filterInputParser.ParseFilterInput("custom", fromStr, toStr);
-        var fromUtc = DateTime.SpecifyKind(from, DateTimeKind.Utc);
-        var toUtc = DateTime.SpecifyKind(to, DateTimeKind.Utc);
 
-        const long numberOfBuckets = 50;
-        var bucketLength = (toUtc - fromUtc) / numberOfBuckets;
+        var desiredNumberOfPoints = _config.GetValue<long>("Graphing:DesiredNumberOfPoints:AnalyticsCard", 500);
+        var bucketLength = (to - from) / (desiredNumberOfPoints / 4);
 
         var kri = await _portRiskMonitorRepo.GetBySlugAsync(slug)
             ?? throw new NotFoundException("Risk indicator not found");
 
-        var scores = (await _portRiskMonitorRepo
+        var scores = await _portRiskMonitorRepo
             .GetKriReadings(slug)
-            .Where(r => fromUtc <= r.Timestamp && r.Timestamp <= toUtc)
+            .Where(r => from <= r.Timestamp && r.Timestamp <= to)
             .Select(r => new ScoreInfo
             {
                 Timestamp = r.Timestamp,
                 Value = r.Value,
             })
-            .ToListAsync())
-            .AsEnumerable()
-            .DownsampleM4Enumerable(fromUtc, 4 * bucketLength);
+            .DownsampleM4Async(from, bucketLength);
 
         return new AnalyticsDto(
             Title: kri.Name,

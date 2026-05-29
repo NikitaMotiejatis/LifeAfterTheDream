@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 
 using RiskMonitor.DTOs;
@@ -11,10 +13,11 @@ public static class ScoreInfoExtentions
             DateTime from,
             TimeSpan bucketLength)
     {
+        var bucketSeconds = bucketLength.TotalSeconds;
         var buckets = await scores
             .GroupBy(s => new
             {
-                TimeBucket = (s.Timestamp.Ticks - from.Ticks) / bucketLength.Ticks,
+                TimeBucket = Math.Floor((s.Timestamp - from).TotalSeconds / bucketSeconds),
             })
             .Select(g => new ScoreInfo?[]
             {
@@ -23,7 +26,7 @@ public static class ScoreInfoExtentions
                 g.OrderBy(r => r.Timestamp).FirstOrDefault(),
                 g.OrderByDescending(r => r.Timestamp).FirstOrDefault(),
             })
-            .ToArrayAsync();
+            .ToListAsync();
 
         return buckets
             .SelectMany(p => p)
@@ -33,15 +36,16 @@ public static class ScoreInfoExtentions
             .OrderBy(s => s.Timestamp);
     }
 
-    public static IEnumerable<ScoreInfo> DownsampleM4Enumerable(
+    public static IEnumerable<ScoreInfo> DownsampleM4(
             this IEnumerable<ScoreInfo> scores,
             DateTime from,
             TimeSpan bucketLength)
     {
+        var bucketSeconds = bucketLength.TotalSeconds;
         var buckets = scores
             .GroupBy(s => new
             {
-                TimeBucket = (s.Timestamp.Ticks - from.Ticks) / bucketLength.Ticks,
+                TimeBucket = Math.Floor((s.Timestamp - from).TotalSeconds / bucketSeconds),
             })
             .Select(g => new ScoreInfo?[]
             {
@@ -59,112 +63,42 @@ public static class ScoreInfoExtentions
             .OrderBy(s => s.Timestamp);
     }
 
-    public static async Task<IEnumerable<ScoreInfo>> DownsampleAverage(
+    public static async Task<IEnumerable<ScoreInfo>> DownsampleAverageAsync(
             this IQueryable<ScoreInfo> scores,
             DateTime from,
-            TimeSpan bucketLength)
+            int bucketCount,
+            BucketType interval)
     {
-        var buckets = await scores
-            .GroupBy(s => new
-            {
-                TimeBucket = (s.Timestamp.Ticks - from.Ticks) / bucketLength.Ticks,
-            })
+        Expression<Func<ScoreInfo, DateTime>> grouping = interval switch
+        {
+            BucketType.Hour => (s) => new DateTime(s.Timestamp.Year, s.Timestamp.Month, s.Timestamp.Day, s.Timestamp.Hour, 0, 0, DateTimeKind.Utc),
+            BucketType.Day => (s) => new DateTime(s.Timestamp.Year, s.Timestamp.Month, s.Timestamp.Day, 0, 0, 0, DateTimeKind.Utc),
+            BucketType.Month => (s) => new DateTime(s.Timestamp.Year, s.Timestamp.Month, 1, 0, 0, 0, DateTimeKind.Utc),
+            BucketType.Year => (s) => new DateTime(s.Timestamp.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            _ => throw new InvalidEnumArgumentException($"BucketType value {interval} is not handled"),
+        };
+
+        var groupedScores = await scores
+            .GroupBy(grouping)
             .Select(g => new
             {
-                Ticks = from.Ticks + bucketLength.Ticks * g.Key.TimeBucket,
-                Value = g.Select(r => r.Value).Average(),
+                BucketTime = g.Key,
+                AverageValue = g.Average(r => r.Value)
             })
-            .OrderBy(r => r.Ticks)
-            .ToListAsync();
-
-        return buckets
-            .Select(b => new ScoreInfo
-            {
-                Timestamp = new DateTime(b.Ticks, DateTimeKind.Utc),
-                Value = b.Value,
-            });
-    }
-
-    public static async Task<IEnumerable<ScoreInfo>> DownsampleAverageAsync(this IQueryable<ScoreInfo> scores, DateTime from, int bucketCount, BucketType interval)
-    {
-        var to = interval switch
-        {
-            BucketType.Day => from.AddDays(bucketCount),
-            BucketType.Month => from.AddMonths(bucketCount),
-            BucketType.Year => from.AddYears(bucketCount),
-            BucketType.Hour or _ => from.AddDays(bucketCount),
-        };
-
-        var baseQuery = scores
-            .Where(s => from <= s.Timestamp && s.Timestamp < to);
-
-        var groupedScores = interval switch
-        {
-            BucketType.Day => await baseQuery
-                .GroupBy(s => new
-                {
-                    Year = s.Timestamp.Year,
-                    Month = s.Timestamp.Month,
-                    Day = s.Timestamp.Day,
-                })
-                .ToDictionaryAsync(
-                    g => from
-                        .AddYears(g.Key.Year - from.Year)
-                        .AddMonths(g.Key.Month - from.Month)
-                        .AddDays(g.Key.Day - from.Day),
-                    g => g.Average(r => r.Value)
-                ),
-
-            BucketType.Month => await baseQuery
-                .GroupBy(s => new
-                {
-                    Year = s.Timestamp.Year,
-                    Month = s.Timestamp.Month,
-                })
-                .ToDictionaryAsync(
-                    g => from
-                        .AddYears(g.Key.Year - from.Year)
-                        .AddMonths(g.Key.Month - from.Month),
-                    g => g.Average(r => r.Value)
-                ),
-
-            BucketType.Year => await baseQuery
-                .GroupBy(s => new
-                {
-                    Year = s.Timestamp.Year,
-                })
-                .ToDictionaryAsync(
-                    g => from
-                        .AddYears(g.Key.Year - from.Year),
-                    g => g.Average(r => r.Value)
-                ),
-
-            BucketType.Hour or _ => await baseQuery
-                .GroupBy(s => new
-                {
-                    Year = s.Timestamp.Year,
-                    Month = s.Timestamp.Month,
-                    Day = s.Timestamp.Day,
-                    Hour = s.Timestamp.Hour,
-                })
-                .ToDictionaryAsync(
-                    g => from
-                        .AddYears(g.Key.Year - from.Year)
-                        .AddMonths(g.Key.Month - from.Month)
-                        .AddDays(g.Key.Day - from.Day)
-                        .AddHours(g.Key.Hour - from.Hour),
-                    g => g.Average(r => r.Value)
-                ),
-        };
+            .ToDictionaryAsync(
+                x => DateTime.SpecifyKind(x.BucketTime, DateTimeKind.Utc),
+                x => x.AverageValue
+            );
 
         return Enumerable
             .Range(0, bucketCount)
-            .Select(bucketIdx => interval switch
+            .Select(bucketIndex => interval switch
             {
-                BucketType.Day => from.AddDays(bucketIdx),
-                BucketType.Month => from.AddMonths(bucketIdx),
-                BucketType.Year => from.AddYears(bucketIdx),
-                BucketType.Hour or _ => from.AddHours(bucketIdx),
+                BucketType.Hour => from.AddHours(bucketIndex),
+                BucketType.Day => from.AddDays(bucketIndex),
+                BucketType.Month => from.AddMonths(bucketIndex),
+                BucketType.Year => from.AddYears(bucketIndex),
+                _ => throw new InvalidEnumArgumentException($"BucketType value {interval} is not handled"),
             })
             .Select(bucketTime => new ScoreInfo
             {

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
@@ -12,19 +13,24 @@ namespace PortRiskMonitor.Application.Services;
 
 public class DashboardService : IDasboardService
 {
+    private readonly IConfiguration _config;
     private readonly IFilterInputParser _filterInputParser;
+
     private readonly IRiskMonitorRepository _riskMonitorRepo;
     private readonly IPortStatusRepo _portStatusRepo;
+
     private readonly IWeatherSnapshotCache _weatherCache;
     private readonly IAisSnapshotCache _aisCache;
 
     public DashboardService(
+            IConfiguration config,
             IFilterInputParser filterInputParser,
             IRiskMonitorRepository riskMonitorRepo,
             IPortStatusRepo portStatusRepo,
             IWeatherSnapshotCache weatherCache,
             IAisSnapshotCache aisCache)
     {
+        _config = config;
         _filterInputParser = filterInputParser;
         _riskMonitorRepo = riskMonitorRepo;
         _portStatusRepo = portStatusRepo;
@@ -36,13 +42,18 @@ public class DashboardService : IDasboardService
     {
         var (from, to) = _filterInputParser.ParseFilterInput(preset, fromStr, toStr);
 
-        const long numberOfBuckets = 30;
-        var bucketLength = (to - from) / numberOfBuckets;
+        var desiredNumberOfPoints = _config.GetValue<long>("Graphing:DesiredNumberOfPoints:PortStatusMini", 100);
+        var bucketLength = (to - from) / (desiredNumberOfPoints / 4);
 
-        var scores = (await _portStatusRepo
+        var scores = await _portStatusRepo
             .GetScores(from, to)
-            .ToListAsync())
-            .DownsampleM4Enumerable(from, 4 * bucketLength);
+            .Where(r => from <= r.Timestamp && r.Timestamp <= to)
+            .Select(r => new ScoreInfo
+            {
+                Timestamp = r.Timestamp,
+                Value = r.Value,
+            })
+            .DownsampleM4Async(from, bucketLength);
 
         var disruptionIndex = (await _portStatusRepo.GetLatestReading())?.Value;
         var kri = await _portStatusRepo.GetKriWithReadings(from, to)
@@ -72,8 +83,8 @@ public class DashboardService : IDasboardService
         var (from, to) = _filterInputParser.ParseFilterInput(preset, fromStr, toStr);
         var now = DateTime.UtcNow;
 
-        const long numberOfBuckets = 30;
-        var bucketLength = (to - from) / numberOfBuckets;
+        var desiredNumberOfPoints = _config.GetValue<long>("Graphing:DesiredNumberOfPoints:KriCard", 300);
+        var bucketLength = (to - from) / (desiredNumberOfPoints / 4);
 
         var krisWithReadings = await _riskMonitorRepo
             .GetAllIndicators()
@@ -96,8 +107,7 @@ public class DashboardService : IDasboardService
                         Timestamp = r.Timestamp,
                         Value = r.Value,
                     })
-                    .DownsampleM4Enumerable(from, 4 * bucketLength)
-                    .ToArray(),
+                    .DownsampleM4(from, bucketLength),
             })
             .ToArrayAsync();
 
