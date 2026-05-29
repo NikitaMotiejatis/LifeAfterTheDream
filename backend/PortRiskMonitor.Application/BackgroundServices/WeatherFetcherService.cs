@@ -39,33 +39,32 @@ public class WeatherFetcherService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Port Status Background Worker starting.");
+        _logger.LogInformation("Weather Fetcher Background Worker starting.");
 
         using PeriodicTimer timer = new PeriodicTimer(_period);
 
-        await FetchAndStoreStatusAsync();
-
-        while (await timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested)
+        do
         {
             await FetchAndStoreStatusAsync();
         }
+        while (await timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested);
     }
 
     private async Task FetchAndStoreStatusAsync()
     {
         try
         {
-            _logger.LogInformation("Fetching fresh port status from external API...");
+            _logger.LogInformation("Fetching weather info from external API...");
 
             var newSnapshot = await FetchData();
             await AddKriReading(newSnapshot);
             _cache.UpdateSnapshot(newSnapshot);
 
-            _logger.LogInformation("Snapshot successfully updated in memory.");
+            _logger.LogInformation("Weather snapshot successfully updated in memory.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch port status from external API.");
+            _logger.LogError(ex, "Failed to fetch weather info from external API.");
         }
     }
 
@@ -77,7 +76,7 @@ public class WeatherFetcherService : BackgroundService
                 .GetRequiredService<IRiskMonitorRepository>()
                 .AddReadingAsync("weather-risk", CalculateKriScore(weatherSnapshot));
 
-            _logger.LogInformation("Successfully saved API metrics to the database at {Time}.", DateTime.UtcNow);
+            _logger.LogInformation("Successfully saved weather risk reading to the database at {Time}.", DateTime.UtcNow);
         }
     }
 

@@ -151,8 +151,9 @@ try
         .AddBackgroundService(builder.Configuration, "DynamicStrategies:AlertEvaluationBackgroundService");
 
     builder.Services
-        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:WeatherFetcherService")
-        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:AisFetcherService");
+        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:AisFetcherService")
+        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:BerthOccupancyFetcherService")
+        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:WeatherFetcherService");
 
     builder.Services.AddCors(options =>
     {
