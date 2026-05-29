@@ -10,7 +10,7 @@ public class VesselDelayRateFetcherService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly HttpClient _httpClient;
-    private readonly ILogger<WeatherFetcherService> _logger;
+    private readonly ILogger<VesselDelayRateFetcherService> _logger;
     private readonly TimeSpan _period = TimeSpan.FromMinutes(5);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -23,7 +23,7 @@ public class VesselDelayRateFetcherService : BackgroundService
     public VesselDelayRateFetcherService(
         IServiceProvider serviceProvider,
         HttpClient httpClient,
-        ILogger<WeatherFetcherService> logger)
+        ILogger<VesselDelayRateFetcherService> logger)
     {
         _serviceProvider = serviceProvider;
         _httpClient = httpClient;

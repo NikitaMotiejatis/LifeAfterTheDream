@@ -153,6 +153,7 @@ try
     builder.Services
         .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:AisFetcherService")
         .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:BerthOccupancyFetcherService")
+        .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:CustomsDwellTimeFetcherService")
         .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:VesselDelayRateFetcherService")
         .AddHttpBackgroundService(builder.Configuration, "DynamicStrategies:WeatherFetcherService");
 

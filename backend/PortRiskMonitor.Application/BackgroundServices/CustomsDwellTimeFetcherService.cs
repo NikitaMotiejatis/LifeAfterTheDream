@@ -6,11 +6,11 @@ using RiskMonitor.Repositories;
 
 namespace PortRiskMonitor.Application.BackgroundServices;
 
-public class BerthOccupancyFetcherService : BackgroundService
+public class CustomsDwellTimeFetcherService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly HttpClient _httpClient;
-    private readonly ILogger<BerthOccupancyFetcherService> _logger;
+    private readonly ILogger<CustomsDwellTimeFetcherService> _logger;
     private readonly TimeSpan _period = TimeSpan.FromMinutes(5);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -20,10 +20,10 @@ public class BerthOccupancyFetcherService : BackgroundService
         RespectRequiredConstructorParameters = true,
     };
 
-    public BerthOccupancyFetcherService(
+    public CustomsDwellTimeFetcherService(
         IServiceProvider serviceProvider,
         HttpClient httpClient,
-        ILogger<BerthOccupancyFetcherService> logger)
+        ILogger<CustomsDwellTimeFetcherService> logger)
     {
         _serviceProvider = serviceProvider;
         _httpClient = httpClient;
@@ -32,7 +32,7 @@ public class BerthOccupancyFetcherService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Berth Occupancy Background Worker starting.");
+        _logger.LogInformation("Customs Dwell Time Background Worker starting.");
 
         using PeriodicTimer timer = new PeriodicTimer(_period);
 
@@ -47,39 +47,35 @@ public class BerthOccupancyFetcherService : BackgroundService
     {
         try
         {
-            _logger.LogInformation("Fetching fresh berth occupancy data from external API...");
+            _logger.LogInformation("Fetching customs dwell time from external API...");
 
             var newSnapshot = await FetchData();
             await AddKriReading(newSnapshot);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch berth occupancy data from external API.");
+            _logger.LogError(ex, "Failed to fetch customs dwell time from external API.");
         }
     }
 
-    private async Task AddKriReading(BerthOccupancy berthOccupancy)
+    private async Task AddKriReading(CustomsDwellTime customsDwellTime)
     {
         using (var scope = _serviceProvider.CreateScope())
         {
             await scope.ServiceProvider
                 .GetRequiredService<IRiskMonitorRepository>()
-                .AddReadingAsync("berth-occupancy", CalculateKriScore(berthOccupancy));
+                .AddReadingAsync("customs-dwell-time", CalculateKriScore(customsDwellTime));
 
-            _logger.LogInformation("Successfully saved berth occupancy data to the database at {Time}.", DateTime.UtcNow);
+            _logger.LogInformation("Successfully saved customs dwell time to the database at {Time}.", DateTime.UtcNow);
         }
     }
 
-    private double CalculateKriScore(BerthOccupancy berthOccupancy)
-        => 100.0 * (double)berthOccupancy.occupied / (double)berthOccupancy.total;
+    private double CalculateKriScore(CustomsDwellTime customsDwellTime)
+        => customsDwellTime.hours;
 
-    private Task<BerthOccupancy> FetchData()
-    {
-        var total = (uint)Random.Shared.NextInt64(10, 20);
-        var occupied = (uint)Random.Shared.NextInt64(0, total / 2);
+    private Task<CustomsDwellTime> FetchData()
+        => Task.FromResult(new CustomsDwellTime(
+                    50.0 * Random.Shared.NextDouble()));
 
-        return Task.FromResult(new BerthOccupancy(total, occupied));
-    }
-
-    private record BerthOccupancy(uint total, uint occupied);
+    private record CustomsDwellTime(double hours);
 }
