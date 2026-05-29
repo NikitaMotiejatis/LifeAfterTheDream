@@ -6,7 +6,7 @@ using RiskMonitor.Repositories;
 
 namespace PortRiskMonitor.Application.BackgroundServices;
 
-public class BerthOccupancyFetcherService : BackgroundService
+public class VesselDelayRateFetcherService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly HttpClient _httpClient;
@@ -20,7 +20,7 @@ public class BerthOccupancyFetcherService : BackgroundService
         RespectRequiredConstructorParameters = true,
     };
 
-    public BerthOccupancyFetcherService(
+    public VesselDelayRateFetcherService(
         IServiceProvider serviceProvider,
         HttpClient httpClient,
         ILogger<WeatherFetcherService> logger)
@@ -32,7 +32,7 @@ public class BerthOccupancyFetcherService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Berth Occupancy Background Worker starting.");
+        _logger.LogInformation("Vessel Delay Rate Background Worker starting.");
 
         using PeriodicTimer timer = new PeriodicTimer(_period);
 
@@ -47,39 +47,39 @@ public class BerthOccupancyFetcherService : BackgroundService
     {
         try
         {
-            _logger.LogInformation("Fetching fresh berth occupancy data from external API...");
+            _logger.LogInformation("Fetching fresh vessel delay rate from external API...");
 
             var newSnapshot = await FetchData();
             await AddKriReading(newSnapshot);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch berth occupancy data from external API.");
+            _logger.LogError(ex, "Failed to fetch vessel delay rate from external API.");
         }
     }
 
-    private async Task AddKriReading(BerthOccupancy berthOccupancy)
+    private async Task AddKriReading(VesselDelayRate vesselDelayRate)
     {
         using (var scope = _serviceProvider.CreateScope())
         {
             await scope.ServiceProvider
                 .GetRequiredService<IRiskMonitorRepository>()
-                .AddReadingAsync("berth-occupancy", CalculateKriScore(berthOccupancy));
+                .AddReadingAsync("vessel-delay-rate", CalculateKriScore(vesselDelayRate));
 
-            _logger.LogInformation("Successfully saved berth occupancy data to the database at {Time}.", DateTime.UtcNow);
+            _logger.LogInformation("Successfully saved vessel delay rate to the database at {Time}.", DateTime.UtcNow);
         }
     }
 
-    private double CalculateKriScore(BerthOccupancy berthOccupancy)
-        => 100.0 * (double)berthOccupancy.occupied / (double)berthOccupancy.total;
+    private double CalculateKriScore(VesselDelayRate vesselDelayRate)
+        => 100.0 * (double)vesselDelayRate.occupied / (double)vesselDelayRate.total;
 
-    private Task<BerthOccupancy> FetchData()
+    private Task<VesselDelayRate> FetchData()
     {
-        var total = (uint)Random.Shared.NextInt64(10, 20);
-        var occupied = (uint)Random.Shared.NextInt64(0, total / 2);
+        var total = (uint)Random.Shared.NextInt64(10, 50);
+        var delayed = (uint)Random.Shared.NextInt64(0, total / 4);
 
-        return Task.FromResult(new BerthOccupancy(total, occupied));
+        return Task.FromResult(new VesselDelayRate(total, delayed));
     }
 
-    private record BerthOccupancy(uint total, uint occupied);
+    private record VesselDelayRate(uint total, uint occupied);
 }
