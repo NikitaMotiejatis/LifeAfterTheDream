@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
@@ -12,19 +13,24 @@ namespace PortRiskMonitor.Application.Services;
 
 public class DashboardService : IDasboardService
 {
+    private readonly IConfiguration _config;
     private readonly IFilterInputParser _filterInputParser;
+
     private readonly IRiskMonitorRepository _riskMonitorRepo;
     private readonly IPortStatusRepo _portStatusRepo;
+
     private readonly IWeatherSnapshotCache _weatherCache;
     private readonly IAisSnapshotCache _aisCache;
 
     public DashboardService(
+            IConfiguration config,
             IFilterInputParser filterInputParser,
             IRiskMonitorRepository riskMonitorRepo,
             IPortStatusRepo portStatusRepo,
             IWeatherSnapshotCache weatherCache,
             IAisSnapshotCache aisCache)
     {
+        _config = config;
         _filterInputParser = filterInputParser;
         _riskMonitorRepo = riskMonitorRepo;
         _portStatusRepo = portStatusRepo;
@@ -39,7 +45,7 @@ public class DashboardService : IDasboardService
         from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
         to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
 
-        const long desiredNumberOfPoints = 100;
+        var desiredNumberOfPoints = _config.GetValue<long>("Graphing:DesiredNumberOfPoints:PortStatusMini", 100);
         var bucketLength = (to - from) / (desiredNumberOfPoints / 4);
 
         var scores = await _portStatusRepo
@@ -83,7 +89,7 @@ public class DashboardService : IDasboardService
         from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
         to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
 
-        const long desiredNumberOfPoints = 300;
+        var desiredNumberOfPoints = _config.GetValue<long>("Graphing:DesiredNumberOfPoints:KriCard", 300);
         var bucketLength = (to - from) / (desiredNumberOfPoints / 4);
 
         var krisWithReadings = await _riskMonitorRepo

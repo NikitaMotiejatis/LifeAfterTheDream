@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+
 using PortRiskMonitor.Application.DTOs;
 using PortRiskMonitor.Application.Exceptions;
 using PortRiskMonitor.Application.Interfaces;
@@ -9,13 +11,16 @@ namespace PortRiskMonitor.Application.Services;
 
 public class AnalyticsService : IAnalyticsService
 {
+    private readonly IConfiguration _config;
     private readonly IFilterInputParser _filterInputParser;
     private readonly IRiskMonitorRepository _portRiskMonitorRepo;
 
     public AnalyticsService(
+        IConfiguration config,
         IFilterInputParser filterInputParser,
         IRiskMonitorRepository portRiskMonitorRepo)
     {
+        _config = config;
         _filterInputParser = filterInputParser;
         _portRiskMonitorRepo = portRiskMonitorRepo;
     }
@@ -27,7 +32,7 @@ public class AnalyticsService : IAnalyticsService
         from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
         to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
 
-        const long desiredNumberOfPoints = 500;
+        var desiredNumberOfPoints = _config.GetValue<long>("Graphing:DesiredNumberOfPoints:AnalyticsCard", 500);
         var bucketLength = (to - from) / (desiredNumberOfPoints / 4);
 
         var kri = await _portRiskMonitorRepo.GetBySlugAsync(slug)
